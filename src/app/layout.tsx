@@ -4,6 +4,7 @@ import { StoreShell } from "@/components/StoreShell";
 import { Toaster } from "@/components/Toaster";
 import { PresenceBeacon } from "@/components/PresenceBeacon";
 import { ComingSoonGate } from "@/components/ComingSoonGate";
+import { SiteLoadSplash } from "@/components/SiteLoadSplash";
 import { getShippingRate } from "@/lib/shipping.server";
 import { SITE } from "@/lib/site";
 import "./globals.css";
@@ -47,6 +48,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
           <Toaster />
           <PresenceBeacon />
           <ComingSoonGate />
+          <SiteLoadSplash />
         </StoreProvider>
       </body>
     </html>

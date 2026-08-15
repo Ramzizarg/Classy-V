@@ -12,6 +12,7 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const ICON_SOURCE = { file: join(root, "public", "brand", "classy V.png") };
 /** The sparkle lockup is painted the other way round: white mark on black paper. */
 const RAIL_SOURCE = { file: join(root, "public", "brand", "Classy V 2.png"), lightInk: true };
+const SPLASH_SOURCE = { file: join(root, "public", "brand", "classy v 4.png"), lightInk: true };
 
 const DISC = [10, 10, 11];
 /** Tab and app icons are stamped in brand yellow; the storefront rail mark stays white. */
@@ -25,8 +26,12 @@ const TARGETS = [
   { file: join(root, "src", "app", "apple-icon.png"), size: 180, shape: "square", fill: 0.76 },
 ];
 
-/** Trimmed, transparent, light-ink mark for the storefront's black brand rail. */
-const RAIL_MARK = { file: join(root, "public", "brand", "classy-v-rail.png"), width: 520 };
+/** Trimmed, transparent, light-ink marks: the storefront rail and the boot splash. */
+const STAMPS = [
+  { source: RAIL_SOURCE, file: join(root, "public", "brand", "classy-v-rail.png"), width: 520 },
+  // The splash scales the wordmark across the viewport, so it is stamped wider.
+  { source: SPLASH_SOURCE, file: join(root, "public", "brand", "classy-v-splash.png"), width: 960 },
+];
 
 const CHANNELS = { 0: 1, 2: 3, 4: 2, 6: 4 };
 
@@ -305,11 +310,13 @@ async function main() {
     console.log(`${target.shape} ${target.size}px -> ${target.file}`);
   }
 
-  const railMark = await loadMark(RAIL_SOURCE);
-  const stamp = renderInkStamp(railMark, inkBounds(railMark), RAIL_MARK);
-  await mkdir(dirname(RAIL_MARK.file), { recursive: true });
-  await writeFile(RAIL_MARK.file, encodePng(stamp.width, stamp.height, stamp.rgba));
-  console.log(`stamp ${stamp.width}x${stamp.height} -> ${RAIL_MARK.file}`);
+  for (const target of STAMPS) {
+    const mark = await loadMark(target.source);
+    const stamp = renderInkStamp(mark, inkBounds(mark), target);
+    await mkdir(dirname(target.file), { recursive: true });
+    await writeFile(target.file, encodePng(stamp.width, stamp.height, stamp.rgba));
+    console.log(`stamp ${stamp.width}x${stamp.height} -> ${target.file}`);
+  }
 }
 
 main().catch((error) => {
