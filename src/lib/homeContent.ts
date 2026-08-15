@@ -1,0 +1,269 @@
+import { cache } from "react";
+import { syncClientCachesWithDeployment } from "@/lib/appBuildId";
+import { neonQuery, resolveDatabaseUrl } from "@/lib/neon-db";
+import { supabaseBrowserClient } from "@/lib/supabaseClient";
+
+export interface HomeProduct {
+  product_id?: number | null;
+  name: string;
+  price: string;
+}
+
+/** 0 = left, 50 = center, 100 = right. Fine control for mobile hero image. */
+export interface HomeContent {
+  heroImageUrls: string[];
+  heroImageUrl: string;
+  heroImagePositionsMobile: number[];
+  /** @deprecated Prefer `heroImagePositionsMobile`. Kept for older saved data. */
+  heroImagePositionMobile: number | "left" | "center" | "right";
+  heroImagePositionsDesktop: number[];
+  heroSubtitle: string;
+  heroSubtitleColor: string;
+  /** When false, hero shows only images (no collection / title / description / CTAs). */
+  heroShowOverlay: boolean;
+  heroCollection: string;
+  heroCollectionColor: string;
+  heroHeadline: string;
+  heroHeadlineColor: string;
+  heroDescription: string;
+  heroDescriptionColor: string;
+  heroButtonText: string;
+  heroButtonTextColor: string;
+  /** Empty = hide secondary CTA. */
+  heroSecondaryButtonText: string;
+  carouselTitle: string;
+  products: HomeProduct[];
+  category1Name: string;
+  category1ImageUrl: string;
+  category2Name: string;
+  category2ImageUrl: string;
+  newsletterText: string;
+  socialHandle: string;
+  /** Top announcement banner phrases, one per element. */
+  bannerPhrases: string[];
+}
+
+export const defaultHomeContent: HomeContent = {
+  heroImageUrls: [],
+  heroImageUrl: "",
+  heroImagePositionsMobile: [],
+  heroImagePositionMobile: 50,
+  heroImagePositionsDesktop: [],
+  heroSubtitle: "New",
+  heroSubtitleColor: "#ffffff",
+  heroShowOverlay: false,
+  heroCollection: "",
+  heroCollectionColor: "#ffffff",
+  heroHeadline: "",
+  heroHeadlineColor: "#ffffff",
+  heroDescription: "",
+  heroDescriptionColor: "#ffffff",
+  heroButtonText: "",
+  heroButtonTextColor: "#000000",
+  heroSecondaryButtonText: "",
+  carouselTitle: "The Latest Arrivals",
+  products: [
+    { product_id: null, name: "Oversized Hoodie", price: "120.00 DT" },
+    { product_id: null, name: "Tech Fleece", price: "110.00 DT" },
+  ],
+  category1Name: "All New",
+  category1ImageUrl: "",
+  category2Name: "Sweatshirts",
+  category2ImageUrl: "",
+  newsletterText: "Sign up to our newsletter & get a gift on your birthday",
+  socialHandle: "@ClassyV",
+  bannerPhrases: [
+    "Easy returns",
+    "Premium quality",
+    "Classy V Club",
+    "New collection",
+    "Streetwear & sport",
+  ],
+};
+
+const STORAGE_KEY = "classyv-home-content";
+const ROW_ID = "default";
+let homeContentTableMissing = false;
+
+function isMissingHomeContentTableMessage(message: string | undefined): boolean {
+  if (!message) return false;
+  const m = message.toLowerCase();
+  return m.includes("home_content") && (m.includes("42p01") || m.includes("does not exist"));
+}
+
+function toPositionNumber(v: number | "left" | "center" | "right" | undefined): number {
+  if (typeof v === "number" && Number.isFinite(v)) return Math.min(100, Math.max(0, Math.round(v)));
+  if (v === "left") return 0;
+  if (v === "right") return 100;
+  return 50;
+}
+
+/** Keep positions array length in sync with hero URLs; fill gaps from legacy shared value. */
+export function syncHeroImagePositionsMobile(
+  urls: string[],
+  positions: number[] | undefined,
+  legacyFallback: number | "left" | "center" | "right" | undefined
+): number[] {
+  const fallback = toPositionNumber(legacyFallback);
+  const src = Array.isArray(positions) ? positions : [];
+  return urls.map((_, i) => toPositionNumber(src[i] ?? fallback));
+}
+
+/** Keep desktop vertical positions in sync with hero URLs (0 = top, 100 = bottom). */
+export function syncHeroImagePositionsDesktop(
+  urls: string[],
+  positions: number[] | undefined,
+  fallback = 30
+): number[] {
+  const fb = toPositionNumber(fallback);
+  const src = Array.isArray(positions) ? positions : [];
+  return urls.map((_, i) => toPositionNumber(src[i] ?? fb));
+}
+
+function mergeWithDefaults(partial: Partial<HomeContent> | null): HomeContent {
+  if (!partial || typeof partial !== "object") return { ...defaultHomeContent };
+  const merged = { ...defaultHomeContent, ...partial };
+  merged.heroShowOverlay = Boolean(
+    (partial as Partial<HomeContent>).heroShowOverlay ?? defaultHomeContent.heroShowOverlay
+  );
+  if (typeof merged.heroSecondaryButtonText !== "string") {
+    merged.heroSecondaryButtonText = defaultHomeContent.heroSecondaryButtonText;
+  }
+  merged.heroImagePositionMobile = toPositionNumber(
+    merged.heroImagePositionMobile as number | "left" | "center" | "right"
+  );
+  if (!Array.isArray(merged.bannerPhrases) || merged.bannerPhrases.length === 0) {
+    merged.bannerPhrases = [...defaultHomeContent.bannerPhrases];
+  }
+  if ((!Array.isArray(merged.heroImageUrls) || merged.heroImageUrls.length === 0) && merged.heroImageUrl?.trim()) {
+    merged.heroImageUrls = [merged.heroImageUrl.trim()];
+  }
+  if (Array.isArray(merged.heroImageUrls) && merged.heroImageUrls.length > 0) {
+    merged.heroImageUrl = merged.heroImageUrls[0] ?? "";
+  } else {
+    merged.heroImageUrls = Array.isArray(merged.heroImageUrls) ? merged.heroImageUrls : [];
+  }
+  merged.heroImagePositionsMobile = syncHeroImagePositionsMobile(
+    merged.heroImageUrls,
+    Array.isArray(partial.heroImagePositionsMobile) ? partial.heroImagePositionsMobile : undefined,
+    merged.heroImagePositionMobile
+  );
+  if (merged.heroImagePositionsMobile.length > 0) {
+    merged.heroImagePositionMobile = merged.heroImagePositionsMobile[0] ?? 50;
+  }
+  merged.heroImagePositionsDesktop = syncHeroImagePositionsDesktop(
+    merged.heroImageUrls,
+    Array.isArray(partial.heroImagePositionsDesktop) ? partial.heroImagePositionsDesktop : undefined,
+    30
+  );
+  return merged;
+}
+
+/** Load CMS home row from Neon (works on server — no relative /api fetch). */
+async function loadHomeContentFromDatabase(): Promise<HomeContent | null> {
+  if (homeContentTableMissing || !resolveDatabaseUrl()) return null;
+  try {
+    const { rows } = await neonQuery<{ content: unknown }>(
+      `SELECT content FROM home_content WHERE id = $1 LIMIT 1`,
+      [ROW_ID]
+    );
+    const raw = rows?.[0]?.content;
+    if (raw && typeof raw === "object") {
+      return mergeWithDefaults(raw as Partial<HomeContent>);
+    }
+  } catch (e) {
+    const message = e instanceof Error ? e.message : String(e);
+    if (isMissingHomeContentTableMessage(message)) {
+      homeContentTableMissing = true;
+    }
+  }
+  return null;
+}
+
+/** Server-side home CMS (first paint on reload). Cached per request. */
+export const getHomeContentServer = cache(async (): Promise<HomeContent> => {
+  const fromDb = await loadHomeContentFromDatabase();
+  return fromDb ?? { ...defaultHomeContent };
+});
+
+/** Get home content from DB, then localStorage fallback, then defaults. */
+export async function getHomeContent(): Promise<HomeContent> {
+  if (homeContentTableMissing) {
+    if (typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) return mergeWithDefaults(JSON.parse(stored));
+      } catch {
+        // ignore
+      }
+    }
+    return defaultHomeContent;
+  }
+
+  try {
+    const supabase = supabaseBrowserClient();
+    const { data, error } = await supabase
+      .from("home_content")
+      .select("content")
+      .eq("id", ROW_ID)
+      .single();
+    if (error && isMissingHomeContentTableMessage(error.message)) {
+      homeContentTableMissing = true;
+    }
+
+    if (!error && data?.content) {
+      const merged = mergeWithDefaults(data.content as Partial<HomeContent>);
+      if (typeof window !== "undefined") {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+      }
+      return merged;
+    }
+  } catch {
+    // not configured or network error
+  }
+
+  if (typeof window !== "undefined") {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) return mergeWithDefaults(JSON.parse(stored));
+    } catch {
+      // ignore
+    }
+  }
+
+  return defaultHomeContent;
+}
+
+/** Fast client-side read to avoid first-render flicker on homepage reload. */
+export function getCachedHomeContentSync(): HomeContent | null {
+  if (typeof window === "undefined") return null;
+  syncClientCachesWithDeployment();
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (!stored) return null;
+    return mergeWithDefaults(JSON.parse(stored));
+  } catch {
+    return null;
+  }
+}
+
+/** Save home content to DB and to localStorage as cache. */
+export async function saveHomeContent(content: HomeContent): Promise<void> {
+  if (typeof window !== "undefined") {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(content));
+  }
+
+  if (homeContentTableMissing) return;
+
+  try {
+    const supabase = supabaseBrowserClient();
+    const { error } = await supabase
+      .from("home_content")
+      .upsert({ id: ROW_ID, content: content, updated_at: new Date().toISOString() }, { onConflict: "id" });
+    if (error && isMissingHomeContentTableMessage(error.message)) {
+      homeContentTableMissing = true;
+    }
+  } catch {
+    // not configured or network error; localStorage already updated
+  }
+}

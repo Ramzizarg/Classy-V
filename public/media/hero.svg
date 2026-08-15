@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900" role="img" aria-label="CLASSY V">
+  <defs>
+    <linearGradient id="base" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1c1c20"/>
+      <stop offset="0.5" stop-color="#0d0d10"/>
+      <stop offset="1" stop-color="#000000"/>
+    </linearGradient>
+    <radialGradient id="spot" cx="0.3" cy="0.2" r="0.85">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.14"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="lines" width="46" height="46" patternUnits="userSpaceOnUse" patternTransform="rotate(28)">
+      <line x1="0" y1="0" x2="0" y2="46" stroke="#ffffff" stroke-opacity="0.05" stroke-width="2"/>
+    </pattern>
+  </defs>
+  <rect width="1600" height="900" fill="url(#base)"/>
+  <rect width="1600" height="900" fill="url(#lines)"/>
+  <rect width="1600" height="900" fill="url(#spot)"/>
+  <g fill="#ffffff">
+    <text x="800" y="410" text-anchor="middle" font-family="Inter, Helvetica, Arial, sans-serif" font-size="35" font-weight="700" letter-spacing="14" opacity="0.65">FROM VALENCIA TO THE WORLD</text>
+    <text x="800" y="523" text-anchor="middle" font-family="Inter, Helvetica, Arial, sans-serif" font-size="123" font-weight="900" letter-spacing="-2">CLASSY V</text>
+  </g>
+</svg>

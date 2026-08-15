@@ -1,0 +1,483 @@
+@import "tailwindcss";
+
+/**
+ * Raw streetwear storefront: military green paper, white ink, monospace uppercase type.
+ * No radii, no shadows, hairlines only where a form needs an edge.
+ */
+
+:root {
+  --background: #455737;
+  --foreground: #ffffff;
+  --muted: #c3c9b8;
+  --line: #5c6b45;
+  --surface: #33401f;
+  /* Warning ink, picked to stay legible on the green paper. */
+  --danger: #ff6b57;
+  /* The logo is painted in this colour wherever the lockup appears. */
+  --brand-ink: #f5c518;
+  /* Product prices borrow the logo's yellow so they pop off the green paper. */
+  --price-ink: #ffec19;
+  /* Fill for the size the customer picked. */
+  --selected-ink: #e2231a;
+  /* Height of the sticky header; the brand rail pins directly beneath it. */
+  --header-height: 40px;
+  /* Content stops growing past this, so zooming out keeps the layout's proportions. */
+  --shell-max: 1600px;
+  /* Laid over the camo so white type keeps its contrast on the pattern's light patches. */
+  --paper-tint: rgb(26 33 18 / 0.5);
+}
+
+/* The desktop bar is padded taller than the mobile one, so the rail pins lower. */
+@media (min-width: 1024px) {
+  :root {
+    --header-height: 56px;
+  }
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-surface: var(--surface);
+  --color-danger: var(--danger);
+  --color-price: var(--price-ink);
+  --color-selected: var(--selected-ink);
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+html {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: clip;
+  background: var(--background);
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/**
+ * Camo paper. The layer is pinned to the viewport so it never stretches with a long
+ * page, and the tint over it keeps white type legible on the lighter patches.
+ */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background-color: var(--background);
+  background-image: linear-gradient(var(--paper-tint), var(--paper-tint)), url("/media/camo.png");
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  pointer-events: none;
+}
+
+body {
+  color: var(--foreground);
+  font-family: ui-monospace, "SFMono-Regular", "SF Mono", Menlo, Consolas, "Liberation Mono",
+    "Courier New", monospace;
+  font-size: 11px;
+  line-height: 1.45;
+  letter-spacing: 0.04em;
+  overflow-x: clip;
+  overscroll-behavior-x: none;
+}
+
+::selection {
+  background: var(--foreground);
+  color: var(--background);
+}
+
+/**
+ * Kept in `base` so Tailwind utilities still win: unlayered rules outrank every
+ * cascade layer, and an unlayered `color: inherit` here would beat `text-*`.
+ */
+@layer base {
+  button,
+  select,
+  input,
+  textarea {
+    font-family: inherit;
+    font-size: inherit;
+    letter-spacing: inherit;
+    color: inherit;
+  }
+
+  /* Several buttons stand in for links (size guide, shipping policy), so they read as one. */
+  button:not(:disabled) {
+    cursor: pointer;
+  }
+}
+
+select option {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+/* Type ---------------------------------------------------------------------- */
+
+.ui {
+  font-size: 10.5px;
+  line-height: 1.3;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.ui-sm {
+  font-size: 9.5px;
+  line-height: 1.3;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.page-title {
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.section-title {
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+/** Product page headline: reads large and centred on a phone, chrome-sized beside the gallery. */
+.product-title {
+  font-size: 15px;
+  line-height: 1.4;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.product-price {
+  font-size: 13px;
+  line-height: 1.3;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+@media (min-width: 1024px) {
+  .product-title {
+    font-size: 17px;
+    line-height: 1.45;
+  }
+
+  .product-price {
+    font-size: 15px;
+  }
+}
+
+.prose-raw {
+  font-size: 11px;
+  line-height: 1.75;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.prose-raw p + p {
+  margin-top: 0.9rem;
+}
+
+/* Links -------------------------------------------------------------------- */
+
+.hover-underline:hover,
+.hover-underline[data-active="true"] {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.u {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* Buttons ------------------------------------------------------------------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 11px 18px;
+  border: 1px solid var(--foreground);
+  background: transparent;
+  color: var(--foreground);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  cursor: pointer;
+  transition: background-color 120ms linear, color 120ms linear;
+}
+
+.btn:hover {
+  background: var(--foreground);
+  color: var(--background);
+}
+
+.btn--solid {
+  background: var(--foreground);
+  color: var(--background);
+}
+
+.btn--solid:hover {
+  background: transparent;
+  color: var(--foreground);
+}
+
+.btn:disabled {
+  cursor: not-allowed;
+  border-color: var(--line);
+  background: transparent;
+  color: var(--muted);
+}
+
+/**
+ * Sold-out sizes are scored corner to corner rather than struck through the label.
+ * A corner keyword keeps the band on the box diagonal whatever the button's ratio.
+ */
+.size-sold-out {
+  background-image: linear-gradient(
+    to top right,
+    transparent calc(50% - 0.5px),
+    var(--line) calc(50% - 0.5px),
+    var(--line) calc(50% + 0.5px),
+    transparent calc(50% + 0.5px)
+  );
+}
+
+.field {
+  width: 100%;
+  height: 32px;
+  padding: 0 8px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--foreground);
+  font-size: 11px;
+  outline: none;
+}
+
+.field:focus {
+  border-color: var(--foreground);
+}
+
+.field::placeholder {
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+textarea.field {
+  height: auto;
+  padding: 8px;
+}
+
+/** Search box in the utility row: rule underneath, nothing else. */
+.field--line {
+  height: 20px;
+  padding: 0;
+  border: 0;
+  border-bottom: 1px solid var(--foreground);
+}
+
+.field--line:focus {
+  border-bottom-color: var(--foreground);
+}
+
+/* Site shell: fixed brand rail, content column ------------------------------ */
+
+/**
+ * Shared width cap for the header bar and the shell below it, so both stay aligned
+ * and a zoomed-out or ultra-wide viewport adds margin instead of scaling the page up.
+ */
+.shell-width {
+  width: 100%;
+  max-width: var(--shell-max);
+  margin-inline: auto;
+}
+
+/**
+ * Every opaque surface — header, drawers, modals, toasts — wears the same camo.
+ * Locking the background to the viewport lines each one up with the fixed layer
+ * behind it, so panels read as cut out of the page rather than laid on top of it.
+ */
+.camo-surface {
+  background-color: var(--background);
+  background-image: linear-gradient(var(--paper-tint), var(--paper-tint)), url("/media/camo.png");
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+
+.site-shell {
+  display: grid;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 1024px) {
+  .site-shell {
+    grid-template-columns: 240px minmax(0, 1fr);
+    column-gap: 32px;
+  }
+}
+
+@media (min-width: 1440px) {
+  .site-shell {
+    grid-template-columns: 280px minmax(0, 1fr);
+    column-gap: 40px;
+  }
+}
+
+/**
+ * Pinned under the header for the whole scroll. `overflow: hidden` keeps the rail
+ * from becoming a scroll container, so the wheel always drives the product grid
+ * even while the pointer sits over the nav.
+ * `display` is left to the element's `hidden lg:flex` utilities: declaring it here
+ * would win over them, since unlayered rules outrank Tailwind's utilities layer.
+ */
+.brand-rail {
+  position: sticky;
+  top: var(--header-height);
+  align-self: start;
+  height: calc(100svh - var(--header-height));
+  overflow: hidden;
+  padding-top: 6px;
+  padding-left: 100px;
+  flex-direction: column;
+}
+
+/**
+ * Pre-coloured lockup (yellow chalk texture). Sized off `--brand-mark-width` by
+ * default; callers can still override with `h-*`/`w-*`. Hover only scales — never
+ * recolours — so the painted yellow stays intact.
+ */
+@layer components {
+  .brand-mark {
+    display: block;
+    width: var(--brand-mark-width, 118px);
+    height: auto;
+    transition: transform 120ms linear;
+  }
+
+  .brand-link:hover .brand-mark,
+  .brand-link:focus-visible .brand-mark {
+    transform: scale(1.04);
+  }
+}
+
+/** Rail nav sits a step above the rest of the UI chrome: bigger type, looser rhythm. */
+.rail-link {
+  padding-block: 7px;
+  font-size: 11px;
+  line-height: 1.25;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+}
+
+@media (min-width: 1440px) {
+  .rail-link {
+    font-size: 12px;
+  }
+}
+
+/* Product grid ------------------------------------------------------------- */
+
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 22px 8px;
+}
+
+@media (min-width: 768px) {
+  .product-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 22px 6px;
+  }
+}
+
+.media-frame {
+  position: relative;
+  overflow: hidden;
+  background: transparent;
+}
+
+.media-frame img {
+  transition: opacity 160ms linear;
+}
+
+.product-card:hover .media-primary {
+  opacity: 0;
+}
+
+.product-card:hover .media-secondary {
+  opacity: 1;
+}
+
+/* Overlays ----------------------------------------------------------------- */
+
+.overlay-panel {
+  animation: overlay-slide 220ms ease-out both;
+}
+
+@keyframes overlay-slide {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.overlay-panel--left {
+  animation: overlay-slide-left 220ms ease-out both;
+}
+
+@keyframes overlay-slide-left {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.fade-in {
+  animation: fade-in 140ms linear both;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.toast {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 16px;
+  z-index: 220;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
