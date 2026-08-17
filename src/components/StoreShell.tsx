@@ -9,6 +9,8 @@ import { SiteHeader } from "@/components/SiteHeader";
 
 /** Back office pages render their own dashboard chrome — no storefront header, rail, or footer. */
 const CHROMELESS_PATHS = ["/admin", "/dashboard"];
+/** Checkout runs a distraction-free flow with its own logo and step nav. */
+const CHROMELESS_EXACT = ["/checkout"];
 /** Auth pages keep the storefront header but drop the rail, footer and cart. */
 const HEADER_ONLY_PATHS = ["/login"];
 
@@ -19,7 +21,7 @@ function matchesPath(pathname: string, paths: string[]) {
 export function StoreShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
-  if (matchesPath(pathname, CHROMELESS_PATHS)) {
+  if (matchesPath(pathname, CHROMELESS_PATHS) || CHROMELESS_EXACT.includes(pathname)) {
     return <>{children}</>;
   }
 

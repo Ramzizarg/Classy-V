@@ -273,6 +273,128 @@ textarea.field {
   padding: 8px;
 }
 
+/**
+ * Checkout runs its own focused flow, so it swaps the storefront's transparent
+ * fields for solid rounded inputs that read clearly against the dark panel.
+ */
+.checkout-field {
+  width: 100%;
+  padding: 13px 14px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #121212;
+  font-size: 12px;
+  line-height: 1.2;
+  letter-spacing: normal;
+  text-transform: none;
+  outline: none;
+}
+
+.checkout-field::placeholder {
+  color: #6f6f6f;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.checkout-field:focus {
+  border-color: #121212;
+  box-shadow: 0 0 0 2px rgb(255 255 255 / 0.35);
+}
+
+select.checkout-field,
+.checkout-field--menu {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%23121212' stroke-width='1.5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  background-size: 11px;
+  padding-right: 34px;
+  cursor: pointer;
+}
+
+.checkout-field--invalid,
+.checkout-field--invalid:focus {
+  border-color: #d21c1c;
+}
+
+textarea.checkout-field {
+  resize: vertical;
+  min-height: 84px;
+}
+
+/**
+ * Governorate list. Sits on white like the fields it belongs to, since the storefront's
+ * green would make the rows unreadable, and scrolls once past roughly seven rows.
+ */
+.checkout-menu {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 6px);
+  right: 0;
+  left: 0;
+  max-height: 252px;
+  overflow-y: auto;
+  padding: 6px;
+  border: 1px solid #e0e0e0;
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 14px 30px rgb(0 0 0 / 0.3);
+}
+
+.checkout-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 9px 10px;
+  border-radius: 7px;
+  background: transparent;
+  color: #121212;
+  font-size: 12px;
+  line-height: 1.2;
+  letter-spacing: normal;
+  text-transform: none;
+  cursor: pointer;
+}
+
+.checkout-option[data-active="true"] {
+  background: #f0f0f0;
+}
+
+.checkout-option[aria-selected="true"] {
+  font-weight: 700;
+}
+
+.checkout-menu-empty {
+  padding: 10px;
+  color: #6f6f6f;
+  font-size: 12px;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+/** Order summary column: a flat panel so it separates from the form side. */
+.checkout-summary {
+  background: rgb(0 0 0 / 0.35);
+}
+
+/* Money in the summary is set larger than the labels around it so totals lead. */
+.checkout-amount {
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0.04em;
+}
+
+.checkout-total {
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: 0.02em;
+  color: var(--price-ink);
+}
+
 /** Search box in the utility row: rule underneath, nothing else. */
 .field--line {
   height: 20px;
@@ -407,6 +529,21 @@ textarea.field {
   transition: opacity 160ms linear;
 }
 
+/**
+ * A press on a tile is only ever navigation, so suppress what a touch device would
+ * otherwise raise on it: the text selection block over the name and price, and the
+ * iOS image callout. Both read as a frame drawn around the card.
+ */
+.product-card {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.product-card img {
+  -webkit-user-drag: none;
+}
+
 .product-card:hover .media-primary {
   opacity: 0;
 }
@@ -508,6 +645,109 @@ textarea.field {
   100% {
     transform: scale(1.6);
     opacity: 0;
+  }
+}
+
+/* Zoom lightbox ------------------------------------------------------------- */
+
+/**
+ * Both layers ease to rest, but only once the fingers are off: while a gesture is
+ * live the transform has to track the touch exactly, so the transition is dropped.
+ */
+.lb-track,
+.lb-frame {
+  will-change: transform;
+  transition: transform 300ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.lb-track[data-dragging="true"],
+.lb-frame[data-dragging="true"] {
+  transition: none;
+}
+
+.lb-hint {
+  animation: lb-hint 3200ms ease forwards;
+}
+
+@keyframes lb-hint {
+  0%,
+  55% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+/* Order placed pop-up ------------------------------------------------------- */
+
+/** Rises into place rather than appearing, so the success reads as a result of the tap. */
+.order-panel {
+  animation: order-panel 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes order-panel {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* The mark is drawn stroke by stroke: ring first, then the tick inside it. */
+.order-check__ring,
+.order-check__tick {
+  fill: none;
+  stroke: var(--foreground);
+  animation: order-draw 460ms ease-out both;
+}
+
+.order-check__ring {
+  stroke-width: 2;
+  stroke-dasharray: 151;
+  stroke-dashoffset: 151;
+  animation-delay: 90ms;
+}
+
+.order-check__tick {
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 40;
+  stroke-dashoffset: 40;
+  animation-delay: 480ms;
+  animation-duration: 300ms;
+}
+
+@keyframes order-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/** Halo on the step the order is sitting at, so "waiting" reads as live, not stalled. */
+.order-step-pulse::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border: 1px solid var(--foreground);
+  border-radius: 9999px;
+  animation: order-pulse 1900ms ease-out infinite;
+}
+
+@keyframes order-pulse {
+  0% {
+    opacity: 0.5;
+    transform: scale(0.7);
+  }
+  70%,
+  100% {
+    opacity: 0;
+    transform: scale(1.35);
   }
 }
 

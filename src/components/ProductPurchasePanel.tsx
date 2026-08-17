@@ -15,7 +15,7 @@ export function ProductPurchasePanel({
   product: Product;
   variants?: Product[];
 }) {
-  const { addLine, toggleWishlist, wishlist, hydrated, shippingRate, showToast } = useStore();
+  const { addLine, toggleWishlist, wishlist, hydrated, shippingRate } = useStore();
   const available = product.sizes.filter((entry) => entry.stock > 0);
   const [size, setSize] = useState(available.length === 1 ? available[0].size : "");
   const [quantity, setQuantity] = useState(1);
@@ -40,7 +40,7 @@ export function ProductPurchasePanel({
       colorway: product.colorway,
       quantity,
     });
-    showToast("Added to cart");
+    /* No toast: `addLine` slides the cart open, which is the confirmation. */
   };
 
   return (

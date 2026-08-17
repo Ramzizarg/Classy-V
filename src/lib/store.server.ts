@@ -18,12 +18,15 @@ type ShopOrderRow = {
   email: string | null;
   phone_number: string;
   address: string | null;
+  governorate: string | null;
   city: string | null;
   postal_code: string | null;
   country: string | null;
   note: string | null;
   subtotal: string | number;
   shipping_price: string | number;
+  discount_amount: string | number;
+  coupon_code: string | null;
   total_price: string | number;
   payment_method: string | null;
   status: string;
@@ -39,8 +42,9 @@ type OrderItemRow = {
   color: string | null;
 };
 
-const ORDER_COLUMNS = `id, reference, created_at, full_name, email, phone_number, address, city,
-  postal_code, country, note, subtotal, shipping_price, total_price, payment_method, status`;
+const ORDER_COLUMNS = `id, reference, created_at, full_name, email, phone_number, address,
+  governorate, city, postal_code, country, note, subtotal, shipping_price, discount_amount,
+  coupon_code, total_price, payment_method, status`;
 
 function assertDb() {
   if (!resolveDatabaseUrl()) {
@@ -89,6 +93,7 @@ function mapOrder(row: ShopOrderRow, lines: CartLine[]): Order {
       email: row.email ?? "",
       phone: row.phone_number,
       address: row.address ?? "",
+      governorate: row.governorate ?? "",
       city: row.city ?? "",
       postalCode: row.postal_code ?? "",
       country: row.country ?? "",
@@ -97,6 +102,8 @@ function mapOrder(row: ShopOrderRow, lines: CartLine[]): Order {
     lines,
     subtotal: Number(row.subtotal),
     shipping: Number(row.shipping_price),
+    discount: Number(row.discount_amount ?? 0),
+    couponCode: row.coupon_code,
     total: Number(row.total_price),
     paymentMethod: row.payment_method === "bank-transfer" ? "bank-transfer" : "cash-on-delivery",
     status: mapStatus(row.status),
@@ -166,11 +173,11 @@ export async function saveOrder(order: Omit<Order, "id">): Promise<Order> {
 
   const { rows } = await neonQuery<{ id: number }>(
     `INSERT INTO shop_orders (
-       reference, created_at, full_name, email, phone_number, address, city,
-       postal_code, country, note, subtotal, shipping_price, total_price,
-       payment_method, status
+       reference, created_at, full_name, email, phone_number, address, governorate, city,
+       postal_code, country, note, subtotal, shipping_price, discount_amount,
+       coupon_code, total_price, payment_method, status
      ) VALUES (
-       $1, $2::timestamptz, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15
+       $1, $2::timestamptz, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18
      )
      RETURNING id`,
     [
@@ -180,12 +187,15 @@ export async function saveOrder(order: Omit<Order, "id">): Promise<Order> {
       customer.email || null,
       customer.phone,
       customer.address,
-      customer.city,
-      customer.postalCode,
+      customer.governorate,
+      customer.city ?? null,
+      customer.postalCode ?? null,
       customer.country,
       customer.note ?? null,
       order.subtotal,
       order.shipping,
+      order.discount,
+      order.couponCode ?? null,
       order.total,
       order.paymentMethod,
       order.status,

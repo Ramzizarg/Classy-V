@@ -1,28 +1,22 @@
 import { NextResponse } from "next/server";
 import { isCartLine, shippingCost } from "@/lib/cart";
-import { getProductById } from "@/lib/products";
+import { applyCoupon } from "@/lib/coupons.server";
+import { priceCart } from "@/lib/pricing.server";
 import { buildOrderReference, saveOrder } from "@/lib/store.server";
 import { getShippingRate } from "@/lib/shipping.server";
-import { getCatalog } from "@/lib/storefrontCatalog";
-import type { CartLine, OrderCustomer } from "@/lib/types";
+import { TUNISIA_GOVERNORATES } from "@/lib/site";
+import type { OrderCustomer } from "@/lib/types";
 
 export const runtime = "nodejs";
 
 type Payload = {
   customer?: Partial<OrderCustomer>;
   lines?: unknown;
-  paymentMethod?: string;
+  couponCode?: string;
 };
 
-const REQUIRED_FIELDS: (keyof OrderCustomer)[] = [
-  "fullName",
-  "email",
-  "phone",
-  "address",
-  "city",
-  "postalCode",
-  "country",
-];
+/** Email is optional: most Tunisian orders are placed with a phone number only. */
+const REQUIRED_FIELDS: (keyof OrderCustomer)[] = ["fullName", "phone", "address", "governorate"];
 
 export async function POST(request: Request) {
   let payload: Payload;
@@ -41,70 +35,63 @@ export async function POST(request: Request) {
     );
   }
 
-  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(customer.email!.trim())) {
+  const email = customer.email?.toString().trim() ?? "";
+  if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
     return NextResponse.json({ error: "Enter a valid email address." }, { status: 400 });
   }
 
-  const rawLines = Array.isArray(payload.lines) ? payload.lines : [];
-  const lines = rawLines.filter(isCartLine);
-  if (lines.length === 0) {
+  const governorate = customer.governorate!.trim();
+  if (!TUNISIA_GOVERNORATES.some((entry) => entry === governorate)) {
+    return NextResponse.json({ error: "Choose a delivery governorate." }, { status: 400 });
+  }
+
+  const requested = (Array.isArray(payload.lines) ? payload.lines : []).filter(isCartLine);
+  if (requested.length === 0) {
     return NextResponse.json({ error: "Your bag is empty." }, { status: 400 });
   }
 
-  const catalog = await getCatalog();
-
   /** Re-price server side so a tampered client cannot set its own totals. */
-  const pricedLines: CartLine[] = [];
-  for (const line of lines) {
-    const product = getProductById(line.productId, catalog);
-    if (!product) {
-      return NextResponse.json({ error: `Unknown product in bag.` }, { status: 400 });
-    }
-    const sizeEntry = product.sizes.find((entry) => entry.size === line.size);
-    if (!sizeEntry || sizeEntry.stock === 0) {
-      return NextResponse.json(
-        { error: `${product.name} in size ${line.size} is no longer available.` },
-        { status: 409 }
-      );
-    }
-    const unitPrice =
-      product.salePrice && product.salePrice < product.price ? product.salePrice : product.price;
-
-    pricedLines.push({
-      productId: product.id,
-      slug: product.slug,
-      name: product.name,
-      unitPrice,
-      compareAtPrice: unitPrice < product.price ? product.price : null,
-      image: product.images[0],
-      size: line.size,
-      colorway: product.colorway,
-      quantity: Math.max(1, Math.min(10, Math.trunc(line.quantity))),
-    });
+  const priced = await priceCart(requested);
+  if (!priced.ok) {
+    return NextResponse.json({ error: priced.error }, { status: priced.status });
   }
 
-  const subtotal = pricedLines.reduce((sum, line) => sum + line.unitPrice * line.quantity, 0);
+  const { lines: pricedLines, subtotal } = priced;
   const shipping = shippingCost(subtotal, await getShippingRate());
-  const paymentMethod = payload.paymentMethod === "bank-transfer" ? "bank-transfer" : "cash-on-delivery";
+
+  // A code that went stale between preview and submit is dropped rather than
+  // failing the order; the customer sees the corrected total on the confirmation.
+  let discount = 0;
+  let couponCode: string | null = null;
+  if (payload.couponCode?.trim()) {
+    const outcome = await applyCoupon(payload.couponCode, pricedLines);
+    if (outcome.ok) {
+      discount = outcome.coupon.discount;
+      couponCode = outcome.coupon.code;
+    }
+  }
+
+  const total = Math.max(0, subtotal + shipping - discount);
 
   const order = await saveOrder({
     reference: buildOrderReference(),
     createdAt: new Date().toISOString(),
     customer: {
       fullName: customer.fullName!.trim(),
-      email: customer.email!.trim().toLowerCase(),
+      email: email.toLowerCase(),
       phone: customer.phone!.trim(),
       address: customer.address!.trim(),
-      city: customer.city!.trim(),
-      postalCode: customer.postalCode!.trim(),
-      country: customer.country!.trim(),
+      governorate,
+      country: "Tunisia",
       note: customer.note?.toString().trim() || undefined,
     },
     lines: pricedLines,
     subtotal,
     shipping,
-    total: subtotal + shipping,
-    paymentMethod,
+    discount,
+    couponCode,
+    total,
+    paymentMethod: "cash-on-delivery",
     status: "pending",
   });
 

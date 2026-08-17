@@ -3,8 +3,9 @@
 import { useStore } from "@/components/StoreProvider";
 
 export function Toaster() {
-  const { toast } = useStore();
-  if (!toast) return null;
+  const { toast, cartOpen } = useStore();
+  /** The toast outranks the drawer, so it would otherwise cover the cart's own buttons. */
+  if (!toast || cartOpen) return null;
 
   return (
     <div className="toast" role="status" aria-live="polite">

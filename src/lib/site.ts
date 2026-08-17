@@ -24,6 +24,34 @@ export const INFO_NAV = [
   { href: "/track", label: "Track order" },
 ] as const;
 
+/** Delivery is domestic only, so checkout picks a governorate instead of a country. */
+export const TUNISIA_GOVERNORATES = [
+  "Ariana",
+  "Béja",
+  "Ben Arous",
+  "Bizerte",
+  "Gabès",
+  "Gafsa",
+  "Jendouba",
+  "Kairouan",
+  "Kasserine",
+  "Kébili",
+  "Le Kef",
+  "Mahdia",
+  "Manouba",
+  "Médenine",
+  "Monastir",
+  "Nabeul",
+  "Sfax",
+  "Sidi Bouzid",
+  "Siliana",
+  "Sousse",
+  "Tataouine",
+  "Tozeur",
+  "Tunis",
+  "Zaghouan",
+] as const;
+
 export const SHIPPING_COUNTRIES = [
   "Spain",
   "France",

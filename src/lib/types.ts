@@ -63,11 +63,14 @@ export type CartLine = {
 
 export type OrderCustomer = {
   fullName: string;
+  /** Optional at checkout — an empty string when the customer skipped it. */
   email: string;
   phone: string;
   address: string;
-  city: string;
-  postalCode: string;
+  /** One of Tunisia's 24 governorates; delivery is domestic only. */
+  governorate: string;
+  city?: string;
+  postalCode?: string;
   country: string;
   note?: string;
 };
@@ -80,6 +83,9 @@ export type Order = {
   lines: CartLine[];
   subtotal: number;
   shipping: number;
+  /** Amount taken off by a discount code; 0 when none was used. */
+  discount: number;
+  couponCode?: string | null;
   total: number;
   paymentMethod: "cash-on-delivery" | "bank-transfer";
   status: "pending" | "confirmed" | "shipped" | "delivered" | "cancelled";

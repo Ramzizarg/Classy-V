@@ -24,7 +24,8 @@ export function CartDrawer() {
         className="absolute inset-0 bg-black/80"
       />
 
-      <aside className="camo-surface overlay-panel absolute inset-y-0 right-0 flex w-[88%] max-w-sm flex-col border-l border-line">
+      {/* `max-w-sm` already caps the desktop width, so the percentage only narrows phones. */}
+      <aside className="camo-surface overlay-panel absolute inset-y-0 right-0 flex w-[76%] max-w-sm flex-col border-l border-line">
         <div className="flex items-center justify-between gap-3 border-b border-line px-3 py-2.5">
           <span className="ui font-bold">Your cart</span>
           <div className="flex items-center gap-3">
@@ -66,7 +67,7 @@ export function CartDrawer() {
                   <Link
                     href={`/collection/${line.slug}`}
                     onClick={closeCart}
-                    className="media-frame h-36 w-28 shrink-0 border border-line"
+                    className="media-frame h-26 w-20 shrink-0 border border-line sm:h-36 sm:w-28"
                   >
                     <Image
                       src={line.image}

@@ -4,42 +4,84 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { BrandMark } from "@/components/BrandMark";
+import { GovernorateSelect } from "@/components/GovernorateSelect";
+import { OrderPlacedModal } from "@/components/OrderPlacedModal";
 import { useStore } from "@/components/StoreProvider";
 import { shippingCost } from "@/lib/cart";
 import { formatPrice } from "@/lib/format";
-import { SHIPPING_COUNTRIES } from "@/lib/site";
-import type { OrderCustomer } from "@/lib/types";
+import { TUNISIA_GOVERNORATES } from "@/lib/site";
 
-const EMPTY: OrderCustomer & { paymentMethod: "cash-on-delivery" | "bank-transfer" } = {
-  fullName: "",
+type Step = "information" | "payment";
+
+const STEPS: { key: Step; label: string }[] = [
+  { key: "information", label: "Information" },
+  { key: "payment", label: "Payment" },
+];
+
+const EMPTY = {
   email: "",
-  phone: "",
+  firstName: "",
+  lastName: "",
   address: "",
-  city: "",
-  postalCode: "",
-  country: SHIPPING_COUNTRIES[0],
+  governorate: "",
+  phone: "",
   note: "",
-  paymentMethod: "cash-on-delivery",
 };
+
+type AppliedCoupon = { code: string; discount: number; label: string };
+
+/** Kept after the cart is emptied so the pop-up can still report on the order. */
+type PlacedOrder = { reference: string; firstName: string; total: number };
 
 export function CheckoutForm() {
   const router = useRouter();
-  const { lines, subtotal, shippingRate, clearCart, hydrated, showToast } = useStore();
+  const { lines, subtotal, shippingRate, clearCart, hydrated } = useStore();
+
+  const [placed, setPlaced] = useState<PlacedOrder | null>(null);
+  const [step, setStep] = useState<Step>("information");
   const [form, setForm] = useState(EMPTY);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [governorateError, setGovernorateError] = useState("");
+
+  const [codeInput, setCodeInput] = useState("");
+  const [coupon, setCoupon] = useState<AppliedCoupon | null>(null);
+  const [couponError, setCouponError] = useState("");
+  const [checkingCode, setCheckingCode] = useState(false);
 
   const shipping = shippingCost(subtotal, shippingRate);
-  const total = subtotal + shipping;
+  const discount = coupon?.discount ?? 0;
+  const total = Math.max(0, subtotal + shipping - discount);
 
   const update = (key: keyof typeof EMPTY, value: string) =>
     setForm((current) => ({ ...current, [key]: value }));
 
   if (!hydrated) return <div className="h-40" />;
 
+  /** Checked before the empty-cart branch: placing the order is what emptied it. */
+  if (placed) {
+    return (
+      <>
+        <div className="mx-auto flex max-w-md flex-col items-start gap-3 px-4 py-16">
+          <p className="ui">Order {placed.reference} placed</p>
+          <Link href="/" className="btn btn--solid">
+            Continue shopping
+          </Link>
+        </div>
+        <OrderPlacedModal
+          reference={placed.reference}
+          firstName={placed.firstName}
+          total={placed.total}
+          onClose={() => router.push("/")}
+        />
+      </>
+    );
+  }
+
   if (lines.length === 0) {
     return (
-      <div className="flex flex-col items-start gap-3">
+      <div className="mx-auto flex max-w-md flex-col items-start gap-3 px-4 py-16">
         <p className="ui">Your cart is empty</p>
         <Link href="/collection" className="btn btn--solid">
           Shop all products
@@ -48,8 +90,35 @@ export function CheckoutForm() {
     );
   }
 
-  const submit = async (event: React.FormEvent) => {
-    event.preventDefault();
+  const applyCode = async () => {
+    const code = codeInput.trim();
+    if (!code) return;
+    setCheckingCode(true);
+    setCouponError("");
+
+    try {
+      const response = await fetch("/api/coupons/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code, lines }),
+      });
+      const payload = (await response.json()) as { coupon?: AppliedCoupon; error?: string };
+
+      if (!response.ok || !payload.coupon) {
+        setCoupon(null);
+        setCouponError(payload.error ?? "That code is not valid.");
+      } else {
+        setCoupon(payload.coupon);
+        setCodeInput("");
+      }
+    } catch {
+      setCouponError("Network error. Try again.");
+    } finally {
+      setCheckingCode(false);
+    }
+  };
+
+  const placeOrder = async () => {
     setSubmitting(true);
     setError("");
 
@@ -59,16 +128,14 @@ export function CheckoutForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           customer: {
-            fullName: form.fullName,
+            fullName: `${form.firstName.trim()} ${form.lastName.trim()}`.trim(),
             email: form.email,
             phone: form.phone,
             address: form.address,
-            city: form.city,
-            postalCode: form.postalCode,
-            country: form.country,
+            governorate: form.governorate,
             note: form.note,
           },
-          paymentMethod: form.paymentMethod,
+          couponCode: coupon?.code ?? null,
           lines,
         }),
       });
@@ -80,212 +147,411 @@ export function CheckoutForm() {
         return;
       }
 
+      setPlaced({
+        reference: payload.reference,
+        firstName: form.firstName.trim(),
+        total,
+      });
       clearCart();
-      showToast("Order placed");
-      router.push(`/checkout/confirmation?ref=${payload.reference}`);
     } catch {
       setError("Network error. Try again.");
       setSubmitting(false);
     }
   };
 
+  const submitStep = (event: React.FormEvent) => {
+    event.preventDefault();
+
+    if (step !== "information") {
+      void placeOrder();
+      return;
+    }
+
+    // The governorate control is not a native input, so it needs its own check.
+    if (!TUNISIA_GOVERNORATES.some((entry) => entry === form.governorate)) {
+      setGovernorateError("Choose your governorate.");
+      return;
+    }
+
+    setStep("payment");
+  };
+
+  const stepIndex = STEPS.findIndex((entry) => entry.key === step);
+
   return (
-    <form onSubmit={submit} className="grid gap-8 lg:grid-cols-[1.4fr_1fr] lg:gap-12">
-      <div className="max-w-xl">
-        <fieldset>
-          <legend className="section-title">Contact</legend>
-          <div className="mt-3 grid gap-3 sm:grid-cols-2">
-            <label className="sm:col-span-2">
-              <span className="ui-sm text-muted">Full name</span>
-              <input
-                required
-                value={form.fullName}
-                onChange={(event) => update("fullName", event.target.value)}
-                className="field mt-1"
-                autoComplete="name"
-              />
-            </label>
-            <label>
-              <span className="ui-sm text-muted">Email</span>
-              <input
-                required
-                type="email"
-                value={form.email}
-                onChange={(event) => update("email", event.target.value)}
-                className="field mt-1"
-                autoComplete="email"
-              />
-            </label>
-            <label>
-              <span className="ui-sm text-muted">Phone</span>
-              <input
-                required
-                type="tel"
-                value={form.phone}
-                onChange={(event) => update("phone", event.target.value)}
-                className="field mt-1"
-                autoComplete="tel"
-              />
-            </label>
+    <div className="flex flex-col lg:grid lg:min-h-screen lg:grid-cols-[1.1fr_0.9fr] lg:grid-rows-[auto_1fr]">
+      {/* Brand and step trail lead at every width. */}
+      <header className="order-1 px-4 pt-8 pb-6 sm:px-6 lg:col-start-1 lg:row-start-1 lg:px-10 lg:pt-12 lg:pb-0">
+        <div className="mx-auto w-full max-w-[420px]">
+          <div className="flex justify-center">
+            <BrandMark width={120} label="Classy V home" />
           </div>
-        </fieldset>
 
-        <fieldset className="mt-7 border-t border-line pt-5">
-          <legend className="section-title">Shipping address</legend>
-          <div className="mt-3 grid gap-3 sm:grid-cols-2">
-            <label className="sm:col-span-2">
-              <span className="ui-sm text-muted">Street and number</span>
-              <input
-                required
-                value={form.address}
-                onChange={(event) => update("address", event.target.value)}
-                className="field mt-1"
-                autoComplete="street-address"
-              />
-            </label>
-            <label>
-              <span className="ui-sm text-muted">City</span>
-              <input
-                required
-                value={form.city}
-                onChange={(event) => update("city", event.target.value)}
-                className="field mt-1"
-                autoComplete="address-level2"
-              />
-            </label>
-            <label>
-              <span className="ui-sm text-muted">Postal code</span>
-              <input
-                required
-                value={form.postalCode}
-                onChange={(event) => update("postalCode", event.target.value)}
-                className="field mt-1"
-                autoComplete="postal-code"
-              />
-            </label>
-            <label className="sm:col-span-2">
-              <span className="ui-sm text-muted">Country</span>
-              <select
-                value={form.country}
-                onChange={(event) => update("country", event.target.value)}
-                className="field mt-1"
-              >
-                {SHIPPING_COUNTRIES.map((country) => (
-                  <option key={country} value={country}>
-                    {country}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="sm:col-span-2">
-              <span className="ui-sm text-muted">Order note (optional)</span>
-              <textarea
-                value={form.note}
-                onChange={(event) => update("note", event.target.value)}
-                rows={3}
-                className="field mt-1"
-              />
-            </label>
-          </div>
-        </fieldset>
-
-        <fieldset className="mt-7 border-t border-line pt-5">
-          <legend className="section-title">Payment</legend>
-          <div className="mt-3 space-y-2">
-            {[
-              {
-                value: "cash-on-delivery" as const,
-                title: "Cash on delivery",
-                copy: "Pay the courier when your parcel arrives.",
-              },
-              {
-                value: "bank-transfer" as const,
-                title: "Bank transfer",
-                copy: "We email the transfer details right after you order.",
-              },
-            ].map((option) => (
-              <label
-                key={option.value}
-                className="flex cursor-pointer items-start gap-2 border border-line p-3"
-              >
-                <input
-                  type="radio"
-                  name="paymentMethod"
-                  value={option.value}
-                  checked={form.paymentMethod === option.value}
-                  onChange={(event) => update("paymentMethod", event.target.value)}
-                  className="mt-0.5 h-3.5 w-3.5 accent-black"
-                />
-                <span>
-                  <span className="ui block">{option.title}</span>
-                  <span className="ui-sm mt-1 block text-muted">{option.copy}</span>
+          <nav aria-label="Checkout steps" className="ui-sm mt-6 flex flex-wrap justify-center gap-2">
+            <Link href="/cart" className="hover-underline text-muted">
+              Cart
+            </Link>
+            {STEPS.map((entry, index) => {
+              const done = index < stepIndex;
+              const current = entry.key === step;
+              return (
+                <span key={entry.key} className="flex items-center gap-2">
+                  <span aria-hidden className="text-muted">
+                    ›
+                  </span>
+                  {done ? (
+                    <button
+                      type="button"
+                      onClick={() => setStep(entry.key)}
+                      className="hover-underline text-muted"
+                    >
+                      {entry.label}
+                    </button>
+                  ) : (
+                    <span
+                      aria-current={current ? "step" : undefined}
+                      className={current ? "font-bold text-foreground" : "text-muted"}
+                    >
+                      {entry.label}
+                    </span>
+                  )}
                 </span>
-              </label>
-            ))}
-          </div>
-        </fieldset>
+              );
+            })}
+          </nav>
+        </div>
+      </header>
+
+      {/* Form side — ordered after the summary on phones, left column on desktop. */}
+      <div className="order-3 px-4 pt-7 pb-12 sm:px-6 lg:col-start-1 lg:row-start-2 lg:px-10 lg:pt-8">
+        <div className="mx-auto w-full max-w-[420px]">
+          <form onSubmit={submitStep}>
+            {step === "information" ? (
+              <>
+                <h2 className="ui font-bold">Contact</h2>
+                <div className="mt-3">
+                  <label htmlFor="co-email" className="sr-only">
+                    Email (optional)
+                  </label>
+                  <input
+                    id="co-email"
+                    type="email"
+                    autoComplete="email"
+                    placeholder="Email (optional)"
+                    value={form.email}
+                    onChange={(event) => update("email", event.target.value)}
+                    className="checkout-field"
+                  />
+                </div>
+
+                <h2 className="ui mt-7 font-bold">Delivery address</h2>
+                <div className="mt-3 grid gap-3">
+                  <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
+                    <div>
+                      <label htmlFor="co-first" className="sr-only">
+                        First name
+                      </label>
+                      <input
+                        id="co-first"
+                        required
+                        autoComplete="given-name"
+                        placeholder="First name"
+                        value={form.firstName}
+                        onChange={(event) => update("firstName", event.target.value)}
+                        className="checkout-field"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="co-last" className="sr-only">
+                        Last name
+                      </label>
+                      <input
+                        id="co-last"
+                        required
+                        autoComplete="family-name"
+                        placeholder="Last name"
+                        value={form.lastName}
+                        onChange={(event) => update("lastName", event.target.value)}
+                        className="checkout-field"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label htmlFor="co-governorate" className="sr-only">
+                      Governorate
+                    </label>
+                    <GovernorateSelect
+                      id="co-governorate"
+                      options={TUNISIA_GOVERNORATES}
+                      value={form.governorate}
+                      invalid={Boolean(governorateError)}
+                      onChange={(governorate) => {
+                        update("governorate", governorate);
+                        setGovernorateError("");
+                      }}
+                    />
+                    {governorateError ? (
+                      <p className="ui-sm mt-1.5 text-danger">{governorateError}</p>
+                    ) : null}
+                  </div>
+
+                  <div>
+                    <label htmlFor="co-address" className="sr-only">
+                      Address
+                    </label>
+                    <input
+                      id="co-address"
+                      required
+                      autoComplete="street-address"
+                      placeholder="Address"
+                      value={form.address}
+                      onChange={(event) => update("address", event.target.value)}
+                      className="checkout-field"
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="co-phone" className="sr-only">
+                      Phone
+                    </label>
+                    <input
+                      id="co-phone"
+                      required
+                      type="tel"
+                      inputMode="tel"
+                      autoComplete="tel"
+                      placeholder="Phone"
+                      value={form.phone}
+                      onChange={(event) => update("phone", event.target.value)}
+                      className="checkout-field"
+                    />
+                    <p className="ui-sm mt-1.5 text-muted">
+                      We call this number to confirm your delivery.
+                    </p>
+                  </div>
+                </div>
+
+                <p className="ui-sm mt-4 text-muted">Delivery in Tunisia only.</p>
+              </>
+            ) : (
+              <>
+                <div className="rounded-xl border border-line">
+                  {[
+                    { label: "Contact", value: form.email.trim() || form.phone.trim() },
+                    {
+                      label: "Deliver to",
+                      value: [form.address, form.governorate]
+                        .filter((part) => part.trim().length > 0)
+                        .join(", "),
+                    },
+                  ].map((row) => (
+                    <div
+                      key={row.label}
+                      className="flex items-start gap-3 border-b border-line px-4 py-3 last:border-b-0"
+                    >
+                      <span className="ui-sm w-20 shrink-0 text-muted">{row.label}</span>
+                      <span className="ui-sm min-w-0 flex-1 break-words">{row.value}</span>
+                      <button
+                        type="button"
+                        onClick={() => setStep("information")}
+                        className="ui-sm hover-underline shrink-0 text-muted"
+                      >
+                        Change
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                <h2 className="ui mt-7 font-bold">Delivery</h2>
+                <div className="mt-3 flex items-center justify-between gap-3 rounded-xl border border-line px-4 py-4">
+                  <span className="ui">Standard delivery</span>
+                  <span className="checkout-amount tabular-nums">
+                    {shipping === 0 ? "Free" : formatPrice(shipping)}
+                  </span>
+                </div>
+                <p className="ui-sm mt-2 text-muted">
+                  Delivered anywhere in Tunisia within 48 working hours.
+                </p>
+
+                <h2 className="ui mt-7 font-bold">Payment</h2>
+                <div className="mt-3 rounded-xl border border-foreground px-4 py-4">
+                  <span className="ui block font-bold">Cash on delivery</span>
+                  <span className="ui-sm mt-2 block text-muted">
+                    Pay the courier when your parcel arrives. Nothing is charged now.
+                  </span>
+                </div>
+
+                <div className="mt-5">
+                  <label htmlFor="co-note" className="ui-sm text-muted">
+                    Order note (optional)
+                  </label>
+                  <textarea
+                    id="co-note"
+                    rows={3}
+                    placeholder="Anything we should know?"
+                    value={form.note}
+                    onChange={(event) => update("note", event.target.value)}
+                    className="checkout-field mt-2"
+                  />
+                </div>
+
+                {error ? <p className="ui-sm mt-4 font-bold text-danger">{error}</p> : null}
+              </>
+            )}
+
+            <div className="mt-7 flex flex-wrap items-center justify-between gap-3">
+              {step === "information" ? (
+                <Link href="/cart" className="ui-sm hover-underline text-muted">
+                  ‹ Return to cart
+                </Link>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setStep("information")}
+                  className="ui-sm hover-underline text-muted"
+                >
+                  ‹ Return to information
+                </button>
+              )}
+
+              <button type="submit" disabled={submitting} className="btn btn--solid">
+                {step === "information"
+                  ? "Continue to payment"
+                  : submitting
+                    ? "Placing order"
+                    : `Place order — ${formatPrice(total)}`}
+              </button>
+            </div>
+
+            {step === "payment" ? (
+              <p className="ui-sm mt-4 leading-relaxed text-muted">
+                By placing this order you accept our{" "}
+                <Link href="/legal/terms" className="u">
+                  terms of service
+                </Link>{" "}
+                and{" "}
+                <Link href="/legal/refund-policy" className="u">
+                  refund policy
+                </Link>
+                .
+              </p>
+            ) : null}
+          </form>
+        </div>
       </div>
 
-      <aside className="h-fit border border-line p-3 lg:sticky lg:top-24">
-        <p className="section-title">Your order</p>
+      {/*
+       * Summary. Ordered above the form on phones so the product and total are the first
+       * things read; on desktop it becomes the full-height right column.
+       */}
+      <aside className="checkout-summary order-2 border-y border-line px-4 py-7 sm:px-6 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:border-y-0 lg:border-l lg:px-10 lg:py-12">
+        <div className="mx-auto w-full max-w-[400px]">
+          <h2 className="sr-only">Order summary</h2>
 
-        <div className="mt-3">
-          {lines.map((line) => (
-            <div
-              key={`${line.productId}-${line.size}`}
-              className="flex gap-2 border-b border-line py-2 last:border-b-0"
-            >
-              <div className="media-frame h-16 w-13 shrink-0 border border-line">
-                <Image
-                  src={line.image}
-                  alt={line.name}
-                  width={130}
-                  height={160}
-                  className="h-full w-full object-contain p-1"
+          <ul className="space-y-4">
+            {lines.map((line) => (
+              <li key={`${line.productId}-${line.size}`} className="flex items-start gap-3">
+                {/* The badge sits outside the clipped frame so it is never cut off. */}
+                <span className="relative shrink-0">
+                  <span className="media-frame block h-14 w-14 rounded-lg border border-line">
+                    <Image
+                      src={line.image}
+                      alt={line.name}
+                      fill
+                      sizes="56px"
+                      className="h-full w-full object-contain p-1"
+                    />
+                  </span>
+                  <span className="absolute -top-2 -right-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-foreground px-1 text-[9px] font-bold text-background tabular-nums">
+                    {line.quantity}
+                  </span>
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="ui block">{line.name}</span>
+                  <span className="ui-sm mt-1 block text-muted">{line.size}</span>
+                </span>
+                <span className="checkout-amount shrink-0 tabular-nums">
+                  {formatPrice(line.unitPrice * line.quantity)}
+                </span>
+              </li>
+            ))}
+          </ul>
+
+          <div className="mt-6 border-t border-line pt-5">
+            {coupon ? (
+              <div className="flex items-center justify-between gap-3">
+                <span className="ui-sm">
+                  {coupon.code} · {coupon.label}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCoupon(null);
+                    setCouponError("");
+                  }}
+                  className="ui-sm hover-underline text-muted"
+                >
+                  Remove
+                </button>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <label htmlFor="co-code" className="sr-only">
+                  Discount code
+                </label>
+                <input
+                  id="co-code"
+                  placeholder="Discount code"
+                  value={codeInput}
+                  onChange={(event) => setCodeInput(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      event.preventDefault();
+                      void applyCode();
+                    }
+                  }}
+                  className="checkout-field"
                 />
+                <button
+                  type="button"
+                  onClick={() => void applyCode()}
+                  disabled={checkingCode || !codeInput.trim()}
+                  className="btn shrink-0"
+                >
+                  {checkingCode ? "…" : "Apply"}
+                </button>
               </div>
-              <div className="ui-sm flex-1">
-                <p className="ui">{line.name}</p>
-                <p className="mt-1 text-muted">
-                  Size {line.size} · Qty {line.quantity}
-                </p>
-              </div>
-              <p className="ui-sm tabular-nums">{formatPrice(line.unitPrice * line.quantity)}</p>
+            )}
+
+            {couponError ? <p className="ui-sm mt-2 text-danger">{couponError}</p> : null}
+          </div>
+
+          <div className="mt-5 space-y-2.5 border-t border-line pt-5">
+            <div className="flex items-center justify-between gap-3">
+              <span className="ui text-muted">Subtotal</span>
+              <span className="checkout-amount tabular-nums">{formatPrice(subtotal)}</span>
             </div>
-          ))}
-        </div>
+            {discount > 0 ? (
+              <div className="flex items-center justify-between gap-3">
+                <span className="ui text-muted">Discount</span>
+                <span className="checkout-amount tabular-nums">−{formatPrice(discount)}</span>
+              </div>
+            ) : null}
+            <div className="flex items-center justify-between gap-3">
+              <span className="ui text-muted">Delivery</span>
+              <span className="checkout-amount tabular-nums">
+                {shipping === 0 ? "Free" : formatPrice(shipping)}
+              </span>
+            </div>
+          </div>
 
-        <div className="ui mt-3 flex justify-between border-t border-line pt-3">
-          <span className="text-muted">Subtotal</span>
-          <span className="tabular-nums">{formatPrice(subtotal)}</span>
+          <div className="mt-4 flex items-baseline justify-between gap-3 border-t border-line pt-4">
+            <span className="ui font-bold">Total</span>
+            <span className="checkout-total tabular-nums">{formatPrice(total)}</span>
+          </div>
         </div>
-        <div className="ui mt-1.5 flex justify-between">
-          <span className="text-muted">Shipping</span>
-          <span className="tabular-nums">{shipping === 0 ? "Free" : formatPrice(shipping)}</span>
-        </div>
-        <div className="ui mt-1.5 flex justify-between border-t border-line pt-2 font-bold">
-          <span>Total</span>
-          <span className="tabular-nums">{formatPrice(total)}</span>
-        </div>
-
-        {error ? <p className="ui-sm mt-3 font-bold">{error}</p> : null}
-
-        <button type="submit" disabled={submitting} className="btn btn--solid mt-3 w-full">
-          {submitting ? "Placing order" : `Place order — ${formatPrice(total)}`}
-        </button>
-
-        <p className="ui-sm mt-2 leading-relaxed text-muted">
-          By placing this order you accept our{" "}
-          <Link href="/legal/terms" className="u">
-            terms of service
-          </Link>{" "}
-          and{" "}
-          <Link href="/legal/refund-policy" className="u">
-            refund policy
-          </Link>
-          .
-        </p>
       </aside>
-    </form>
+    </div>
   );
 }

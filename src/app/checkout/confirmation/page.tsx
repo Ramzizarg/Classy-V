@@ -45,8 +45,11 @@ export default async function ConfirmationPage({
       <h1 className="page-title">Order confirmed — {order.reference}</h1>
       <p className="prose-raw mt-3 max-w-xl">
         Thank you, {order.customer.fullName.split(" ")[0]}. Your order was placed on{" "}
-        {formatDate(order.createdAt)} and a confirmation went out to {order.customer.email}. We pack
-        and dispatch from {SITE.city} within 48 working hours.
+        {formatDate(order.createdAt)}
+        {order.customer.email
+          ? ` and a confirmation went out to ${order.customer.email}`
+          : ` and we will confirm it by phone on ${order.customer.phone}`}
+        . We pack and dispatch from {SITE.city} within 48 working hours.
       </p>
 
       <div className="mt-6 max-w-xl border border-line">
@@ -81,6 +84,14 @@ export default async function ConfirmationPage({
             <span className="text-muted">Subtotal</span>
             <span className="tabular-nums">{formatPrice(order.subtotal)}</span>
           </div>
+          {order.discount > 0 ? (
+            <div className="ui mt-1.5 flex justify-between">
+              <span className="text-muted">
+                Discount{order.couponCode ? ` (${order.couponCode})` : ""}
+              </span>
+              <span className="tabular-nums">−{formatPrice(order.discount)}</span>
+            </div>
+          ) : null}
           <div className="ui mt-1.5 flex justify-between">
             <span className="text-muted">Shipping</span>
             <span className="tabular-nums">
@@ -102,15 +113,13 @@ export default async function ConfirmationPage({
 
       <div className="mt-6 grid max-w-xl gap-3 sm:grid-cols-2">
         <div className="border border-line p-3">
-          <p className="section-title">Shipping to</p>
+          <p className="section-title">Delivering to</p>
           <address className="prose-raw mt-2 not-italic">
             {order.customer.fullName}
             <br />
             {order.customer.address}
             <br />
-            {order.customer.postalCode} {order.customer.city}
-            <br />
-            {order.customer.country}
+            {order.customer.governorate}
             <br />
             {order.customer.phone}
           </address>

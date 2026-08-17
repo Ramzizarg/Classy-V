@@ -123,8 +123,12 @@ export function SiteHeader() {
 
   return (
     <>
-      {/* Scrolls away on mobile; only the desktop bar sticks, since the rail pins beneath it. */}
-      <header className="camo-surface z-[100] px-3 pt-3 pb-2 sm:px-5 lg:sticky lg:top-0 lg:pt-7 lg:pb-2">
+      {/*
+        Scrolls away on mobile; only the desktop bar sticks, since the rail pins beneath it.
+        No surface of its own: the page's fixed camo reads straight through, so the bar
+        never shows as a separate band against the content below it.
+      */}
+      <header className="z-[100] px-3 pt-3 pb-2 sm:px-5 lg:sticky lg:top-0 lg:pt-7 lg:pb-2">
         {/* Mobile bar: menu left, mark centred, bag right. Yields to the open menu panel. */}
         <div
           className={`shell-width items-center justify-between lg:hidden ${
