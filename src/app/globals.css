@@ -53,24 +53,21 @@ html {
   width: 100%;
   max-width: 100%;
   overflow-x: clip;
+  background: var(--background);
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
-}
-
-html,
-body {
-  background: #1a210e;
 }
 
 body::before {
   content: "";
   position: fixed;
-  top: -100%;
-  left: -100%;
-  width: 300%;
-  height: 300%;
+  inset: 0;
   z-index: -1;
-  background: url("/media/camo.png") center / 33.34% 33.34% no-repeat;
+  background-color: var(--background);
+  background-image: linear-gradient(rgb(0 0 0 / 0.45), rgb(0 0 0 / 0.45)), url("/media/camo.png");
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
   pointer-events: none;
 }
 
