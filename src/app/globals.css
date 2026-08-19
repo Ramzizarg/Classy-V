@@ -49,24 +49,32 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+html,
+body {
+  background-color: var(--background);
+  background-image: linear-gradient(var(--paper-tint), var(--paper-tint)), url("/media/camo.png");
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+
 html {
   width: 100%;
   max-width: 100%;
   overflow-x: clip;
-  /* Blended tone of the camo + paper-tint so overscroll areas match the page. */
-  background: #232d1b;
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
 }
 
 /**
- * Camo paper. Duplicated on the pseudo-element so it stays pinned to the viewport
- * on browsers that don't honour background-attachment:fixed on <html>.
+ * Camo paper fallback: mobile Safari ignores background-attachment:fixed,
+ * so this fixed pseudo-element guarantees full coverage everywhere.
  */
 body::before {
   content: "";
   position: fixed;
-  inset: -10vh -5vw;
+  inset: -50vh -50vw;
   z-index: -1;
   background-color: var(--background);
   background-image: linear-gradient(var(--paper-tint), var(--paper-tint)), url("/media/camo.png");
