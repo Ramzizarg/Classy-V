@@ -14,7 +14,11 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: "#1f2618",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#1f2618" },
+    { media: "(prefers-color-scheme: dark)", color: "#1f2618" },
+  ],
+  colorScheme: "dark",
 };
 
 export const metadata: Metadata = {
@@ -24,6 +28,15 @@ export const metadata: Metadata = {
     template: `%s | ${SITE.name}`,
   },
   description: SITE.description,
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: SITE.name,
+  },
+  other: {
+    "mobile-web-app-capable": "yes",
+    "apple-mobile-web-app-status-bar-style": "black-translucent",
+  },
   openGraph: {
     type: "website",
     siteName: SITE.name,
