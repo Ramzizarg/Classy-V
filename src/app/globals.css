@@ -49,16 +49,6 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-html,
-body {
-  background-color: var(--background);
-  background-image: linear-gradient(var(--paper-tint), var(--paper-tint)), url("/media/camo.png");
-  background-position: center;
-  background-size: cover;
-  background-repeat: no-repeat;
-  background-attachment: fixed;
-}
-
 html {
   width: 100%;
   max-width: 100%;
@@ -68,18 +58,26 @@ html {
 }
 
 /**
- * Camo paper fallback: mobile Safari ignores background-attachment:fixed,
- * so this fixed pseudo-element guarantees full coverage everywhere.
+ * Single camo layer covering everything. Uses a massive fixed pseudo-element
+ * so mobile Safari overscroll bounce never reveals a bare background color.
  */
+html,
+body {
+  background: var(--background);
+}
+
 body::before {
   content: "";
   position: fixed;
-  inset: -50vh -50vw;
+  top: -100%;
+  left: -100%;
+  width: 300%;
+  height: 300%;
   z-index: -1;
   background-color: var(--background);
   background-image: linear-gradient(var(--paper-tint), var(--paper-tint)), url("/media/camo.png");
   background-position: center;
-  background-size: cover;
+  background-size: 33.34% 33.34%;
   background-repeat: no-repeat;
   pointer-events: none;
 }
