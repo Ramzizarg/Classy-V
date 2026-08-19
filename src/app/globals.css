@@ -605,20 +605,16 @@ textarea.checkout-field {
   top: 0;
   bottom: 0;
   width: 50%;
-  background: radial-gradient(ellipse 160% 60% at 100% 38%, rgb(30 36 22 / 0.65), rgb(0 0 0 / 0.97));
-  backdrop-filter: blur(32px) saturate(0.6);
-  -webkit-backdrop-filter: blur(32px) saturate(0.6);
+  background: #000;
   animation: entry-gate-bg 600ms ease both;
 }
 
 .entry-gate__curtain-left {
   left: 0;
-  background: radial-gradient(ellipse 160% 60% at 100% 38%, rgb(30 36 22 / 0.65), rgb(0 0 0 / 0.97));
 }
 
 .entry-gate__curtain-right {
   right: 0;
-  background: radial-gradient(ellipse 160% 60% at 0% 38%, rgb(30 36 22 / 0.65), rgb(0 0 0 / 0.97));
 }
 
 .entry-gate__curtain--open-left {
