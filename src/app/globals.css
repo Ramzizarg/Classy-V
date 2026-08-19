@@ -24,7 +24,7 @@
   /* Content stops growing past this, so zooming out keeps the layout's proportions. */
   --shell-max: 1600px;
   /* Laid over the camo so white type keeps its contrast on the pattern's light patches. */
-  --paper-tint: rgb(26 33 18 / 0.5);
+  --paper-tint: rgb(26 33 18 / 0);
 
 }
 
