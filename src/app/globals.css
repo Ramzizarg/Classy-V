@@ -6,7 +6,7 @@
  */
 
 :root {
-  --background: #455737;
+  --background: #000000;
   --foreground: #ffffff;
   --muted: #c3c9b8;
   --line: #5c6b45;
@@ -53,19 +53,9 @@ html {
   width: 100%;
   max-width: 100%;
   overflow-x: clip;
-  min-height: 100%;
-  background: url("/media/camo.png") center / 100% 130% no-repeat;
+  background: #000;
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
-}
-
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  background: linear-gradient(rgb(0 0 0 / 0.45), rgb(0 0 0 / 0.45));
-  pointer-events: none;
 }
 
 body {
