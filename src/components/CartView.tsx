@@ -58,8 +58,8 @@ export function CartView() {
               <Link href={`/collection/${line.slug}`} className="ui hover-underline">
                 {line.name}
               </Link>
-              <p className="ui-sm mt-1 text-muted">Size {line.size}</p>
-              <p className="ui-sm mt-1 text-muted">{formatPrice(line.unitPrice)} each</p>
+              <p className="ui mt-1 text-muted text-base">{line.size}</p>
+              <p className="ui mt-1 text-yellow-400 text-lg font-bold">{formatPrice(line.unitPrice)} each</p>
 
               <div className="mt-auto flex flex-wrap items-center justify-between gap-3 pt-3">
                 <div className="flex items-center border border-line">
@@ -83,7 +83,7 @@ export function CartView() {
                 </div>
 
                 <div className="flex items-center gap-4">
-                  <p className="ui tabular-nums">{formatPrice(line.unitPrice * line.quantity)}</p>
+                  <p className="ui tabular-nums text-yellow-400 text-lg font-bold">{formatPrice(line.unitPrice * line.quantity)}</p>
                   <button
                     type="button"
                     onClick={() => removeLine(line)}
