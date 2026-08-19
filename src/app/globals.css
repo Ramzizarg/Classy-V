@@ -65,7 +65,7 @@ html {
 body::before {
   content: "";
   position: fixed;
-  inset: 0;
+  inset: -10vh -5vw;
   z-index: -1;
   background-color: var(--background);
   background-image: linear-gradient(var(--paper-tint), var(--paper-tint)), url("/media/camo.png");
