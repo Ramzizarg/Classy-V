@@ -57,13 +57,9 @@ html {
   text-size-adjust: 100%;
 }
 
-/**
- * Single camo layer covering everything. Uses a massive fixed pseudo-element
- * so mobile Safari overscroll bounce never reveals a bare background color.
- */
 html,
 body {
-  background: var(--background);
+  background: #1a210e;
 }
 
 body::before {
@@ -74,11 +70,7 @@ body::before {
   width: 300%;
   height: 300%;
   z-index: -1;
-  background-color: var(--background);
-  background-image: linear-gradient(var(--paper-tint), var(--paper-tint)), url("/media/camo.png");
-  background-position: center;
-  background-size: 33.34% 33.34%;
-  background-repeat: no-repeat;
+  background: url("/media/camo.png") center / 33.34% 33.34% no-repeat;
   pointer-events: none;
 }
 
