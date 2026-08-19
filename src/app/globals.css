@@ -53,7 +53,6 @@ html {
   width: 100%;
   max-width: 100%;
   overflow-x: clip;
-  background: #000;
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
 }
@@ -403,10 +402,15 @@ textarea.checkout-field {
 }
 
 /**
- * Every opaque surface — header, drawers, modals, toasts — wears the same camo.
+ * Every opaque surface — the page itself, drawers, modals, toasts — wears the same camo.
  * Locking the background to the viewport lines each one up with the fixed layer
  * behind it, so panels read as cut out of the page rather than laid on top of it.
+ *
+ * The page's copy rides on `html` rather than `body`: a root background propagates to
+ * the canvas, so it fills the viewport edge to edge even where `body`'s box falls short
+ * (short pages, the safe areas behind mobile browser chrome, overscroll).
  */
+html,
 .camo-surface {
   background-color: var(--background);
   background-image: linear-gradient(var(--paper-tint), var(--paper-tint)), url("/media/camo.png");
