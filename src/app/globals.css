@@ -53,12 +53,8 @@ html {
   width: 100%;
   max-width: 100%;
   overflow-x: clip;
-  background-color: var(--background);
-  background-image: linear-gradient(var(--paper-tint), var(--paper-tint)), url("/media/camo.png");
-  background-position: center;
-  background-size: cover;
-  background-repeat: no-repeat;
-  background-attachment: fixed;
+  /* Blended tone of the camo + paper-tint so overscroll areas match the page. */
+  background: #232d1b;
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
 }
