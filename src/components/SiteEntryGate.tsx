@@ -111,14 +111,18 @@ export function SiteEntryGate() {
 
   return createPortal(
     <div
-      className={`fixed inset-0 z-[9990] ${opening ? "pointer-events-none" : ""}`}
+      className={`fixed inset-0 z-[9990] ${opening ? "pointer-events-none" : "bg-black"}`}
       role="dialog"
       aria-modal
       aria-labelledby="entry-gate-title"
     >
       {/* Curtain split: two halves slide apart to reveal the site */}
-      <div className={`entry-gate__curtain-left ${opening ? "entry-gate__curtain--open-left" : ""}`} />
-      <div className={`entry-gate__curtain-right ${opening ? "entry-gate__curtain--open-right" : ""}`} />
+      {opening ? (
+        <>
+          <div className="entry-gate__curtain-left entry-gate__curtain--open-left" />
+          <div className="entry-gate__curtain-right entry-gate__curtain--open-right" />
+        </>
+      ) : null}
 
       {!opening ? (
         <div className="relative z-10 flex h-full items-center justify-center">

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { BrandMark } from "@/components/BrandMark";
+import { replaySplash } from "@/components/SiteLoadSplash";
 import { ShippingPolicyModal } from "@/components/ShippingPolicyModal";
 import { BagGlyph, InstagramGlyph, MenuGlyph, SearchGlyph } from "@/components/SocialGlyphs";
 import { useStore } from "@/components/StoreProvider";
@@ -144,7 +145,7 @@ export function SiteHeader() {
             <MenuGlyph className="h-6 w-6" />
           </button>
 
-          <BrandMark className="h-12 w-auto" />
+          <BrandMark className="h-12 w-auto" onClick={() => replaySplash()} />
 
           <button
             type="button"
@@ -194,7 +195,7 @@ export function SiteHeader() {
           />
           <nav className="camo-surface overlay-panel--left absolute inset-y-0 left-0 flex w-[82%] max-w-xs flex-col overflow-y-auto border-r border-line">
             <div className="flex items-start justify-between px-4 py-3">
-              <BrandMark className="h-14 w-auto" />
+              <BrandMark className="h-14 w-auto" onClick={() => replaySplash()} />
               <button
                 type="button"
                 onClick={() => setMenuOpen(false)}

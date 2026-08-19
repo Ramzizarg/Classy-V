@@ -5,10 +5,23 @@ import { useEffect, useState } from "react";
 /** Matches the `splash-cover` / `splash-mark` animations in globals.css. */
 const SPLASH_MS = 1500;
 const SEEN_KEY = "classyv:splash-seen";
+const REPLAY_EVENT = "classyv:replay-splash";
 
 /**
- * Black cover with the wordmark zoom animation. Plays only once per browser
- * session — navigating between pages afterwards skips it entirely.
+ * Call this before navigating home so the splash replays as a transition.
+ * It clears the session flag and fires a custom event that the already-mounted
+ * `SiteLoadSplash` listens for.
+ */
+export function replaySplash() {
+  try {
+    sessionStorage.removeItem(SEEN_KEY);
+  } catch {}
+  window.dispatchEvent(new Event(REPLAY_EVENT));
+}
+
+/**
+ * Black cover with the wordmark zoom animation. Plays once on the first visit,
+ * then again whenever `replaySplash()` is called (e.g. clicking the header logo).
  */
 export function SiteLoadSplash() {
   const [finished, setFinished] = useState(() => {
@@ -18,6 +31,13 @@ export function SiteLoadSplash() {
       return false;
     }
   });
+
+  // Listen for explicit replay requests (logo click → home).
+  useEffect(() => {
+    const handle = () => setFinished(false);
+    window.addEventListener(REPLAY_EVENT, handle);
+    return () => window.removeEventListener(REPLAY_EVENT, handle);
+  }, []);
 
   useEffect(() => {
     if (finished) return;

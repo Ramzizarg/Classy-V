@@ -15,16 +15,19 @@ export function BrandMark({
   src = BRAND_MARK_SRC,
   href = "/",
   label,
+  onClick,
 }: {
   width?: number;
   className?: string;
   src?: string;
   href?: string;
   label?: string;
+  onClick?: (e: React.MouseEvent<HTMLAnchorElement>) => void;
 }) {
   return (
     <Link
       href={href}
+      onClick={onClick}
       aria-label={label ?? `${SITE.name} home`}
       className="brand-link inline-block"
     >
