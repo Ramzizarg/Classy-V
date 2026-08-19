@@ -24,7 +24,7 @@
   /* Content stops growing past this, so zooming out keeps the layout's proportions. */
   --shell-max: 1600px;
   /* Laid over the camo so white type keeps its contrast on the pattern's light patches. */
-  --paper-tint: rgb(26 33 18 / 0);
+  --paper-tint: rgb(26 33 18 / 0.5);
 
 }
 
@@ -54,7 +54,7 @@ html {
   width: 100%;
   max-width: 100%;
   overflow-x: clip;
-  background: var(--background);
+  background: transparent;
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
 }
@@ -73,7 +73,7 @@ html::before {
   position: fixed;
   inset: 0;
   z-index: -1;
-  background-color: var(--background);
+  background-color: transparent;
   background-image: linear-gradient(var(--paper-tint), var(--paper-tint)), url("/media/camo.png");
   background-position: center;
   background-size: cover;
@@ -432,7 +432,7 @@ textarea.checkout-field {
  * The page itself is covered by `html::before` instead; see that rule.
  */
 .camo-surface {
-  background-color: var(--background);
+  background-color: transparent;
   background-image: linear-gradient(var(--paper-tint), var(--paper-tint)), url("/media/camo.png");
   background-position: center;
   background-size: cover;
