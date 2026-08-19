@@ -23,13 +23,6 @@
   --header-height: 40px;
   /* Content stops growing past this, so zooming out keeps the layout's proportions. */
   --shell-max: 1600px;
-  /* Laid over the camo so white type keeps its contrast on the pattern's light patches. */
-  --paper-tint: rgb(26 33 18 / 0.5);
-  /* Shared camo stack for the page backdrop and html fallback. */
-  --camo-bg: linear-gradient(var(--paper-tint), var(--paper-tint)), url("/media/camo.png");
-  /* Tints Safari's top/bottom chrome to match the camo instead of default white. */
-  --browser-chrome: #1f2618;
-
 }
 
 /* The desktop bar is padded taller than the mobile one, so the rail pins lower. */
@@ -61,42 +54,16 @@ html {
   min-height: -webkit-fill-available;
   overflow-x: clip;
   color-scheme: dark;
-  background-color: var(--browser-chrome);
-  background-image: var(--camo-bg);
-  background-position: center;
-  background-size: cover;
-  background-repeat: no-repeat;
+  background: var(--background);
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
-}
-
-/**
- * Full-viewport camo, as a real fixed layer instead of `background-attachment: fixed`.
- * iOS Safari sizes that property against the document, not the viewport, which left
- * bare strips behind the header and footer. Sized with vmax + extra height so the
- * pattern still covers the notch, home indicator, and rubber-band overscroll.
- */
-.site-backdrop {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  z-index: 0;
-  width: 100vmax;
-  height: max(150dvh, 150lvh);
-  pointer-events: none;
-  transform: translate(-50%, -50%);
-  background-color: var(--browser-chrome);
-  background-image: var(--camo-bg);
-  background-position: center;
-  background-size: cover;
-  background-repeat: no-repeat;
 }
 
 body {
   position: relative;
   min-height: 100dvh;
   min-height: -webkit-fill-available;
-  background: transparent;
+  background: var(--background);
   color: var(--foreground);
   font-family: ui-monospace, "SFMono-Regular", "SF Mono", Menlo, Consolas, "Liberation Mono",
     "Courier New", monospace;
@@ -441,19 +408,10 @@ textarea.checkout-field {
 }
 
 /**
- * Every opaque panel — drawers, modals, toasts — wears the same camo.
- * Locking the background to the viewport lines each one up with the fixed layer
- * behind it, so panels read as cut out of the page rather than laid on top of it.
- *
- * The page itself is covered by `.site-backdrop` instead; see that rule.
+ * Opaque panels — drawers, modals, toasts — match the page background.
  */
 .camo-surface {
-  background-color: var(--browser-chrome);
-  background-image: var(--camo-bg);
-  background-position: center;
-  background-size: cover;
-  background-repeat: no-repeat;
-  background-attachment: fixed;
+  background: var(--background);
 }
 
 .site-shell {

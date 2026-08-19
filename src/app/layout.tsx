@@ -15,8 +15,8 @@ export const viewport: Viewport = {
   initialScale: 1,
   viewportFit: "cover",
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#1f2618" },
-    { media: "(prefers-color-scheme: dark)", color: "#1f2618" },
+    { media: "(prefers-color-scheme: light)", color: "#000000" },
+    { media: "(prefers-color-scheme: dark)", color: "#000000" },
   ],
   colorScheme: "dark",
 };
@@ -57,18 +57,15 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   return (
     <html lang="en" className="min-h-dvh antialiased" suppressHydrationWarning>
       {/* Extensions inject inline styles here before React loads, so ignore body attr drift. */}
-      <body className="flex min-h-dvh flex-col" suppressHydrationWarning>
-        <div className="site-backdrop" aria-hidden="true" />
-        <div className="relative z-[1] flex min-h-dvh flex-1 flex-col">
-          <StoreProvider shippingRate={shippingRate}>
-            <StoreShell>{children}</StoreShell>
-            <Toaster />
-            <PresenceBeacon />
-            <ComingSoonGate />
-            <SiteLoadSplash />
-            <SiteEntryGate />
-          </StoreProvider>
-        </div>
+      <body className="flex min-h-dvh flex-col bg-background" suppressHydrationWarning>
+        <StoreProvider shippingRate={shippingRate}>
+          <StoreShell>{children}</StoreShell>
+          <Toaster />
+          <PresenceBeacon />
+          <ComingSoonGate />
+          <SiteLoadSplash />
+          <SiteEntryGate />
+        </StoreProvider>
       </body>
     </html>
   );
