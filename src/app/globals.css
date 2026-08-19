@@ -601,20 +601,20 @@ textarea.checkout-field {
  */
 .entry-gate__curtain-left,
 .entry-gate__curtain-right {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 50%;
+  position: fixed;
+  top: -5vh;
+  bottom: -5vh;
+  width: 52%;
   background: #000;
   animation: entry-gate-bg 600ms ease both;
 }
 
 .entry-gate__curtain-left {
-  left: 0;
+  left: -2%;
 }
 
 .entry-gate__curtain-right {
-  right: 0;
+  right: -2%;
 }
 
 .entry-gate__curtain--open-left {
