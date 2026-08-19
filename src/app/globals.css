@@ -53,6 +53,7 @@
 html {
   width: 100%;
   max-width: 100%;
+  min-height: 100dvh;
   overflow-x: clip;
   background: transparent;
   -webkit-text-size-adjust: 100%;
@@ -60,19 +61,20 @@ html {
 }
 
 /**
- * The page's camo, as a real fixed layer rather than a `background-attachment: fixed`
- * background. iOS Safari sizes such a background against the document instead of the
- * viewport, which left the strips behind the header and footer bare. A fixed box is
- * measured off the viewport everywhere, so the pattern always reaches every edge.
- *
- * `-1` keeps it behind the page while staying in front of the canvas; nothing above it
- * paints a background of its own, so `body` must stay transparent.
+ * Full-viewport camo, as a real fixed layer instead of `background-attachment: fixed`.
+ * iOS Safari sizes that property against the document, not the viewport, which left
+ * bare strips behind the header and footer. A fixed box is measured off the viewport
+ * everywhere; extra inset pulls the pattern into the notch, home indicator, and the
+ * rubber-band overscroll so nothing else shows through at the top or bottom.
  */
-html::before {
-  content: "";
+.site-backdrop {
   position: fixed;
-  inset: 0;
-  z-index: -1;
+  top: calc(-25vh - env(safe-area-inset-top, 0px));
+  right: calc(-5vw - env(safe-area-inset-right, 0px));
+  bottom: calc(-25vh - env(safe-area-inset-bottom, 0px));
+  left: calc(-5vw - env(safe-area-inset-left, 0px));
+  z-index: 0;
+  pointer-events: none;
   background-color: transparent;
   background-image: linear-gradient(var(--paper-tint), var(--paper-tint)), url("/media/camo.png");
   background-position: center;
@@ -81,6 +83,8 @@ html::before {
 }
 
 body {
+  position: relative;
+  min-height: 100dvh;
   color: var(--foreground);
   font-family: ui-monospace, "SFMono-Regular", "SF Mono", Menlo, Consolas, "Liberation Mono",
     "Courier New", monospace;
@@ -429,7 +433,7 @@ textarea.checkout-field {
  * Locking the background to the viewport lines each one up with the fixed layer
  * behind it, so panels read as cut out of the page rather than laid on top of it.
  *
- * The page itself is covered by `html::before` instead; see that rule.
+ * The page itself is covered by `.site-backdrop` instead; see that rule.
  */
 .camo-surface {
   background-color: transparent;

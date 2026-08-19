@@ -14,6 +14,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
+  themeColor: "#1f2618",
 };
 
 export const metadata: Metadata = {
@@ -41,17 +42,20 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   const shippingRate = await getShippingRate();
 
   return (
-    <html lang="en" className="h-full antialiased" suppressHydrationWarning>
+    <html lang="en" className="min-h-dvh antialiased" suppressHydrationWarning>
       {/* Extensions inject inline styles here before React loads, so ignore body attr drift. */}
-      <body className="flex min-h-full flex-col" suppressHydrationWarning>
-        <StoreProvider shippingRate={shippingRate}>
-          <StoreShell>{children}</StoreShell>
-          <Toaster />
-          <PresenceBeacon />
-          <ComingSoonGate />
-          <SiteLoadSplash />
-          <SiteEntryGate />
-        </StoreProvider>
+      <body className="flex min-h-dvh flex-col" suppressHydrationWarning>
+        <div className="site-backdrop" aria-hidden="true" />
+        <div className="relative z-[1] flex min-h-dvh flex-1 flex-col">
+          <StoreProvider shippingRate={shippingRate}>
+            <StoreShell>{children}</StoreShell>
+            <Toaster />
+            <PresenceBeacon />
+            <ComingSoonGate />
+            <SiteLoadSplash />
+            <SiteEntryGate />
+          </StoreProvider>
+        </div>
       </body>
     </html>
   );
