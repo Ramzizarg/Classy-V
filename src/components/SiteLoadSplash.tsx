@@ -4,19 +4,31 @@ import { useEffect, useState } from "react";
 
 /** Matches the `splash-cover` / `splash-mark` animations in globals.css. */
 const SPLASH_MS = 1500;
+const SEEN_KEY = "classyv:splash-seen";
 
 /**
- * Black cover played on every full page load: the wordmark zooms in, holds, then
- * zooms back out as the cover clears. The animation is pure CSS so it is already
- * running before React hydrates; this component only drops it from the DOM after.
+ * Black cover with the wordmark zoom animation. Plays only once per browser
+ * session — navigating between pages afterwards skips it entirely.
  */
 export function SiteLoadSplash() {
-  const [finished, setFinished] = useState(false);
+  const [finished, setFinished] = useState(() => {
+    try {
+      return sessionStorage.getItem(SEEN_KEY) === "1";
+    } catch {
+      return false;
+    }
+  });
 
   useEffect(() => {
-    const timer = window.setTimeout(() => setFinished(true), SPLASH_MS);
+    if (finished) return;
+    const timer = window.setTimeout(() => {
+      try {
+        sessionStorage.setItem(SEEN_KEY, "1");
+      } catch {}
+      setFinished(true);
+    }, SPLASH_MS);
     return () => window.clearTimeout(timer);
-  }, []);
+  }, [finished]);
 
   if (finished) return null;
 
