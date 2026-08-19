@@ -25,6 +25,8 @@
   --shell-max: 1600px;
   /* Laid over the camo so white type keeps its contrast on the pattern's light patches. */
   --paper-tint: rgb(26 33 18 / 0.5);
+  /* The camo's average tone. Backs the pattern so a gap never reads as a black band. */
+  --canvas-ink: #232a1b;
 }
 
 /* The desktop bar is padded taller than the mobile one, so the rail pins lower. */
@@ -53,8 +55,30 @@ html {
   width: 100%;
   max-width: 100%;
   overflow-x: clip;
+  background: var(--canvas-ink);
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
+}
+
+/**
+ * The page's camo, as a real fixed layer rather than a `background-attachment: fixed`
+ * background. iOS Safari sizes such a background against the document instead of the
+ * viewport, which left the strips behind the header and footer bare. A fixed box is
+ * measured off the viewport everywhere, so the pattern always reaches every edge.
+ *
+ * `-1` keeps it behind the page while staying in front of the canvas; nothing above it
+ * paints a background of its own, so `body` must stay transparent.
+ */
+html::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background-color: var(--canvas-ink);
+  background-image: linear-gradient(var(--paper-tint), var(--paper-tint)), url("/media/camo.png");
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
 }
 
 body {
@@ -402,17 +426,14 @@ textarea.checkout-field {
 }
 
 /**
- * Every opaque surface — the page itself, drawers, modals, toasts — wears the same camo.
+ * Every opaque panel — drawers, modals, toasts — wears the same camo.
  * Locking the background to the viewport lines each one up with the fixed layer
  * behind it, so panels read as cut out of the page rather than laid on top of it.
  *
- * The page's copy rides on `html` rather than `body`: a root background propagates to
- * the canvas, so it fills the viewport edge to edge even where `body`'s box falls short
- * (short pages, the safe areas behind mobile browser chrome, overscroll).
+ * The page itself is covered by `html::before` instead; see that rule.
  */
-html,
 .camo-surface {
-  background-color: var(--background);
+  background-color: var(--canvas-ink);
   background-image: linear-gradient(var(--paper-tint), var(--paper-tint)), url("/media/camo.png");
   background-position: center;
   background-size: cover;
