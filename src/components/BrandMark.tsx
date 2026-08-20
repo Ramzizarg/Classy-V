@@ -5,8 +5,7 @@ import { SITE } from "@/lib/site";
 const BRAND_MARK_SRC = "/brand/classy%20v%204.png";
 
 /**
- * Painted sparkle lockup. Shipped as a pre-coloured PNG so the chalk texture and
- * yellow ink stay intact — including on hover (no white recolor).
+ * Sparkle lockup. The PNG is used as a CSS mask so `--brand-ink` tints the shape.
  * `className` still accepts `h-*`/`w-*` overrides.
  */
 export function BrandMark({
@@ -31,12 +30,14 @@ export function BrandMark({
       aria-label={label ?? `${SITE.name} home`}
       className="brand-link inline-block"
     >
-      {/* eslint-disable-next-line @next/next/no-img-element -- static brand asset; size via CSS var / utility classes */}
-      <img
-        src={src}
-        alt=""
+      <span
         aria-hidden
-        style={{ "--brand-mark-width": `${width}px` } as CSSProperties}
+        style={
+          {
+            "--brand-mark-width": `${width}px`,
+            "--brand-mark-image": `url("${src}")`,
+          } as CSSProperties
+        }
         className={`brand-mark ${className ?? ""}`}
       />
     </Link>
