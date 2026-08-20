@@ -3,11 +3,10 @@
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { BrandMark } from "@/components/BrandMark";
-import { InstagramGlyph } from "@/components/SocialGlyphs";
+import { SocialLinks } from "@/components/SocialLinks";
 import { CATEGORIES, COLLECTIONS } from "@/lib/products";
-import { SITE } from "@/lib/site";
 
-/** Site-wide brand rail: mark on top, single column of drops, Instagram at the foot. */
+/** Site-wide brand rail: mark on top, single column of drops, social links at the foot. */
 export function ShopRail() {
   const pathname = usePathname();
   const params = useSearchParams();
@@ -47,15 +46,7 @@ export function ShopRail() {
         ))}
       </nav>
 
-      <a
-        href={SITE.instagram}
-        target="_blank"
-        rel="noreferrer"
-        className="mt-auto mb-8 inline-flex items-center gap-2 text-foreground opacity-90 hover:opacity-100"
-      >
-        <InstagramGlyph className="h-5 w-5" />
-        <span className="rail-link py-0">Instagram</span>
-      </a>
+      <SocialLinks className="mt-auto mb-8" />
     </aside>
   );
 }

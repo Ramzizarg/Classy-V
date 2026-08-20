@@ -15,10 +15,10 @@ export const viewport: Viewport = {
   initialScale: 1,
   viewportFit: "cover",
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#fff0e5" },
-    { media: "(prefers-color-scheme: dark)", color: "#fff0e5" },
+    { media: "(prefers-color-scheme: light)", color: "#000000" },
+    { media: "(prefers-color-scheme: dark)", color: "#000000" },
   ],
-  colorScheme: "light",
+  colorScheme: "dark",
 };
 
 export const metadata: Metadata = {
@@ -46,8 +46,8 @@ export const metadata: Metadata = {
     images: [
       {
         url: "/og-image.png",
-        width: 1672,
-        height: 941,
+        width: 1200,
+        height: 630,
         alt: `${SITE.name} logo`,
       },
     ],

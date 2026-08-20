@@ -87,7 +87,7 @@ export function CartDrawer() {
                       >
                         {line.name}
                       </Link>
-                      <span className="ui shrink-0 tabular-nums">
+                      <span className="shrink-0 text-[15px] font-bold tabular-nums sm:text-base">
                         {formatPrice(line.unitPrice)}
                       </span>
                     </div>
@@ -134,17 +134,17 @@ export function CartDrawer() {
             <div className="border-t border-line px-3 py-3">
               <div className="ui flex justify-between">
                 <span>Subtotal</span>
-                <span className="tabular-nums">{formatPrice(subtotal)}</span>
+                <span className="text-[13px] font-bold tabular-nums">{formatPrice(subtotal)}</span>
               </div>
               <div className="ui mt-1.5 flex justify-between text-muted">
                 <span>Shipping</span>
-                <span className="tabular-nums">
+                <span className="text-[13px] font-bold tabular-nums">
                   {shipping === 0 ? "Free" : formatPrice(shipping)}
                 </span>
               </div>
-              <div className="ui mt-1.5 flex justify-between font-bold">
+              <div className="ui mt-2 flex items-baseline justify-between font-bold">
                 <span>Total</span>
-                <span className="tabular-nums">{formatPrice(subtotal + shipping)}</span>
+                <span className="text-[20px] tabular-nums">{formatPrice(subtotal + shipping)}</span>
               </div>
 
               <div className="mt-3 grid grid-cols-2 gap-2">

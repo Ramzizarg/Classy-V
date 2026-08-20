@@ -6,12 +6,12 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { BrandMark } from "@/components/BrandMark";
 import { replaySplash } from "@/components/SiteLoadSplash";
-import { ShippingPolicyModal } from "@/components/ShippingPolicyModal";
-import { BagGlyph, InstagramGlyph, MenuGlyph, SearchGlyph } from "@/components/SocialGlyphs";
+import { BagGlyph, MenuGlyph, SearchGlyph } from "@/components/SocialGlyphs";
+import { SocialLinks } from "@/components/SocialLinks";
 import { useStore } from "@/components/StoreProvider";
 import { formatPrice } from "@/lib/format";
 import { CATEGORIES, COLLECTIONS, effectivePrice, filterProducts } from "@/lib/products";
-import { INFO_NAV, SITE } from "@/lib/site";
+import { SITE } from "@/lib/site";
 import type { Product } from "@/lib/types";
 
 const SUGGESTION_LIMIT = 6;
@@ -88,7 +88,6 @@ export function SiteHeader() {
   const router = useRouter();
   const { count, openCart, hydrated } = useStore();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [policyOpen, setPolicyOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [lastPath, setLastPath] = useState(pathname);
 
@@ -98,13 +97,12 @@ export function SiteHeader() {
     setMenuOpen(false);
   }
 
-  /** Runs after the pop-up's own lock (it sits deeper in the tree), so it has the last word. */
   useEffect(() => {
-    document.body.style.overflow = menuOpen || policyOpen ? "hidden" : "";
+    document.body.style.overflow = menuOpen ? "hidden" : "";
     return () => {
       document.body.style.overflow = "";
     };
-  }, [menuOpen, policyOpen]);
+  }, [menuOpen]);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -226,7 +224,7 @@ export function SiteHeader() {
               ))}
             </div>
 
-            <form onSubmit={submitSearch} className="flex items-center gap-2 px-4 pb-3">
+            <form onSubmit={submitSearch} className="flex items-center gap-2 px-4 pb-8">
               <SearchGlyph />
               <input
                 value={query}
@@ -237,49 +235,20 @@ export function SiteHeader() {
               />
             </form>
 
+            <div className="mx-4 border-t border-line" aria-hidden="true" />
+
+            <div className="px-4 pt-6 pb-6">
+              <SocialLinks />
+            </div>
+
             {term ? (
               <div className="mx-4 mb-4 border border-line">
                 <SearchResults term={term} onPick={() => setQuery("")} />
               </div>
             ) : null}
-
-            <div className="mt-auto flex flex-col border-t border-line px-4 py-4">
-              {INFO_NAV.map((item) =>
-                /* The policy is a pop-up, so it closes the menu and opens over the page. */
-                item.href === "/shipping-returns" ? (
-                  <button
-                    key={item.href}
-                    type="button"
-                    onClick={() => {
-                      setMenuOpen(false);
-                      setPolicyOpen(true);
-                    }}
-                    className="ui hover-underline py-1.5 text-left"
-                  >
-                    {item.label}
-                  </button>
-                ) : (
-                  <Link key={item.href} href={item.href} className="ui hover-underline py-1.5">
-                    {item.label}
-                  </Link>
-                )
-              )}
-              <a
-                href={SITE.instagram}
-                target="_blank"
-                rel="noreferrer"
-                className="mt-3 inline-flex items-center gap-2 text-foreground"
-              >
-                <InstagramGlyph className="h-4 w-4" />
-                <span className="ui">Instagram</span>
-              </a>
-            </div>
           </nav>
         </div>
       ) : null}
-
-      {/* Kept outside the menu panel so closing the menu does not tear the pop-up down. */}
-      {policyOpen ? <ShippingPolicyModal onClose={() => setPolicyOpen(false)} /> : null}
     </>
   );
 }

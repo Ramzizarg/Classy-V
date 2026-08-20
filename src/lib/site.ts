@@ -8,7 +8,7 @@ export const SITE = {
   email: "hello@classyv.store",
   phone: "+34 600 000 000",
   city: "Valencia, Spain",
-  instagram: "https://instagram.com",
+  instagram: "https://www.instagram.com/classyv.tn?igsh=YXR2OTJoNnA4d2s5",
   tiktok: "https://tiktok.com",
   standardShipping: 8,
 } as const;

@@ -157,9 +157,10 @@ export function SiteEntryGate() {
               <>
                 <h2
                   id="entry-gate-title"
-                  className="mt-8 text-[13px] font-bold tracking-[0.28em] text-white uppercase sm:text-[15px]"
+                  className="mt-8 text-[13px] font-bold text-white uppercase sm:text-[15px]"
                 >
-                  {SITE.name} isn&apos;t for everyone.
+                  <span className="tracking-[0.28em]">{SITE.name}</span>
+                  <span className="tracking-[0.12em] normal-case"> isn&apos;t for everyone.</span>
                 </h2>
                 <p className="mt-3 text-[10px] tracking-[0.18em] text-white/40 uppercase sm:text-[11px]">
                   This side is for those who move different.
@@ -169,7 +170,7 @@ export function SiteEntryGate() {
                   onClick={reconsider}
                   className="entry-gate__btn-solid mx-auto mt-10 block w-full max-w-[220px]"
                 >
-                  Actually, I do
+                  THEN YOU&apos;RE ONE OF US.
                 </button>
               </>
             ) : (
@@ -178,7 +179,7 @@ export function SiteEntryGate() {
                   id="entry-gate-title"
                   className="mt-8 text-[15px] font-bold tracking-[0.28em] text-white uppercase sm:text-[18px]"
                 >
-                  Do you move different?
+                  Are you really different?
                 </h2>
 
                 <div className="mx-auto mt-10 grid max-w-[280px] grid-cols-2 gap-4">
