@@ -2,6 +2,7 @@ export const SITE = {
   name: "CLASSY V",
   legalName: "CLASSY V",
   tagline: "Clothing",
+  url: "https://classy-v.com",
   description:
     "Classy V — heavyweight t-shirts, jerseys, fleece, jackets, denim and hats. Small runs, shipped worldwide.",
   email: "hello@classyv.store",

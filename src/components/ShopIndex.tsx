@@ -33,7 +33,7 @@ export function ShopIndex({
       ) : (
         <div className="product-grid">
           {products.map((product, index) => (
-            <ProductCard key={product.id} product={product} priority={index < 3} />
+            <ProductCard key={product.id} product={product} priority={index < 4} />
           ))}
         </div>
       )}

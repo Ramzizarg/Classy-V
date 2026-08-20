@@ -7,7 +7,7 @@ import type { Product } from "@/lib/types";
 export function ProductCard({
   product,
   priority = false,
-  sizes = "(min-width: 1800px) 22vw, (min-width: 768px) 30vw, 46vw",
+  sizes = "(min-width: 1800px) 22vw, (min-width: 1024px) 30vw, (min-width: 640px) 46vw, 46vw",
 }: {
   product: Product;
   priority?: boolean;

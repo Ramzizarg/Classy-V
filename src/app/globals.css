@@ -140,10 +140,15 @@ select option {
 }
 
 .product-price {
-  font-size: 13px;
-  line-height: 1.3;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.2;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
+}
+
+.product-price .text-muted.line-through {
+  font-weight: 400;
 }
 
 @media (min-width: 1024px) {
@@ -153,7 +158,7 @@ select option {
   }
 
   .product-price {
-    font-size: 15px;
+    font-size: 24px;
   }
 }
 
@@ -451,6 +456,29 @@ textarea.checkout-field {
 .site-shell {
   display: grid;
   grid-template-columns: 1fr;
+  flex: 1;
+  min-height: calc(100dvh - var(--header-height));
+}
+
+/* Site footer -------------------------------------------------------------- */
+
+.site-footer {
+  margin-top: auto;
+  border-top: 1px solid var(--line);
+  background: var(--background);
+  padding: 24px 12px 28px;
+}
+
+.site-footer__copy {
+  margin: 0;
+  text-align: center;
+  color: var(--foreground);
+}
+
+@media (min-width: 640px) {
+  .site-footer {
+    padding-inline: 20px;
+  }
 }
 
 @media (min-width: 1024px) {
@@ -486,15 +514,27 @@ textarea.checkout-field {
 }
 
 /**
- * Sparkle lockup tinted with `--brand-ink`. The PNG is used as a mask so the
- * chalk shape stays intact while the colour tracks the theme.
+ * Sparkle lockup tinted with `--brand-ink`. The hidden `<img>` sets the box size
+ * on every browser; the tint layer uses the PNG as a mask for the theme colour.
  */
 @layer components {
-  .brand-mark {
+  .brand-mark-shell {
+    position: relative;
+    display: inline-block;
+    line-height: 0;
+    transition: transform 120ms linear;
+  }
+
+  .brand-mark-size {
     display: block;
     width: var(--brand-mark-width, 118px);
-    aspect-ratio: 146 / 82;
-    max-width: 100%;
+    height: auto;
+    opacity: 0;
+  }
+
+  .brand-mark-tint {
+    position: absolute;
+    inset: 0;
     background-color: var(--brand-ink);
     -webkit-mask-image: var(--brand-mark-image);
     mask-image: var(--brand-mark-image);
@@ -504,15 +544,11 @@ textarea.checkout-field {
     mask-repeat: no-repeat;
     -webkit-mask-position: center;
     mask-position: center;
-    transition: transform 120ms linear;
+    pointer-events: none;
   }
 
-  .brand-mark.h-auto {
-    height: auto;
-  }
-
-  .brand-link:hover .brand-mark,
-  .brand-link:focus-visible .brand-mark {
+  .brand-link:hover .brand-mark-shell,
+  .brand-link:focus-visible .brand-mark-shell {
     transform: scale(1.04);
   }
 }
@@ -536,13 +572,12 @@ textarea.checkout-field {
 
 .product-grid {
   display: grid;
-  grid-template-columns: repeat(1, minmax(0, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 10px;
 }
 
 @media (min-width: 640px) {
   .product-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 20px 16px;
   }
 }
