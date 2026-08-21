@@ -13,7 +13,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   return (
     // Outer wrapper stays unzoomed so the white background always covers the
     // full viewport (otherwise the storefront black body shows through).
-    <div className="dashboard-shell min-h-screen bg-white text-black">
+    <div className="dashboard-shell min-h-screen bg-white text-black" style={{ colorScheme: "light" }}>
       <DashboardThemeSync />
       <div
         // Opts the back office out of the storefront's 11px monospace type scale,

@@ -114,9 +114,24 @@ select option {
   color: var(--foreground);
 }
 
-/* Dashboard is light; keep option text readable on Windows native menus
-   (dark storefront option colors otherwise render as white-on-white). */
-html.dashboard-light select,
+/*
+ * Dashboard selects must stay light even before `dashboard-light` lands on
+ * <html>. Scope to `.dashboard-shell` (present from first paint) and force
+ * `color-scheme: light` so Windows native menus are not white-on-white under
+ * the storefront's dark scheme / color-scheme meta.
+ */
+.dashboard-shell {
+  color-scheme: light;
+}
+
+.dashboard-shell select,
+html.dashboard-light select {
+  color-scheme: light;
+  background-color: #ffffff;
+  color: #000000;
+}
+
+.dashboard-shell select option,
 html.dashboard-light select option {
   background-color: #ffffff;
   color: #000000;
