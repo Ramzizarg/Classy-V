@@ -75,6 +75,14 @@ body {
   overscroll-behavior-x: none;
 }
 
+/* Back office: white page canvas; header stays black in DashboardHeader. */
+html.dashboard-light,
+html.dashboard-light body {
+  background: #ffffff;
+  color: #000000;
+  color-scheme: light;
+}
+
 ::selection {
   background: var(--foreground);
   color: var(--background);
@@ -1066,7 +1074,7 @@ textarea.checkout-field {
 .order-check__ring,
 .order-check__tick {
   fill: none;
-  stroke: var(--foreground);
+  stroke: #22c55e;
   animation: order-draw 460ms ease-out both;
 }
 

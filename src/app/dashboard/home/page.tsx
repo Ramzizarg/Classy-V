@@ -391,18 +391,18 @@ export default function DashboardHomePage() {
       {/* Hero Section Editor */}
       {activeTab === "hero" && (
         <div className="space-y-6">
-          <div className="rounded-lg border border-zinc-700 bg-black p-4 sm:p-6 space-y-5">
-            <h2 className="text-sm font-bold uppercase tracking-wider text-white flex items-center gap-2">
+          <div className="rounded-lg border border-zinc-200 bg-white p-4 sm:p-6 space-y-5 shadow-sm">
+            <h2 className="text-sm font-bold uppercase tracking-wider text-black flex items-center gap-2">
               <Type className="h-4 w-4" />
               Hero section
             </h2>
 
             <div className="space-y-1.5">
-              <label className="block text-xs font-semibold uppercase tracking-wider text-white">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-black">
                 Hero images (carousel)
               </label>
               <div className="flex flex-col sm:flex-row gap-3 items-start">
-                <label className="inline-flex items-center gap-2 px-4 py-2 bg-white text-black border border-white rounded text-xs font-semibold uppercase tracking-wider cursor-pointer hover:bg-zinc-100 hover:border-zinc-100 transition-colors">
+                <label className="inline-flex items-center gap-2 px-4 py-2 bg-zinc-100 text-black border border-zinc-300 rounded text-xs font-semibold uppercase tracking-wider cursor-pointer hover:bg-zinc-200 hover:border-zinc-400 transition-colors">
                   <Upload className="h-4 w-4" />
                   {heroUploading ? "Upload…" : "Add image(s)"}
                   <input
@@ -473,7 +473,7 @@ export default function DashboardHomePage() {
                         heroImagePositionsDesktop: [],
                       }))
                     }
-                    className="inline-flex items-center gap-2 px-4 py-2 border border-zinc-600 rounded text-zinc-300 text-xs font-semibold uppercase tracking-wider hover:bg-zinc-800 hover:text-white transition-colors"
+                    className="inline-flex items-center gap-2 px-4 py-2 border border-zinc-300 rounded text-zinc-600 text-xs font-semibold uppercase tracking-wider hover:bg-zinc-100 hover:text-black transition-colors"
                   >
                     <Trash2 className="h-4 w-4" />
                     Clear list
@@ -496,11 +496,11 @@ export default function DashboardHomePage() {
                         className={`flex items-center gap-2 rounded border p-2 transition-colors ${
                           index === selectedHeroPreviewIndex
                             ? "border-white bg-zinc-800"
-                            : "border-zinc-700 bg-zinc-900"
+                            : "border-zinc-200 bg-zinc-50"
                         }`}
                         onClick={() => setSelectedHeroPreviewIndex(index)}
                       >
-                        <div className="relative h-12 w-16 shrink-0 overflow-hidden rounded border border-zinc-700 bg-black">
+                        <div className="relative h-12 w-16 shrink-0 overflow-hidden rounded border border-zinc-200 bg-zinc-100">
                           <img
                             src={url}
                             alt={`Hero ${index + 1}`}
@@ -509,7 +509,7 @@ export default function DashboardHomePage() {
                           />
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className="truncate text-xs text-zinc-300">{url}</p>
+                          <p className="truncate text-xs text-zinc-600">{url}</p>
                           <p className="text-[10px] text-zinc-500">
                             {index === 0 ? "Main image (shown first)" : `Position ${index + 1}`}
                             {" · "}
@@ -559,7 +559,7 @@ export default function DashboardHomePage() {
                                   };
                                 })
                               }
-                              className="rounded border border-zinc-700 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-zinc-300 hover:bg-zinc-800"
+                              className="rounded border border-zinc-300 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-zinc-600 hover:bg-zinc-100"
                             >
                               ↑
                             </button>
@@ -604,7 +604,7 @@ export default function DashboardHomePage() {
                                   };
                                 })
                               }
-                              className="rounded border border-zinc-700 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-zinc-300 hover:bg-zinc-800"
+                              className="rounded border border-zinc-300 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-zinc-600 hover:bg-zinc-100"
                             >
                               ↓
                             </button>
@@ -736,10 +736,10 @@ export default function DashboardHomePage() {
               )}
             </div>
 
-            <div className="rounded-lg border border-zinc-600 bg-zinc-900/80 p-4 space-y-3">
+            <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-4 space-y-3">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-wider text-white">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-black">
                     Hero texts & buttons
                   </p>
                   <p className="text-[11px] text-zinc-400 mt-1">
@@ -770,7 +770,7 @@ export default function DashboardHomePage() {
               }`}
             >
               <div className="space-y-1.5">
-                <label className="block text-xs font-semibold uppercase tracking-wider text-white">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-black">
                   Collection name
                 </label>
                 <div className="flex gap-2 items-center">
@@ -779,13 +779,13 @@ export default function DashboardHomePage() {
                     value={content.heroCollection}
                     onChange={(e) => updateField("heroCollection", e.target.value)}
                     placeholder="Empty = hidden"
-                    className="flex-1 min-w-0 border border-zinc-600 bg-white text-black placeholder:text-zinc-400 rounded px-3 py-2 text-sm focus:outline-none focus:border-white transition-colors"
+                    className="flex-1 min-w-0 border border-zinc-300 bg-white text-black placeholder:text-zinc-400 rounded px-3 py-2 text-sm focus:outline-none focus:border-black transition-colors"
                   />
                   <input
                     type="color"
                     value={(content.heroCollectionColor || "#ffffff").replace(/^([^#])/, "#$1")}
                     onChange={(e) => updateField("heroCollectionColor", e.target.value)}
-                    className="w-9 h-9 rounded border border-zinc-600 cursor-pointer bg-white p-0.5"
+                    className="w-9 h-9 rounded border border-zinc-300 cursor-pointer bg-white p-0.5"
                     title="Text color"
                   />
                 </div>
@@ -795,7 +795,7 @@ export default function DashboardHomePage() {
             <div
               className={`space-y-1.5 ${content.heroShowOverlay ? "" : "opacity-45 pointer-events-none"}`}
             >
-              <label className="block text-xs font-semibold uppercase tracking-wider text-white">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-black">
                 Main title (use \n for a line break)
               </label>
               <div className="flex gap-2 items-center">
@@ -806,13 +806,13 @@ export default function DashboardHomePage() {
                     updateField("heroHeadline", e.target.value.replace(/\\n/g, "\n"))
                   }
                   placeholder="Empty = hidden"
-                  className="flex-1 min-w-0 border border-zinc-600 bg-white text-black placeholder:text-zinc-400 rounded px-3 py-2 text-sm focus:outline-none focus:border-white transition-colors"
+                  className="flex-1 min-w-0 border border-zinc-300 bg-white text-black placeholder:text-zinc-400 rounded px-3 py-2 text-sm focus:outline-none focus:border-black transition-colors"
                 />
                 <input
                   type="color"
                   value={(content.heroHeadlineColor || "#ffffff").replace(/^([^#])/, "#$1")}
                   onChange={(e) => updateField("heroHeadlineColor", e.target.value)}
-                  className="w-9 h-9 rounded border border-zinc-600 cursor-pointer bg-white p-0.5"
+                  className="w-9 h-9 rounded border border-zinc-300 cursor-pointer bg-white p-0.5"
                   title="Text color"
                 />
               </div>
@@ -821,7 +821,7 @@ export default function DashboardHomePage() {
             <div
               className={`space-y-1.5 ${content.heroShowOverlay ? "" : "opacity-45 pointer-events-none"}`}
             >
-              <label className="block text-xs font-semibold uppercase tracking-wider text-white">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-black">
                 Description
               </label>
               <div className="flex gap-2 items-start">
@@ -830,13 +830,13 @@ export default function DashboardHomePage() {
                   onChange={(e) => updateField("heroDescription", e.target.value)}
                   rows={2}
                   placeholder="Empty = hidden"
-                  className="flex-1 min-w-0 border border-zinc-600 bg-white text-black placeholder:text-zinc-400 rounded px-3 py-2 text-sm focus:outline-none focus:border-white transition-colors resize-none"
+                  className="flex-1 min-w-0 border border-zinc-300 bg-white text-black placeholder:text-zinc-400 rounded px-3 py-2 text-sm focus:outline-none focus:border-black transition-colors resize-none"
                 />
                 <input
                   type="color"
                   value={(content.heroDescriptionColor || "#ffffff").replace(/^([^#])/, "#$1")}
                   onChange={(e) => updateField("heroDescriptionColor", e.target.value)}
-                  className="w-9 h-9 rounded border border-zinc-600 cursor-pointer bg-white p-0.5 shrink-0 mt-1"
+                  className="w-9 h-9 rounded border border-zinc-300 cursor-pointer bg-white p-0.5 shrink-0 mt-1"
                   title="Text color"
                 />
               </div>
@@ -848,7 +848,7 @@ export default function DashboardHomePage() {
               }`}
             >
               <div className="space-y-1.5">
-                <label className="block text-xs font-semibold uppercase tracking-wider text-white">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-black">
                   Main button
                 </label>
                 <input
@@ -856,11 +856,11 @@ export default function DashboardHomePage() {
                   value={content.heroButtonText}
                   onChange={(e) => updateField("heroButtonText", e.target.value)}
                   placeholder="Empty = hidden (e.g. Shop now)"
-                  className="w-full border border-zinc-600 bg-white text-black placeholder:text-zinc-400 rounded px-3 py-2 text-sm focus:outline-none focus:border-white transition-colors"
+                  className="w-full border border-zinc-300 bg-white text-black placeholder:text-zinc-400 rounded px-3 py-2 text-sm focus:outline-none focus:border-black transition-colors"
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="block text-xs font-semibold uppercase tracking-wider text-white">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-black">
                   Secondary button
                 </label>
                 <input
@@ -868,7 +868,7 @@ export default function DashboardHomePage() {
                   value={content.heroSecondaryButtonText ?? ""}
                   onChange={(e) => updateField("heroSecondaryButtonText", e.target.value)}
                   placeholder="Empty = hidden (e.g. See new arrivals)"
-                  className="w-full border border-zinc-600 bg-white text-black placeholder:text-zinc-400 rounded px-3 py-2 text-sm focus:outline-none focus:border-white transition-colors"
+                  className="w-full border border-zinc-300 bg-white text-black placeholder:text-zinc-400 rounded px-3 py-2 text-sm focus:outline-none focus:border-black transition-colors"
                 />
               </div>
             </div>
@@ -934,8 +934,8 @@ export default function DashboardHomePage() {
       {/* Banner (scrolling phrases at the top of the site) */}
       {activeTab === "bandeau" && (
         <div className="space-y-6">
-          <div className="rounded-lg border border-zinc-700 bg-black p-4 sm:p-6 space-y-5">
-            <h2 className="text-sm font-bold uppercase tracking-wider text-white flex items-center gap-2">
+          <div className="rounded-lg border border-zinc-200 bg-white p-4 sm:p-6 space-y-5 shadow-sm">
+            <h2 className="text-sm font-bold uppercase tracking-wider text-black flex items-center gap-2">
               <PanelTop className="h-4 w-4" />
               Banner phrases
             </h2>
@@ -951,12 +951,12 @@ export default function DashboardHomePage() {
                     value={phrase}
                     onChange={(e) => updateBannerPhrase(index, e.target.value)}
                     placeholder="New phrase"
-                    className="flex-1 min-w-0 border border-zinc-600 bg-white text-black placeholder:text-zinc-400 rounded px-3 py-2 text-sm focus:outline-none focus:border-white transition-colors"
+                    className="flex-1 min-w-0 border border-zinc-300 bg-white text-black placeholder:text-zinc-400 rounded px-3 py-2 text-sm focus:outline-none focus:border-black transition-colors"
                   />
                   <button
                     type="button"
                     onClick={() => removeBannerPhrase(index)}
-                    className="p-2 border border-zinc-600 rounded text-zinc-400 hover:text-red-400 hover:border-red-400 transition-colors shrink-0"
+                    className="p-2 border border-zinc-300 rounded text-zinc-500 hover:text-red-500 hover:border-red-400 transition-colors shrink-0"
                     title="Delete"
                     disabled={(content.bannerPhrases || []).length <= 1}
                   >
@@ -967,7 +967,7 @@ export default function DashboardHomePage() {
               <button
                 type="button"
                 onClick={addBannerPhrase}
-                className="inline-flex items-center gap-2 px-4 py-2 border border-zinc-600 rounded text-zinc-300 text-xs font-semibold uppercase tracking-wider hover:bg-zinc-800 hover:text-white transition-colors"
+                className="inline-flex items-center gap-2 px-4 py-2 border border-zinc-300 rounded text-zinc-600 text-xs font-semibold uppercase tracking-wider hover:bg-zinc-100 hover:text-black transition-colors"
               >
                 <Plus className="h-4 w-4" />
                 Add a phrase
@@ -980,14 +980,14 @@ export default function DashboardHomePage() {
       {/* Products Section Editor */}
       {activeTab === "products" && (
         <div className="space-y-6">
-          <div className="rounded-lg border border-zinc-700 bg-black p-4 sm:p-6 space-y-5">
-            <h2 className="text-sm font-bold uppercase tracking-wider text-white flex items-center gap-2">
+          <div className="rounded-lg border border-zinc-200 bg-white p-4 sm:p-6 space-y-5 shadow-sm">
+            <h2 className="text-sm font-bold uppercase tracking-wider text-black flex items-center gap-2">
               <ShoppingBag className="h-4 w-4" />
               Products carousel
             </h2>
 
             <div className="space-y-1.5">
-              <label className="block text-xs font-semibold uppercase tracking-wider text-white">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-black">
                 Section title
               </label>
               <input
@@ -995,19 +995,19 @@ export default function DashboardHomePage() {
                 value={content.carouselTitle}
                 onChange={(e) => updateField("carouselTitle", e.target.value)}
                 placeholder="e.g. The Latest /n Arrivals"
-                className="w-full sm:max-w-md border border-zinc-600 bg-white text-black placeholder:text-zinc-400 rounded px-3 py-2 text-sm focus:outline-none focus:border-white transition-colors"
+                className="w-full sm:max-w-md border border-zinc-300 bg-white text-black placeholder:text-zinc-400 rounded px-3 py-2 text-sm focus:outline-none focus:border-black transition-colors"
               />
               <p className="text-[10px] text-zinc-400">Use /n for a line break (e.g. The Latest /n Arrivals)</p>
             </div>
 
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <label className="block text-xs font-semibold uppercase tracking-wider text-white">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-black">
                   Products ({content.products.length})
                 </label>
                 <button
                   onClick={addProduct}
-                  className="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wider text-white hover:text-zinc-300 transition-colors"
+                  className="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wider text-black hover:text-zinc-600 transition-colors"
                 >
                   <Plus className="h-3.5 w-3.5" />
                   Add
@@ -1018,7 +1018,7 @@ export default function DashboardHomePage() {
                 {content.products.map((product, index) => (
                   <div
                     key={index}
-                    className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 p-3 border border-zinc-600 rounded bg-zinc-800"
+                    className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 p-3 border border-zinc-200 rounded bg-zinc-50"
                   >
                     <div className="flex items-center gap-2 shrink-0">
                       <span className="text-xs font-bold text-zinc-400 w-6 text-center">{index + 1}</span>
@@ -1027,7 +1027,7 @@ export default function DashboardHomePage() {
                           type="button"
                           onClick={() => moveProduct(index, "up")}
                           disabled={index === 0}
-                          className="p-0.5 text-zinc-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed"
+                          className="p-0.5 text-zinc-400 hover:text-black disabled:opacity-30 disabled:cursor-not-allowed"
                           aria-label="Move up"
                         >
                           <ChevronUp className="h-4 w-4" />
@@ -1036,7 +1036,7 @@ export default function DashboardHomePage() {
                           type="button"
                           onClick={() => moveProduct(index, "down")}
                           disabled={index === content.products.length - 1}
-                          className="p-0.5 text-zinc-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed"
+                          className="p-0.5 text-zinc-400 hover:text-black disabled:opacity-30 disabled:cursor-not-allowed"
                           aria-label="Move down"
                         >
                           <ChevronDown className="h-4 w-4" />
@@ -1046,7 +1046,7 @@ export default function DashboardHomePage() {
                     <select
                       value={product.product_id ?? ""}
                       onChange={(e) => selectProduct(index, e.target.value)}
-                      className="flex-1 min-w-0 border border-zinc-600 bg-white text-black rounded px-3 py-1.5 text-sm focus:outline-none focus:border-white"
+                      className="flex-1 min-w-0 border border-zinc-300 bg-white text-black rounded px-3 py-1.5 text-sm focus:outline-none focus:border-black"
                     >
                       <option value="">Select product…</option>
                       {shopProducts.map((p) => (
@@ -1076,8 +1076,8 @@ export default function DashboardHomePage() {
       {/* Categories Section Editor */}
       {activeTab === "categories" && (
         <div className="space-y-6">
-          <div className="rounded-lg border border-zinc-700 bg-black p-4 sm:p-6 space-y-5">
-            <h2 className="text-sm font-bold uppercase tracking-wider text-white flex items-center gap-2">
+          <div className="rounded-lg border border-zinc-200 bg-white p-4 sm:p-6 space-y-5 shadow-sm">
+            <h2 className="text-sm font-bold uppercase tracking-wider text-black flex items-center gap-2">
               <LayoutGrid className="h-4 w-4" />
               Categories grid
             </h2>
@@ -1085,23 +1085,23 @@ export default function DashboardHomePage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <div className="space-y-3">
                 <div className="space-y-1.5">
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-white">
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-black">
                     Category 1 – Name
                   </label>
                   <input
                     type="text"
                     value={content.category1Name}
                     onChange={(e) => updateField("category1Name", e.target.value)}
-                    className="w-full border border-zinc-600 bg-white text-black placeholder:text-zinc-400 rounded px-3 py-2 text-sm focus:outline-none focus:border-white transition-colors"
+                    className="w-full border border-zinc-300 bg-white text-black placeholder:text-zinc-400 rounded px-3 py-2 text-sm focus:outline-none focus:border-black transition-colors"
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-white flex items-center gap-2">
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-black flex items-center gap-2">
                     <ImageIcon className="h-3.5 w-3.5" />
                     Category 1 image
                   </label>
                   <div className="flex flex-col gap-2">
-                    <label className="inline-flex items-center gap-2 px-4 py-2 bg-white text-black border border-white rounded text-xs font-semibold uppercase tracking-wider cursor-pointer hover:bg-zinc-100 hover:border-zinc-100 transition-colors w-fit">
+                    <label className="inline-flex items-center gap-2 px-4 py-2 bg-zinc-100 text-black border border-zinc-300 rounded text-xs font-semibold uppercase tracking-wider cursor-pointer hover:bg-zinc-200 hover:border-zinc-400 transition-colors w-fit">
                       <Upload className="h-4 w-4" />
                       {cat1Uploading ? "Upload…" : "Choose an image"}
                       <input
@@ -1147,23 +1147,23 @@ export default function DashboardHomePage() {
 
               <div className="space-y-3">
                 <div className="space-y-1.5">
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-white">
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-black">
                     Category 2 – Name
                   </label>
                   <input
                     type="text"
                     value={content.category2Name}
                     onChange={(e) => updateField("category2Name", e.target.value)}
-                    className="w-full border border-zinc-600 bg-white text-black placeholder:text-zinc-400 rounded px-3 py-2 text-sm focus:outline-none focus:border-white transition-colors"
+                    className="w-full border border-zinc-300 bg-white text-black placeholder:text-zinc-400 rounded px-3 py-2 text-sm focus:outline-none focus:border-black transition-colors"
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-white flex items-center gap-2">
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-black flex items-center gap-2">
                     <ImageIcon className="h-3.5 w-3.5" />
                     Category 2 image
                   </label>
                   <div className="flex flex-col gap-2">
-                    <label className="inline-flex items-center gap-2 px-4 py-2 bg-white text-black border border-white rounded text-xs font-semibold uppercase tracking-wider cursor-pointer hover:bg-zinc-100 hover:border-zinc-100 transition-colors w-fit">
+                    <label className="inline-flex items-center gap-2 px-4 py-2 bg-zinc-100 text-black border border-zinc-300 rounded text-xs font-semibold uppercase tracking-wider cursor-pointer hover:bg-zinc-200 hover:border-zinc-400 transition-colors w-fit">
                       <Upload className="h-4 w-4" />
                       {cat2Uploading ? "Upload…" : "Choose an image"}
                       <input
@@ -1230,33 +1230,33 @@ export default function DashboardHomePage() {
       {/* Footer / Newsletter Section Editor */}
       {activeTab === "footer" && (
         <div className="space-y-6">
-          <div className="rounded-lg border border-zinc-700 bg-black p-4 sm:p-6 space-y-5">
-            <h2 className="text-sm font-bold uppercase tracking-wider text-white flex items-center gap-2">
+          <div className="rounded-lg border border-zinc-200 bg-white p-4 sm:p-6 space-y-5 shadow-sm">
+            <h2 className="text-sm font-bold uppercase tracking-wider text-black flex items-center gap-2">
               <Mail className="h-4 w-4" />
               Newsletter & Footer
             </h2>
 
             <div className="space-y-1.5">
-              <label className="block text-xs font-semibold uppercase tracking-wider text-white">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-black">
                 Newsletter text
               </label>
               <textarea
                 value={content.newsletterText}
                 onChange={(e) => updateField("newsletterText", e.target.value)}
                 rows={2}
-                className="w-full border border-zinc-600 bg-white text-black placeholder:text-zinc-400 rounded px-3 py-2 text-sm focus:outline-none focus:border-white transition-colors resize-none"
+                className="w-full border border-zinc-300 bg-white text-black placeholder:text-zinc-400 rounded px-3 py-2 text-sm focus:outline-none focus:border-black transition-colors resize-none"
               />
             </div>
 
             <div className="space-y-1.5">
-              <label className="block text-xs font-semibold uppercase tracking-wider text-white">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-black">
                 Social handle
               </label>
               <input
                 type="text"
                 value={content.socialHandle}
                 onChange={(e) => updateField("socialHandle", e.target.value)}
-                className="w-full sm:max-w-xs border border-zinc-600 bg-white text-black placeholder:text-zinc-400 rounded px-3 py-2 text-sm focus:outline-none focus:border-white transition-colors"
+                className="w-full sm:max-w-xs border border-zinc-300 bg-white text-black placeholder:text-zinc-400 rounded px-3 py-2 text-sm focus:outline-none focus:border-black transition-colors"
               />
             </div>
           </div>
@@ -1266,9 +1266,9 @@ export default function DashboardHomePage() {
       {/* Coming soon / Password gate */}
       {activeTab === "comingSoon" && (
         <div className="space-y-6">
-          <div className="rounded-lg border border-zinc-700 bg-black p-4 sm:p-6 space-y-5">
+          <div className="rounded-lg border border-zinc-200 bg-white p-4 sm:p-6 space-y-5 shadow-sm">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <h2 className="text-sm font-bold uppercase tracking-wider text-white flex items-center gap-2">
+              <h2 className="text-sm font-bold uppercase tracking-wider text-black flex items-center gap-2">
                 <Clock className="h-4 w-4" />
                 Coming soon (block site)
               </h2>
@@ -1299,14 +1299,14 @@ export default function DashboardHomePage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <div className="space-y-2">
-                <label className="block text-xs font-semibold uppercase tracking-wider text-white">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-black">
                   Enable gate
                 </label>
                 <button
                   type="button"
                   onClick={() => setComingSoon((p) => ({ ...p, enabled: !p.enabled }))}
                   className={`w-full sm:w-fit px-4 py-2 rounded text-xs font-bold uppercase tracking-wider border transition-colors ${
-                    comingSoon.enabled ? "bg-emerald-600 border-emerald-600 text-white" : "bg-transparent border-zinc-600 text-zinc-300 hover:border-white hover:text-white"
+                    comingSoon.enabled ? "bg-emerald-600 border-emerald-600 text-white" : "bg-transparent border-zinc-300 text-zinc-600 hover:border-black hover:text-black"
                   }`}
                 >
                   {comingSoon.enabled ? "Enabled" : "Disabled"}
@@ -1317,7 +1317,7 @@ export default function DashboardHomePage() {
               </div>
 
               <div className="space-y-2">
-                <label className="block text-xs font-semibold uppercase tracking-wider text-white">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-black">
                   Countdown end time
                 </label>
                 <div className="flex flex-wrap gap-2">
@@ -1332,7 +1332,7 @@ export default function DashboardHomePage() {
                       key={p.label}
                       type="button"
                       onClick={() => setEndIn(p.minutes)}
-                      className="px-3 py-2 border border-zinc-600 rounded text-[10px] font-bold uppercase tracking-wider text-zinc-200 hover:border-white hover:text-white transition-colors"
+                      className="px-3 py-2 border border-zinc-300 rounded text-[10px] font-bold uppercase tracking-wider text-zinc-700 hover:border-black hover:text-black transition-colors"
                     >
                       {p.label}
                     </button>
@@ -1352,7 +1352,7 @@ export default function DashboardHomePage() {
                       }
                       setEndFromParts(datePart, timePart);
                     }}
-                    className="w-full border border-zinc-600 bg-white text-black rounded px-3 py-2 text-sm focus:outline-none focus:border-white transition-colors"
+                    className="w-full border border-zinc-300 bg-white text-black rounded px-3 py-2 text-sm focus:outline-none focus:border-black transition-colors"
                   />
                   <input
                     type="time"
@@ -1363,14 +1363,14 @@ export default function DashboardHomePage() {
                       if (!datePart || !timePart) return;
                       setEndFromParts(datePart, timePart);
                     }}
-                    className="w-full border border-zinc-600 bg-white text-black rounded px-3 py-2 text-sm focus:outline-none focus:border-white transition-colors"
+                    className="w-full border border-zinc-300 bg-white text-black rounded px-3 py-2 text-sm focus:outline-none focus:border-black transition-colors"
                   />
                 </div>
 
                 <button
                   type="button"
                   onClick={() => setComingSoon((p) => ({ ...p, endAt: "" }))}
-                  className="text-[10px] uppercase tracking-widest text-zinc-400 hover:text-white w-fit"
+                  className="text-[10px] uppercase tracking-widest text-zinc-500 hover:text-black w-fit"
                 >
                   Clear time
                 </button>
@@ -1378,12 +1378,12 @@ export default function DashboardHomePage() {
             </div>
 
             <div className="space-y-2">
-              <label className="block text-xs font-semibold uppercase tracking-wider text-white flex items-center gap-2">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-black flex items-center gap-2">
                 <ImageIcon className="h-3.5 w-3.5" />
                 Background image (1920×1080)
               </label>
               <div className="flex flex-col sm:flex-row gap-3 items-start">
-                <label className="inline-flex items-center gap-2 px-4 py-2 bg-white text-black border border-white rounded text-xs font-semibold uppercase tracking-wider cursor-pointer hover:bg-zinc-100 hover:border-zinc-100 transition-colors">
+                <label className="inline-flex items-center gap-2 px-4 py-2 bg-zinc-100 text-black border border-zinc-300 rounded text-xs font-semibold uppercase tracking-wider cursor-pointer hover:bg-zinc-200 hover:border-zinc-400 transition-colors">
                   <Upload className="h-4 w-4" />
                   {comingSoonUploading ? "Upload…" : "Choose image"}
                   <input
@@ -1413,7 +1413,7 @@ export default function DashboardHomePage() {
                   <button
                     type="button"
                     onClick={() => setComingSoon((p) => ({ ...p, heroImageUrl: "" }))}
-                    className="inline-flex items-center gap-2 px-4 py-2 border border-zinc-600 rounded text-zinc-300 text-xs font-semibold uppercase tracking-wider hover:bg-zinc-800 hover:text-white transition-colors"
+                    className="inline-flex items-center gap-2 px-4 py-2 border border-zinc-300 rounded text-zinc-600 text-xs font-semibold uppercase tracking-wider hover:bg-zinc-100 hover:text-black transition-colors"
                   >
                     <Trash2 className="h-4 w-4" />
                     Remove image
@@ -1434,17 +1434,17 @@ export default function DashboardHomePage() {
               )}
             </div>
 
-            <div className="rounded-lg border border-zinc-600/80 bg-zinc-950 p-4 space-y-3">
+            <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-4 space-y-3">
               <div className="flex items-center justify-between gap-4">
                 <div className="flex items-center gap-2">
-                  <Lock className="h-4 w-4 text-white/80" />
-                  <p className="text-xs font-bold uppercase tracking-wider text-white">Password (optional)</p>
+                  <Lock className="h-4 w-4 text-zinc-600" />
+                  <p className="text-xs font-bold uppercase tracking-wider text-black">Password (optional)</p>
                 </div>
                 <button
                   type="button"
                   onClick={() => setComingSoon((p) => ({ ...p, requirePassword: !p.requirePassword }))}
                   className={`px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider border rounded ${
-                    comingSoon.requirePassword ? "bg-white text-black border-white" : "bg-transparent text-zinc-300 border-zinc-600 hover:border-white hover:text-white"
+                    comingSoon.requirePassword ? "bg-black text-white border-black" : "bg-transparent text-zinc-600 border-zinc-300 hover:border-black hover:text-black"
                   }`}
                 >
                   {comingSoon.requirePassword ? "Required" : "No password"}
@@ -1453,7 +1453,7 @@ export default function DashboardHomePage() {
               {comingSoon.requirePassword && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
                   <div className="space-y-1.5">
-                    <label className="block text-[10px] font-semibold uppercase tracking-wider text-zinc-300">
+                    <label className="block text-[10px] font-semibold uppercase tracking-wider text-zinc-600">
                       Set / change password
                     </label>
                     <div className="relative">
@@ -1461,7 +1461,7 @@ export default function DashboardHomePage() {
                         type={showNewComingSoonPassword ? "text" : "password"}
                         value={comingSoon.newPassword || ""}
                         onChange={(e) => setComingSoon((p) => ({ ...p, newPassword: e.target.value }))}
-                        className="w-full border border-zinc-600 bg-white text-black placeholder:text-zinc-400 rounded px-3 py-2 pr-10 text-sm focus:outline-none focus:border-white transition-colors"
+                        className="w-full border border-zinc-300 bg-white text-black placeholder:text-zinc-400 rounded px-3 py-2 pr-10 text-sm focus:outline-none focus:border-black transition-colors"
                         placeholder="New password"
                       />
                       <button
@@ -1480,18 +1480,18 @@ export default function DashboardHomePage() {
                       Current password: <span className="font-semibold">{comingSoonHasPassword ? "set" : "not set"}</span>
                     </p>
                     {lastSavedComingSoonPassword ? (
-                      <div className="mt-2 rounded border border-zinc-700 bg-zinc-900/40 p-2.5">
+                      <div className="mt-2 rounded border border-zinc-200 bg-zinc-50 p-2.5">
                         <p className="text-[10px] uppercase tracking-widest text-zinc-400 mb-1">
                           Last saved password (this browser)
                         </p>
                         <div className="flex items-center gap-2">
-                          <code className="flex-1 text-xs text-white/90 break-all">
+                          <code className="flex-1 text-xs text-zinc-800 break-all">
                             {showLastSavedComingSoonPassword ? lastSavedComingSoonPassword : "••••••••••"}
                           </code>
                           <button
                             type="button"
                             onClick={() => setShowLastSavedComingSoonPassword((p) => !p)}
-                            className="p-1.5 border border-zinc-600 rounded text-zinc-300 hover:text-white hover:border-white transition-colors"
+                            className="p-1.5 border border-zinc-300 rounded text-zinc-600 hover:text-black hover:border-black transition-colors"
                             aria-label={showLastSavedComingSoonPassword ? "Hide last password" : "Show last password"}
                           >
                             {showLastSavedComingSoonPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -1503,7 +1503,7 @@ export default function DashboardHomePage() {
                                 await navigator.clipboard.writeText(lastSavedComingSoonPassword);
                               } catch {}
                             }}
-                            className="px-2.5 py-1.5 border border-zinc-600 rounded text-[10px] font-bold uppercase tracking-wider text-zinc-300 hover:text-white hover:border-white transition-colors"
+                            className="px-2.5 py-1.5 border border-zinc-300 rounded text-[10px] font-bold uppercase tracking-wider text-zinc-600 hover:text-black hover:border-black transition-colors"
                           >
                             Copy
                           </button>
@@ -1516,7 +1516,7 @@ export default function DashboardHomePage() {
                               localStorage.removeItem(CS_LAST_PASSWORD_KEY);
                             } catch {}
                           }}
-                          className="mt-2 text-[10px] uppercase tracking-widest text-zinc-500 hover:text-white"
+                          className="mt-2 text-[10px] uppercase tracking-widest text-zinc-500 hover:text-black"
                         >
                           Forget on this device
                         </button>
