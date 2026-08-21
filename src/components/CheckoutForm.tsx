@@ -12,13 +12,6 @@ import { shippingCost } from "@/lib/cart";
 import { formatPrice } from "@/lib/format";
 import { TUNISIA_GOVERNORATES } from "@/lib/site";
 
-type Step = "information" | "payment";
-
-const STEPS: { key: Step; label: string }[] = [
-  { key: "information", label: "Information" },
-  { key: "payment", label: "Payment" },
-];
-
 const EMPTY = {
   email: "",
   firstName: "",
@@ -39,7 +32,6 @@ export function CheckoutForm() {
   const { lines, subtotal, shippingRate, clearCart, hydrated } = useStore();
 
   const [placed, setPlaced] = useState<PlacedOrder | null>(null);
-  const [step, setStep] = useState<Step>("information");
   const [form, setForm] = useState(EMPTY);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -159,13 +151,8 @@ export function CheckoutForm() {
     }
   };
 
-  const submitStep = (event: React.FormEvent) => {
+  const submitCheckout = (event: React.FormEvent) => {
     event.preventDefault();
-
-    if (step !== "information") {
-      void placeOrder();
-      return;
-    }
 
     // The governorate control is not a native input, so it needs its own check.
     if (!TUNISIA_GOVERNORATES.some((entry) => entry === form.governorate)) {
@@ -173,51 +160,30 @@ export function CheckoutForm() {
       return;
     }
 
-    setStep("payment");
+    void placeOrder();
   };
-
-  const stepIndex = STEPS.findIndex((entry) => entry.key === step);
 
   return (
     <div className="flex flex-col lg:grid lg:min-h-screen lg:grid-cols-[1.1fr_0.9fr] lg:grid-rows-[auto_1fr]">
-      {/* Brand and step trail lead at every width. */}
+      {/* Brand and trail lead at every width. */}
       <header className="order-1 px-4 pt-8 pb-6 sm:px-6 lg:col-start-1 lg:row-start-1 lg:px-10 lg:pt-12 lg:pb-0">
         <div className="mx-auto w-full max-w-[420px]">
           <div className="flex justify-center">
             <BrandMark width={120} label="Classy V home" />
           </div>
 
-          <nav aria-label="Checkout steps" className="ui-sm mt-6 flex flex-wrap justify-center gap-2">
+          <nav aria-label="Checkout" className="ui-sm mt-6 flex flex-wrap justify-center gap-2">
             <Link href="/cart" className="hover-underline text-muted">
               Cart
             </Link>
-            {STEPS.map((entry, index) => {
-              const done = index < stepIndex;
-              const current = entry.key === step;
-              return (
-                <span key={entry.key} className="flex items-center gap-2">
-                  <span aria-hidden className="text-muted">
-                    ›
-                  </span>
-                  {done ? (
-                    <button
-                      type="button"
-                      onClick={() => setStep(entry.key)}
-                      className="hover-underline text-muted"
-                    >
-                      {entry.label}
-                    </button>
-                  ) : (
-                    <span
-                      aria-current={current ? "step" : undefined}
-                      className={current ? "font-bold text-foreground" : "text-muted"}
-                    >
-                      {entry.label}
-                    </span>
-                  )}
-                </span>
-              );
-            })}
+            <span className="flex items-center gap-2">
+              <span aria-hidden className="text-muted">
+                ›
+              </span>
+              <span aria-current="page" className="font-bold text-foreground">
+                Checkout
+              </span>
+            </span>
           </nav>
         </div>
       </header>
@@ -225,218 +191,148 @@ export function CheckoutForm() {
       {/* Form side — ordered after the summary on phones, left column on desktop. */}
       <div className="order-3 px-4 pt-7 pb-12 sm:px-6 lg:col-start-1 lg:row-start-2 lg:px-10 lg:pt-8">
         <div className="mx-auto w-full max-w-[420px]">
-          <form onSubmit={submitStep}>
-            {step === "information" ? (
-              <>
-                <h2 className="ui font-bold">Contact</h2>
-                <div className="mt-3">
-                  <label htmlFor="co-email" className="sr-only">
-                    Email (optional)
+          <form onSubmit={submitCheckout}>
+            <h2 className="ui font-bold">Contact</h2>
+            <div className="mt-3">
+              <label htmlFor="co-email" className="sr-only">
+                Email (optional)
+              </label>
+              <input
+                id="co-email"
+                type="email"
+                autoComplete="email"
+                placeholder="Email (optional)"
+                value={form.email}
+                onChange={(event) => update("email", event.target.value)}
+                className="checkout-field"
+              />
+            </div>
+
+            <h2 className="ui mt-7 font-bold">Delivery address</h2>
+            <div className="mt-3 grid gap-3">
+              <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
+                <div>
+                  <label htmlFor="co-first" className="sr-only">
+                    First name
                   </label>
                   <input
-                    id="co-email"
-                    type="email"
-                    autoComplete="email"
-                    placeholder="Email (optional)"
-                    value={form.email}
-                    onChange={(event) => update("email", event.target.value)}
+                    id="co-first"
+                    required
+                    autoComplete="given-name"
+                    placeholder="First name"
+                    value={form.firstName}
+                    onChange={(event) => update("firstName", event.target.value)}
                     className="checkout-field"
                   />
                 </div>
-
-                <h2 className="ui mt-7 font-bold">Delivery address</h2>
-                <div className="mt-3 grid gap-3">
-                  <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
-                    <div>
-                      <label htmlFor="co-first" className="sr-only">
-                        First name
-                      </label>
-                      <input
-                        id="co-first"
-                        required
-                        autoComplete="given-name"
-                        placeholder="First name"
-                        value={form.firstName}
-                        onChange={(event) => update("firstName", event.target.value)}
-                        className="checkout-field"
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="co-last" className="sr-only">
-                        Last name
-                      </label>
-                      <input
-                        id="co-last"
-                        required
-                        autoComplete="family-name"
-                        placeholder="Last name"
-                        value={form.lastName}
-                        onChange={(event) => update("lastName", event.target.value)}
-                        className="checkout-field"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label htmlFor="co-governorate" className="sr-only">
-                      Governorate
-                    </label>
-                    <GovernorateSelect
-                      id="co-governorate"
-                      options={TUNISIA_GOVERNORATES}
-                      value={form.governorate}
-                      invalid={Boolean(governorateError)}
-                      onChange={(governorate) => {
-                        update("governorate", governorate);
-                        setGovernorateError("");
-                      }}
-                    />
-                    {governorateError ? (
-                      <p className="ui-sm mt-1.5 text-danger">{governorateError}</p>
-                    ) : null}
-                  </div>
-
-                  <div>
-                    <label htmlFor="co-address" className="sr-only">
-                      Address
-                    </label>
-                    <input
-                      id="co-address"
-                      required
-                      autoComplete="street-address"
-                      placeholder="Address"
-                      value={form.address}
-                      onChange={(event) => update("address", event.target.value)}
-                      className="checkout-field"
-                    />
-                  </div>
-
-                  <div>
-                    <label htmlFor="co-phone" className="sr-only">
-                      Phone
-                    </label>
-                    <input
-                      id="co-phone"
-                      required
-                      type="tel"
-                      inputMode="tel"
-                      autoComplete="tel"
-                      placeholder="Phone"
-                      value={form.phone}
-                      onChange={(event) => update("phone", event.target.value)}
-                      className="checkout-field"
-                    />
-                    <p className="ui-sm mt-1.5 text-muted">
-                      We call this number to confirm your delivery.
-                    </p>
-                  </div>
-                </div>
-
-                <p className="ui-sm mt-4 text-muted">Delivery in Tunisia only.</p>
-              </>
-            ) : (
-              <>
-                <div className="rounded-xl border border-line">
-                  {[
-                    { label: "Contact", value: form.email.trim() || form.phone.trim() },
-                    {
-                      label: "Deliver to",
-                      value: [form.address, form.governorate]
-                        .filter((part) => part.trim().length > 0)
-                        .join(", "),
-                    },
-                  ].map((row) => (
-                    <div
-                      key={row.label}
-                      className="flex items-start gap-3 border-b border-line px-4 py-3 last:border-b-0"
-                    >
-                      <span className="ui-sm w-20 shrink-0 text-muted">{row.label}</span>
-                      <span className="ui-sm min-w-0 flex-1 break-words">{row.value}</span>
-                      <button
-                        type="button"
-                        onClick={() => setStep("information")}
-                        className="ui-sm hover-underline shrink-0 text-muted"
-                      >
-                        Change
-                      </button>
-                    </div>
-                  ))}
-                </div>
-
-                <h2 className="ui mt-7 font-bold">Delivery</h2>
-                <div className="mt-3 flex items-center justify-between gap-3 rounded-xl border border-line px-4 py-4">
-                  <span className="ui">Standard delivery</span>
-                  <span className="checkout-amount tabular-nums">
-                    {shipping === 0 ? "Free" : formatPrice(shipping)}
-                  </span>
-                </div>
-                <p className="ui-sm mt-2 text-muted">
-                  Delivered anywhere in Tunisia within 48 working hours.
-                </p>
-
-                <h2 className="ui mt-7 font-bold">Payment</h2>
-                <div className="mt-3 rounded-xl border border-foreground px-4 py-4">
-                  <span className="ui block font-bold">Cash on delivery</span>
-                  <span className="ui-sm mt-2 block text-muted">
-                    Pay the courier when your parcel arrives. Nothing is charged now.
-                  </span>
-                </div>
-
-                <div className="mt-5">
-                  <label htmlFor="co-note" className="ui-sm text-muted">
-                    Order note (optional)
+                <div>
+                  <label htmlFor="co-last" className="sr-only">
+                    Last name
                   </label>
-                  <textarea
-                    id="co-note"
-                    rows={3}
-                    placeholder="Anything we should know?"
-                    value={form.note}
-                    onChange={(event) => update("note", event.target.value)}
-                    className="checkout-field mt-2"
+                  <input
+                    id="co-last"
+                    required
+                    autoComplete="family-name"
+                    placeholder="Last name"
+                    value={form.lastName}
+                    onChange={(event) => update("lastName", event.target.value)}
+                    className="checkout-field"
                   />
                 </div>
+              </div>
 
-                {error ? <p className="ui-sm mt-4 font-bold text-danger">{error}</p> : null}
-              </>
-            )}
+              <div>
+                <label htmlFor="co-governorate" className="sr-only">
+                  Governorate
+                </label>
+                <GovernorateSelect
+                  id="co-governorate"
+                  options={TUNISIA_GOVERNORATES}
+                  value={form.governorate}
+                  invalid={Boolean(governorateError)}
+                  onChange={(governorate) => {
+                    update("governorate", governorate);
+                    setGovernorateError("");
+                  }}
+                />
+                {governorateError ? (
+                  <p className="ui-sm mt-1.5 text-danger">{governorateError}</p>
+                ) : null}
+              </div>
+
+              <div>
+                <label htmlFor="co-address" className="sr-only">
+                  Address
+                </label>
+                <input
+                  id="co-address"
+                  required
+                  autoComplete="street-address"
+                  placeholder="Address"
+                  value={form.address}
+                  onChange={(event) => update("address", event.target.value)}
+                  className="checkout-field"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="co-phone" className="sr-only">
+                  Phone
+                </label>
+                <input
+                  id="co-phone"
+                  required
+                  type="tel"
+                  inputMode="tel"
+                  autoComplete="tel"
+                  placeholder="Phone"
+                  value={form.phone}
+                  onChange={(event) => update("phone", event.target.value)}
+                  className="checkout-field"
+                />
+                <p className="ui-sm mt-1.5 text-muted">
+                  We call this number to confirm your delivery.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-7">
+              <label htmlFor="co-note" className="ui-sm text-muted">
+                Order note (optional)
+              </label>
+              <textarea
+                id="co-note"
+                rows={3}
+                placeholder="Anything we should know?"
+                value={form.note}
+                onChange={(event) => update("note", event.target.value)}
+                className="checkout-field mt-2"
+              />
+            </div>
+
+            {error ? <p className="ui-sm mt-4 font-bold text-danger">{error}</p> : null}
 
             <div className="mt-7 flex flex-wrap items-center justify-between gap-3">
-              {step === "information" ? (
-                <Link href="/cart" className="ui-sm hover-underline text-muted">
-                  ‹ Return to cart
-                </Link>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => setStep("information")}
-                  className="ui-sm hover-underline text-muted"
-                >
-                  ‹ Return to information
-                </button>
-              )}
+              <Link href="/cart" className="ui-sm hover-underline text-muted">
+                ‹ Return to cart
+              </Link>
 
               <button type="submit" disabled={submitting} className="btn btn--solid">
-                {step === "information"
-                  ? "Continue to payment"
-                  : submitting
-                    ? "Placing order"
-                    : `Place order — ${formatPrice(total)}`}
+                {submitting ? "Placing order" : `Place order — ${formatPrice(total)}`}
               </button>
             </div>
 
-            {step === "payment" ? (
-              <p className="ui-sm mt-4 leading-relaxed text-muted">
-                By placing this order you accept our{" "}
-                <Link href="/legal/terms" className="u">
-                  terms of service
-                </Link>{" "}
-                and{" "}
-                <Link href="/legal/refund-policy" className="u">
-                  refund policy
-                </Link>
-                .
-              </p>
-            ) : null}
+            <p className="ui-sm mt-4 leading-relaxed text-muted">
+              By placing this order you accept our{" "}
+              <Link href="/legal/terms" className="u">
+                terms of service
+              </Link>{" "}
+              and{" "}
+              <Link href="/legal/refund-policy" className="u">
+                refund policy
+              </Link>
+              .
+            </p>
           </form>
         </div>
       </div>
