@@ -318,6 +318,22 @@ textarea.checkout-field {
 }
 
 /**
+ * iOS Safari zooms the page when a focused field is under 16px.
+ * Keep text inputs at 16px on phones so typing does not zoom.
+ */
+@media (max-width: 1023px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="button"]):not(
+      [type="submit"]
+    ):not([type="reset"]):not([type="file"]):not([type="hidden"]),
+  textarea,
+  select,
+  .field,
+  .checkout-field {
+    font-size: 16px;
+  }
+}
+
+/**
  * Governorate list. Sits on white like the fields it belongs to, since the storefront's
  * green would make the rows unreadable, and scrolls once past roughly seven rows.
  */
