@@ -114,6 +114,14 @@ select option {
   color: var(--foreground);
 }
 
+/* Dashboard is light; keep option text readable on Windows native menus
+   (dark storefront option colors otherwise render as white-on-white). */
+html.dashboard-light select,
+html.dashboard-light select option {
+  background-color: #ffffff;
+  color: #000000;
+}
+
 /* Type ---------------------------------------------------------------------- */
 
 .ui {

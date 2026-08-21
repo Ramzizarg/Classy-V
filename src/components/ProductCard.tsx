@@ -15,7 +15,6 @@ export function ProductCard({
 }) {
   const soldOut = isSoldOut(product);
   const price = effectivePrice(product);
-  const onSale = price < product.price;
   const category = getCategory(product.categorySlug);
   const headerLabel = product.badges?.[0] ?? category?.name ?? "Product";
 
@@ -55,18 +54,7 @@ export function ProductCard({
 
         <div className="product-card__footer">
           <span>{soldOut ? "Sold out" : "In stock"}</span>
-          <span className="product-card__footer-price">
-            {onSale ? (
-              <>
-                <span className="mr-2 font-normal text-muted line-through">
-                  {formatPrice(product.price)}
-                </span>
-                {formatPrice(price)}
-              </>
-            ) : (
-              formatPrice(price)
-            )}
-          </span>
+          <span className="product-card__footer-price">{formatPrice(price)}</span>
         </div>
       </Link>
     </article>

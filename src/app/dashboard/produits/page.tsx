@@ -29,6 +29,19 @@ import {
 
 const SIZES = ["Standard", "S", "M", "L", "XL", "XXL"];
 
+/** Sale is only valid when discount_price is set and strictly below regular price. */
+function productSalePrice(p: Pick<Product, "price" | "discount_price">): number | null {
+  const regular = Number(p.price);
+  const sale = p.discount_price == null ? null : Number(p.discount_price);
+  if (sale == null || Number.isNaN(sale) || Number.isNaN(regular)) return null;
+  if (sale <= 0 || sale >= regular) return null;
+  return sale;
+}
+
+function formatDt(value: number): string {
+  return Number.isInteger(value) ? String(value) : value.toFixed(2);
+}
+
 function CouponCountdown({ expiresAt, startsAt }: { expiresAt: string | null; startsAt: string | null }) {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
@@ -334,14 +347,21 @@ export default function DashboardProduitsPage() {
         }
       }
 
+      const regularPrice = parseFloat(price) || 0;
+      const saleRaw = discountPrice.trim() ? parseFloat(discountPrice) : null;
+      if (saleRaw != null && !Number.isNaN(saleRaw) && saleRaw >= regularPrice) {
+        throw new Error("Sale price must be lower than the regular price.");
+      }
+      const salePrice = saleRaw != null && !Number.isNaN(saleRaw) && saleRaw > 0 ? saleRaw : null;
+
       const payload: Record<string, unknown> = {
         name: name.trim(),
         description: hasDescription ? description : null,
-        price: parseFloat(price) || 0,
+        price: regularPrice,
         stock: totalStock,
         category_id: categoryId ? parseInt(categoryId, 10) : null,
         images: allImages,
-        discount_price: discountPrice ? parseFloat(discountPrice) : null,
+        discount_price: salePrice,
         size_guide_image: sizeGuideUrl || null,
         measurement_table: measurementRows.length > 0 ? measurementRows.map((r) => [...r]) : null,
         sizes: sizePayload,
@@ -1230,7 +1250,7 @@ export default function DashboardProduitsPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-medium text-black mb-1.5">
-                  Price (DT) <span className="text-red-500">*</span>
+                  Regular price (DT) <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="number"
@@ -1255,11 +1275,24 @@ export default function DashboardProduitsPage() {
                 {(() => {
                   const p = parseFloat(price);
                   const d = parseFloat(discountPrice);
-                  if (p > 0 && !Number.isNaN(d) && d >= 0 && d < p) {
-                    const percent = Math.round(((p - d) / p) * 100);
-                    return <p className="mt-1 text-xs text-center text-red-600 font-medium">{percent} % off</p>;
+                  if (!discountPrice.trim()) {
+                    return <p className="mt-1 text-xs text-zinc-500">Optional — must be lower than price</p>;
                   }
-                  return <p className="mt-1 text-xs text-zinc-500">Enter the original price first</p>;
+                  if (Number.isNaN(d) || d < 0) {
+                    return <p className="mt-1 text-xs text-red-600 font-medium">Enter a valid sale price</p>;
+                  }
+                  if (!(p > 0)) {
+                    return <p className="mt-1 text-xs text-zinc-500">Enter the original price first</p>;
+                  }
+                  if (d >= p) {
+                    return (
+                      <p className="mt-1 text-xs text-red-600 font-medium">
+                        Sale price must be lower than {p} DT
+                      </p>
+                    );
+                  }
+                  const percent = Math.round(((p - d) / p) * 100);
+                  return <p className="mt-1 text-xs text-center text-red-600 font-medium">{percent} % off</p>;
                 })()}
               </div>
             </div>
@@ -1625,14 +1658,18 @@ export default function DashboardProduitsPage() {
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-black truncate">{p.name}</p>
                     <p className="text-sm text-zinc-600">
-                      {p.discount_price != null ? (
-                        <>
-                          <span className="line-through text-zinc-400 mr-1">{p.price} DT</span>
-                          <span className="font-medium text-black">{p.discount_price} DT</span>
-                        </>
-                      ) : (
-                        <span>{p.price} DT</span>
-                      )}
+                      {(() => {
+                        const sale = productSalePrice(p);
+                        if (sale != null) {
+                          return (
+                            <>
+                              <span className="font-semibold text-black">{formatDt(sale)} DT</span>
+                              <span className="line-through text-zinc-400 ml-1.5">{formatDt(Number(p.price))} DT</span>
+                            </>
+                          );
+                        }
+                        return <span>{formatDt(Number(p.price))} DT</span>;
+                      })()}
                     </p>
                     <p className="mt-0.5 text-[11px] text-zinc-500">
                       Total stock {p.stock}
@@ -1712,10 +1749,10 @@ export default function DashboardProduitsPage() {
             <table className="w-full table-fixed text-left text-sm">
               <thead className="bg-zinc-50 border-b border-zinc-200">
                 <tr>
-                  <th className="w-[26%] px-2 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-zinc-600 sm:text-xs">Product</th>
-                  <th className="w-[12%] px-2 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-zinc-600 sm:text-xs">Price</th>
+                  <th className="w-[24%] px-2 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-zinc-600 sm:text-xs">Product</th>
+                  <th className="w-[16%] px-2 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-zinc-600 sm:text-xs">Price</th>
                   <th className="w-[6%] px-2 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-zinc-600 sm:text-xs hidden sm:table-cell">Stock</th>
-                  <th className="w-[17%] px-2 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-zinc-600 sm:text-xs hidden md:table-cell">Category</th>
+                  <th className="w-[15%] px-2 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-zinc-600 sm:text-xs hidden md:table-cell">Category</th>
                   <th className="w-[7%] px-1 py-2 text-center text-[11px] font-semibold uppercase tracking-wide text-zinc-600 sm:text-xs hidden sm:table-cell" title="Toggle between in stock and out of stock">Stock</th>
                   <th className="w-[7%] px-1 py-2 text-center text-[11px] font-semibold uppercase tracking-wide text-zinc-600 sm:text-xs hidden sm:table-cell" title="Visible on the store or coming soon">Store</th>
                   <th className="w-[18%] px-2 py-2 text-right text-[11px] font-semibold uppercase tracking-wide text-zinc-600 sm:text-xs">Actions</th>
@@ -1745,15 +1782,30 @@ export default function DashboardProduitsPage() {
                         </div>
                       </td>
                       <td className="px-2 py-2 text-black text-xs sm:text-sm">
-                        {p.discount_price != null ? (
-                          <span className="block truncate" title={`${p.price} DT → ${p.discount_price} DT`}>
-                            <span className="line-through text-zinc-400">{p.price}</span> <span className="font-medium">{p.discount_price} DT</span>
-                          </span>
-                        ) : (
-                          <span className="block truncate" title={`${p.price} DT`}>
-                            {p.price} DT
-                          </span>
-                        )}
+                        {(() => {
+                          const sale = productSalePrice(p);
+                          const regular = Number(p.price);
+                          if (sale != null) {
+                            return (
+                              <span
+                                className="flex flex-col gap-0.5 leading-tight"
+                                title={`${formatDt(regular)} DT → ${formatDt(sale)} DT`}
+                              >
+                                <span className="font-semibold text-black whitespace-nowrap">
+                                  {formatDt(sale)} DT
+                                </span>
+                                <span className="line-through text-zinc-400 whitespace-nowrap text-[11px]">
+                                  {formatDt(regular)} DT
+                                </span>
+                              </span>
+                            );
+                          }
+                          return (
+                            <span className="block whitespace-nowrap" title={`${formatDt(regular)} DT`}>
+                              {formatDt(regular)} DT
+                            </span>
+                          );
+                        })()}
                       </td>
                       <td className="px-2 py-2 hidden sm:table-cell text-zinc-600 text-center">
                         <div className="font-semibold text-black">{p.stock}</div>
