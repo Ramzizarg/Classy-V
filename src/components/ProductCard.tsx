@@ -16,12 +16,13 @@ export function ProductCard({
   const soldOut = isSoldOut(product);
   const price = effectivePrice(product);
   const category = getCategory(product.categorySlug);
-  const headerLabel = product.badges?.[0] ?? category?.name ?? "Product";
 
   return (
     <article className="product-card product-card--catalog">
       <Link href={`/collection/${product.slug}`} className="flex h-full flex-col">
-        <div className="product-card__header">{headerLabel}</div>
+        <div className="product-card__header">
+          <span className="product-card__header-category">{category?.name ?? "Product"}</span>
+        </div>
 
         <div className="product-card__body flex-1">
           <div className="media-frame product-card__media w-full">
