@@ -24,23 +24,32 @@ export function replaySplash() {
  * then again whenever `replaySplash()` is called (e.g. clicking the header logo).
  */
 export function SiteLoadSplash() {
-  const [finished, setFinished] = useState(() => {
+  const [entryOk, setEntryOk] = useState(() => {
     try {
-      return sessionStorage.getItem(SEEN_KEY) === "1";
+      return sessionStorage.getItem("classyv-entry-gate") === "yes";
     } catch {
       return false;
     }
   });
+  const [finished, setFinished] = useState(() => {
+    try {
+      return sessionStorage.getItem(SEEN_KEY) === "1";
+    } catch {
+      return true;
+    }
+  });
 
-  // Listen for explicit replay requests (logo click → home).
   useEffect(() => {
-    const handle = () => setFinished(false);
+    const handle = () => {
+      setEntryOk(true);
+      setFinished(false);
+    };
     window.addEventListener(REPLAY_EVENT, handle);
     return () => window.removeEventListener(REPLAY_EVENT, handle);
   }, []);
 
   useEffect(() => {
-    if (finished) return;
+    if (!entryOk || finished) return;
     const timer = window.setTimeout(() => {
       try {
         sessionStorage.setItem(SEEN_KEY, "1");
@@ -48,9 +57,9 @@ export function SiteLoadSplash() {
       setFinished(true);
     }, SPLASH_MS);
     return () => window.clearTimeout(timer);
-  }, [finished]);
+  }, [entryOk, finished]);
 
-  if (finished) return null;
+  if (!entryOk || finished) return null;
 
   return (
     <div className="splash" aria-hidden>

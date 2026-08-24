@@ -55,7 +55,7 @@ export function CartView() {
             </Link>
 
             <div className="flex flex-1 flex-col">
-              <Link href={`/collection/${line.slug}`} className="ui hover-underline">
+              <Link href={`/collection/${line.slug}`} className="product-card__title hover-underline">
                 {line.name}
               </Link>
               <p className="ui mt-1 text-muted text-base">{line.size}</p>

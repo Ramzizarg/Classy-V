@@ -22,7 +22,7 @@
   --price-ink: #ffffff;
   --selected-ink: #e2231a;
   /* Height of the sticky header; the brand rail pins directly beneath it. */
-  --header-height: 40px;
+  --header-height: 68px;
   /* Content stops growing past this, so zooming out keeps the layout's proportions. */
   --shell-max: 1600px;
 }
@@ -30,7 +30,7 @@
 /* The desktop bar is padded taller than the mobile one, so the rail pins lower. */
 @media (min-width: 1024px) {
   :root {
-    --header-height: 56px;
+    --header-height: 64px;
   }
 }
 
@@ -61,16 +61,23 @@ html {
   text-size-adjust: 100%;
 }
 
+/* Cover the catalog until the entry gate hydrates (or session already said yes). */
+html:not([data-entry-ok]) body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 9989;
+  background: #000;
+  pointer-events: none;
+}
+
 body {
   position: relative;
+  z-index: 0;
   min-height: 100dvh;
-  min-height: -webkit-fill-available;
-  background-color: var(--background);
-  background-image: var(--background-texture);
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  background-attachment: fixed;
+  min-height: 100svh;
+  background-color: transparent;
+  background-image: none;
   color: var(--foreground);
   font-family: ui-monospace, "SFMono-Regular", "SF Mono", Menlo, Consolas, "Liberation Mono",
     "Courier New", monospace;
@@ -81,6 +88,20 @@ body {
   overscroll-behavior-x: none;
 }
 
+/* Full-viewport texture. Avoids `background-attachment: fixed` (iOS paints it as a short strip). */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background-color: var(--background);
+  background-image: var(--background-texture);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  pointer-events: none;
+}
+
 /* Back office: white page canvas; header stays black in DashboardHeader. */
 html.dashboard-light,
 html.dashboard-light body {
@@ -88,6 +109,11 @@ html.dashboard-light body {
   background-image: none;
   color: #000000;
   color-scheme: light;
+}
+
+html.dashboard-light body::before,
+html.dashboard-light body::after {
+  display: none;
 }
 
 ::selection {
@@ -186,6 +212,10 @@ html.dashboard-light select option {
   line-height: 1.2;
   text-transform: uppercase;
   letter-spacing: 0.06em;
+}
+
+.product-price__current {
+  color: #f5d000;
 }
 
 .product-price .text-muted.line-through {
@@ -508,10 +538,23 @@ textarea.checkout-field {
 }
 
 /**
- * Opaque panels — drawers, modals, toasts — match the page background.
+ * Sidebar, cart, search, and toasts share the home-page camo.
+ * Fixed attachment is desktop-only: iOS ignores it and would fall back to black.
  */
-.camo-surface {
-  background: var(--background);
+.camo-surface,
+.brand-rail {
+  background-color: var(--background);
+  background-image: var(--background-texture);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+@media (min-width: 1024px) {
+  .camo-surface,
+  .brand-rail {
+    background-attachment: fixed;
+  }
 }
 
 .site-shell {
@@ -519,6 +562,7 @@ textarea.checkout-field {
   grid-template-columns: 1fr;
   flex: 1;
   min-height: calc(100dvh - var(--header-height));
+  min-height: calc(100svh - var(--header-height));
 }
 
 /* Site footer -------------------------------------------------------------- */
@@ -566,8 +610,9 @@ textarea.checkout-field {
 .brand-rail {
   position: sticky;
   top: var(--header-height);
-  align-self: start;
-  height: calc(100svh - var(--header-height));
+  align-self: stretch;
+  min-height: 0;
+  height: auto;
   overflow: hidden;
   padding-top: 6px;
   padding-left: 100px;
@@ -654,61 +699,14 @@ textarea.checkout-field {
   }
 }
 
-/** Catalog tile: same layout as before, frosted glass surface. */
 .product-card--catalog {
   height: 100%;
-  overflow: hidden;
-  border: 1px solid rgb(255 255 255 / 0.32);
-  border-radius: 18px;
-  background: rgb(255 255 255 / 0.12);
   color: var(--card-ink);
-  backdrop-filter: blur(22px) saturate(1.35);
-  -webkit-backdrop-filter: blur(22px) saturate(1.35);
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.28),
-    0 10px 36px rgb(0 0 0 / 0.4);
 }
 
 .product-card--catalog:focus-within {
   outline: 2px solid rgb(255 255 255 / 0.55);
   outline-offset: 2px;
-}
-
-.product-card__header {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-  padding: 10px 14px;
-  border-bottom: 1px solid rgb(255 255 255 / 0.18);
-  background: rgb(255 255 255 / 0.1);
-  color: var(--card-ink);
-  font-size: 11px;
-  line-height: 1.2;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-
-.product-card__header-category {
-  flex-shrink: 0;
-  color: var(--card-muted);
-}
-
-.product-card__header-sep {
-  flex-shrink: 0;
-  color: var(--card-muted);
-}
-
-.product-card__header-name {
-  min-width: 0;
-  overflow: hidden;
-  font-weight: 600;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.product-card__body {
-  padding: 0 0 10px;
 }
 
 .product-card__media {
@@ -717,7 +715,8 @@ textarea.checkout-field {
 }
 
 .product-card__copy {
-  padding: 10px 12px 0;
+  padding: 10px 2px 0;
+  text-align: center;
 }
 
 .product-card__title {
@@ -731,35 +730,22 @@ textarea.checkout-field {
   color: var(--card-ink);
 }
 
-.product-card__desc {
-  margin-top: 6px;
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  font-size: 11px;
-  line-height: 1.45;
-  letter-spacing: normal;
-  text-transform: none;
-  color: var(--card-muted);
-}
-
-.product-card__footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 12px 14px;
-  border-top: 1px solid rgb(255 255 255 / 0.18);
-  background: rgb(255 255 255 / 0.06);
+.product-card__footer-price {
+  margin-top: 4px;
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   font-size: 13px;
+  font-weight: 700;
   line-height: 1.2;
-  letter-spacing: normal;
-  text-transform: none;
-  color: var(--card-ink);
+  white-space: nowrap;
+  color: #f5d000;
 }
 
-.product-card__footer-price {
-  font-weight: 700;
-  white-space: nowrap;
+.product-card__sold-out {
+  margin-top: 4px;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 11px;
+  line-height: 1.2;
+  color: inherit;
 }
 
 .media-frame {

@@ -13,7 +13,7 @@ export function ShopIndex({
   note?: string;
 }) {
   return (
-    <div className="px-3 pt-2 pb-10 sm:px-5 lg:pl-20 lg:pr-48 lg:pt-12 xl:pl-28 xl:pr-72">
+    <div className="px-3 pt-2 pb-6 sm:px-5 lg:pl-20 lg:pr-48 lg:pt-6 xl:pl-28 xl:pr-72">
       {heading || note ? (
         <div className="mb-7 flex flex-wrap items-baseline gap-x-3 gap-y-1">
           {heading ? <h1 className="page-title">{heading}</h1> : null}

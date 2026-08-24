@@ -12,7 +12,7 @@ import {
 } from "react";
 import { cartCount, cartSubtotal } from "@/lib/cart";
 import * as shopStore from "@/lib/clientStore";
-import type { CartLine } from "@/lib/types";
+import type { CartLine, Product } from "@/lib/types";
 
 type StoreContextValue = {
   lines: CartLine[];
@@ -67,6 +67,21 @@ export function StoreProvider({
     },
     []
   );
+
+  useEffect(() => {
+    if (!hydrated) return;
+    let cancelled = false;
+    fetch("/api/catalog")
+      .then((res) => (res.ok ? res.json() : Promise.reject()))
+      .then((data: { products?: Product[] }) => {
+        if (cancelled || !Array.isArray(data.products)) return;
+        shopStore.refreshLinesFromCatalog(data.products);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [hydrated, cartOpen]);
 
   const showToast = useCallback((message: string) => {
     setToast(message);

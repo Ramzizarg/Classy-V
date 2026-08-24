@@ -5,8 +5,6 @@ import { createPortal } from "react-dom";
 import { usePathname } from "next/navigation";
 import { SITE } from "@/lib/site";
 
-/** Matches `SiteLoadSplash` — the question waits until the logo animation clears. */
-const SPLASH_MS = 1500;
 /** Welcome text holds, then the curtain split plays. */
 const WELCOME_MS = 1400;
 /** Duration of the curtain-open animation before unmounting. */
@@ -38,6 +36,10 @@ function writeChoice(choice: GateChoice) {
   }
 }
 
+function markEntryPassed() {
+  document.documentElement.setAttribute("data-entry-ok", "1");
+}
+
 function subscribeToEntryGate() {
   return () => {};
 }
@@ -48,14 +50,11 @@ export function SiteEntryGate() {
 
   const mounted = useSyncExternalStore(subscribeToEntryGate, () => true, () => false);
   const storedChoice = useSyncExternalStore(subscribeToEntryGate, readChoice, () => null);
-  const [phase, setPhase] = useState<GatePhase>("idle");
+  const [phase, setPhase] = useState<GatePhase>("question");
 
   useEffect(() => {
-    if (exempt || !mounted || storedChoice) return;
-
-    const timer = window.setTimeout(() => setPhase("question"), SPLASH_MS);
-    return () => window.clearTimeout(timer);
-  }, [exempt, mounted, storedChoice]);
+    if (exempt || storedChoice === "yes") markEntryPassed();
+  }, [exempt, storedChoice]);
 
   useEffect(() => {
     if (phase !== "welcome") return;
@@ -67,6 +66,7 @@ export function SiteEntryGate() {
   useEffect(() => {
     if (phase !== "opening") return;
 
+    markEntryPassed();
     const timer = window.setTimeout(() => {
       writeChoice("yes");
       setPhase("idle");

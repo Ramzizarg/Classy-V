@@ -49,14 +49,14 @@ export function ProductPurchasePanel({
         {product.name}
       </h1>
 
-      <p className="product-price mt-2 text-center text-price lg:text-left">
+      <p className="product-price mt-2 text-center lg:text-right">
         {onSale ? (
           <>
             <span className="text-muted line-through">{formatPrice(product.price)}</span>{" "}
-            <span>{formatPrice(price)}</span>
+            <span className="product-price__current">{formatPrice(price)}</span>
           </>
         ) : (
-          formatPrice(price)
+          <span className="product-price__current">{formatPrice(price)}</span>
         )}
         {soldOut ? <span className="font-bold text-foreground"> — Sold Out</span> : null}
       </p>

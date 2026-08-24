@@ -1,5 +1,5 @@
 import { CART_STORAGE_KEY, WISHLIST_STORAGE_KEY, cartLineKey, isCartLine } from "@/lib/cart";
-import type { CartLine } from "@/lib/types";
+import type { CartLine, Product } from "@/lib/types";
 
 /**
  * localStorage-backed cart/wishlist exposed as an external store so components can
@@ -122,6 +122,23 @@ export function removeLine(target: Pick<CartLine, "productId" | "size">): void {
 
 export function clearCart(): void {
   commit({ lines: [] });
+}
+
+/** Overlay live product names (and slug/image) from Neon onto stored cart lines. */
+export function refreshLinesFromCatalog(products: Product[]): void {
+  const byId = new Map(products.map((product) => [product.id, product]));
+  let changed = false;
+  const lines = state.lines.map((line) => {
+    const product = byId.get(line.productId);
+    if (!product) return line;
+    const image = product.images[0] ?? line.image;
+    if (product.name === line.name && product.slug === line.slug && image === line.image) {
+      return line;
+    }
+    changed = true;
+    return { ...line, name: product.name, slug: product.slug, image };
+  });
+  if (changed) commit({ lines });
 }
 
 /** Returns `true` when the product ended up saved. */

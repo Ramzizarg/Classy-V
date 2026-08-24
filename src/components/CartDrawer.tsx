@@ -62,12 +62,12 @@ export function CartDrawer() {
               {lines.map((line) => (
                 <article
                   key={`${line.productId}-${line.size}`}
-                  className="flex gap-3 border-b border-line px-3 py-3"
+                  className="flex gap-3 border-b border-line px-3 py-4 sm:gap-3 sm:py-3"
                 >
                   <Link
                     href={`/collection/${line.slug}`}
                     onClick={closeCart}
-                    className="media-frame h-26 w-20 shrink-0 border border-line sm:h-36 sm:w-28"
+                    className="media-frame h-32 w-24 shrink-0 border border-line sm:h-36 sm:w-28"
                   >
                     <Image
                       src={line.image}
@@ -83,35 +83,35 @@ export function CartDrawer() {
                       <Link
                         href={`/collection/${line.slug}`}
                         onClick={closeCart}
-                        className="ui hover-underline"
+                        className="product-card__title hover-underline"
                       >
                         {line.name}
                       </Link>
-                      <span className="shrink-0 text-[15px] font-bold tabular-nums sm:text-base">
+                      <span className="product-price__current shrink-0 text-[16px] font-bold tabular-nums sm:text-base">
                         {formatPrice(line.unitPrice)}
                       </span>
                     </div>
 
                     <p className="ui-sm mt-1 text-muted">Size {line.size}</p>
 
-                    <div className="mt-auto flex items-center justify-between gap-2">
+                    <div className="mt-auto flex items-center justify-between gap-2 pt-2">
                       <div className="flex items-center border border-line">
                         <button
                           type="button"
                           onClick={() => setQuantity(line, line.quantity - 1)}
                           aria-label="Decrease quantity"
-                          className="ui flex h-7 w-7 items-center justify-center hover:bg-surface"
+                          className="ui flex h-8 w-8 items-center justify-center hover:bg-surface sm:h-7 sm:w-7"
                         >
                           −
                         </button>
-                        <span className="ui flex h-7 w-8 items-center justify-center border-x border-line tabular-nums">
+                        <span className="ui flex h-8 w-9 items-center justify-center border-x border-line tabular-nums sm:h-7 sm:w-8">
                           {line.quantity}
                         </span>
                         <button
                           type="button"
                           onClick={() => setQuantity(line, line.quantity + 1)}
                           aria-label="Increase quantity"
-                          className="ui flex h-7 w-7 items-center justify-center hover:bg-surface"
+                          className="ui flex h-8 w-8 items-center justify-center hover:bg-surface sm:h-7 sm:w-7"
                         >
                           +
                         </button>
@@ -144,7 +144,7 @@ export function CartDrawer() {
               </div>
               <div className="ui mt-2 flex items-baseline justify-between font-bold">
                 <span>Total</span>
-                <span className="text-[20px] tabular-nums">{formatPrice(subtotal + shipping)}</span>
+                <span className="product-price__current text-[20px] tabular-nums">{formatPrice(subtotal + shipping)}</span>
               </div>
 
               <div className="mt-3 grid grid-cols-2 gap-2">

@@ -65,6 +65,13 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
 
   return (
     <html lang="en" className="min-h-dvh antialiased" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){var p=location.pathname;if(/^\\/(dashboard|admin|api|backoffice|login)(\\/|$)/i.test(p)){document.documentElement.setAttribute("data-entry-ok","1");return;}try{if(sessionStorage.getItem("classyv-entry-gate")==="yes")document.documentElement.setAttribute("data-entry-ok","1");}catch(e){}})();`,
+          }}
+        />
+      </head>
       {/* Extensions inject inline styles here before React loads, so ignore body attr drift. */}
       <body className="flex min-h-dvh flex-col bg-background" suppressHydrationWarning>
         <StoreProvider shippingRate={shippingRate}>
