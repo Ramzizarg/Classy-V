@@ -43,7 +43,7 @@ export function StoreShell({ children }: { children: React.ReactNode }) {
         <Suspense fallback={<div className="hidden lg:block" />}>
           <ShopRail />
         </Suspense>
-        <div className="flex min-h-full min-w-0 flex-1 flex-col">
+        <div className="flex min-h-[calc(100dvh-var(--header-height))] min-w-0 flex-1 flex-col lg:min-h-0">
           <main className="flex-1">{children}</main>
           <SiteFooter />
         </div>

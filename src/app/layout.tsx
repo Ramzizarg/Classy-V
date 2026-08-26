@@ -4,6 +4,7 @@ import { StoreShell } from "@/components/StoreShell";
 import { Toaster } from "@/components/Toaster";
 import { PresenceBeacon } from "@/components/PresenceBeacon";
 import { ComingSoonGate } from "@/components/ComingSoonGate";
+import { SiteBackground } from "@/components/SiteBackground";
 import { SiteEntryGate } from "@/components/SiteEntryGate";
 import { SiteLoadSplash } from "@/components/SiteLoadSplash";
 import { getShippingRate } from "@/lib/shipping.server";
@@ -74,6 +75,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
       </head>
       {/* Extensions inject inline styles here before React loads, so ignore body attr drift. */}
       <body className="flex min-h-dvh flex-col" suppressHydrationWarning>
+        <SiteBackground />
         <StoreProvider shippingRate={shippingRate}>
           <StoreShell>{children}</StoreShell>
           <Toaster />

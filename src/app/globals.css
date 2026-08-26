@@ -56,12 +56,12 @@ html {
   min-height: -webkit-fill-available;
   overflow-x: clip;
   color-scheme: dark;
-  /* Fallback camo for overscroll / URL-bar gaps (not only a solid black fill). */
+  /* Overscroll / rubber-band fallback matches the site camo. */
   background-color: var(--background);
   background-image: var(--background-texture);
-  background-size: 100% auto;
-  background-position: center top;
-  background-repeat: repeat-y;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
 }
@@ -94,22 +94,39 @@ body {
 }
 
 /**
- * Texture follows the full page height (not only the mobile viewport).
- * `position: fixed` + `cover` left a solid black strip on phones when scrolling.
- * Tile at page-width so long product pages stay camo instead of zooming into black.
+ * One fixed camo layer for every page height.
+ * Extends past the visual viewport so mobile URL-bar / home-indicator gaps stay textured.
  */
-body::after {
-  content: "";
-  position: absolute;
+.site-bg {
+  position: fixed;
   inset: 0;
   z-index: -1;
-  min-height: 100%;
+  width: 100%;
+  height: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+  min-height: 100lvh;
+  min-height: -webkit-fill-available;
+  pointer-events: none;
   background-color: var(--background);
   background-image: var(--background-texture);
-  background-size: 100% auto;
-  background-position: center top;
-  background-repeat: repeat-y;
-  pointer-events: none;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  transform: translateZ(0);
+}
+
+@supports (top: env(safe-area-inset-top)) {
+  .site-bg {
+    top: calc(-1 * max(env(safe-area-inset-top), 24px));
+    right: 0;
+    bottom: calc(-1 * max(env(safe-area-inset-bottom), 48px));
+    left: 0;
+    height: auto;
+    min-height: calc(
+      100lvh + max(env(safe-area-inset-top), 24px) + max(env(safe-area-inset-bottom), 48px)
+    );
+  }
 }
 
 /* Back office: white page canvas; header stays black in DashboardHeader. */
@@ -128,7 +145,7 @@ html.dashboard-light body {
 }
 
 html.dashboard-light body::before,
-html.dashboard-light body::after {
+html.dashboard-light .site-bg {
   display: none;
 }
 
@@ -554,40 +571,37 @@ textarea.checkout-field {
 }
 
 /**
- * Sidebar, cart, search, and toasts share the home-page camo.
- * Fixed attachment is desktop-only: iOS ignores it and would fall back to black.
+ * Sidebar stays clear so the fixed `.site-bg` shows through (perfect match).
+ * Drawers/search keep an opaque camo panel so content stays readable.
  */
-.camo-surface,
 .brand-rail {
-  background-color: var(--background);
+  background-color: transparent;
+  background-image: none;
+}
+
+.camo-surface {
+  background-color: rgb(0 0 0 / 0.92);
   background-image: var(--background-texture);
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
 }
 
-@media (min-width: 1024px) {
-  .camo-surface,
-  .brand-rail {
-    background-attachment: fixed;
-  }
-}
-
 .site-shell {
   display: grid;
   grid-template-columns: 1fr;
   flex: 1;
-  min-height: calc(100dvh - var(--header-height));
-  min-height: calc(100svh - var(--header-height));
+  min-height: 0;
 }
 
 /* Site footer -------------------------------------------------------------- */
 
 .site-footer {
+  /* Sit at the bottom of the page column (classic footer on short mobile pages). */
   margin-top: auto;
   border-top: 1px solid var(--line);
   background: transparent;
-  padding: 24px 12px 28px;
+  padding: 18px 12px calc(22px + env(safe-area-inset-bottom, 0px));
 }
 
 .site-footer__copy {
@@ -599,10 +613,16 @@ textarea.checkout-field {
 @media (min-width: 640px) {
   .site-footer {
     padding-inline: 20px;
+    padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
   }
 }
 
 @media (min-width: 1024px) {
+  .site-footer {
+    /* Match ShopIndex inset so the copyright lines up with the product grid. */
+    padding: 24px 12rem calc(32px + env(safe-area-inset-bottom, 0px)) 5rem;
+  }
+
   .site-shell {
     grid-template-columns: 240px minmax(0, 1fr);
     column-gap: 32px;
@@ -610,6 +630,10 @@ textarea.checkout-field {
 }
 
 @media (min-width: 1440px) {
+  .site-footer {
+    padding: 24px 18rem calc(36px + env(safe-area-inset-bottom, 0px)) 7rem;
+  }
+
   .site-shell {
     grid-template-columns: 280px minmax(0, 1fr);
     column-gap: 40px;
@@ -617,18 +641,15 @@ textarea.checkout-field {
 }
 
 /**
- * Pinned under the header for the whole scroll. `overflow: hidden` keeps the rail
- * from becoming a scroll container, so the wheel always drives the product grid
- * even while the pointer sits over the nav.
- * `display` is left to the element's `hidden lg:flex` utilities: declaring it here
- * would win over them, since unlayered rules outrank Tailwind's utilities layer.
+ * Sticky viewport rail. `align-self: start` + fixed height so a long nav list
+ * does not stretch the home page when only a few products are in the grid.
  */
 .brand-rail {
   position: sticky;
   top: var(--header-height);
-  align-self: stretch;
-  min-height: 0;
-  height: auto;
+  align-self: start;
+  height: calc(100dvh - var(--header-height));
+  max-height: calc(100dvh - var(--header-height));
   overflow: hidden;
   padding-top: 6px;
   padding-left: 100px;
