@@ -73,7 +73,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         />
       </head>
       {/* Extensions inject inline styles here before React loads, so ignore body attr drift. */}
-      <body className="flex min-h-dvh flex-col bg-background" suppressHydrationWarning>
+      <body className="flex min-h-dvh flex-col" suppressHydrationWarning>
         <StoreProvider shippingRate={shippingRate}>
           <StoreShell>{children}</StoreShell>
           <Toaster />
