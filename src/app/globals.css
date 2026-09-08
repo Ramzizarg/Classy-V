@@ -7,7 +7,7 @@
 
 :root {
   --background: #000000;
-  --background-texture: url("/images/site-bg.png");
+  --background-texture: url("/images/site-bg.png?v=2");
   --foreground: #ffffff;
   --muted: #a0a0a0;
   --line: rgb(255 255 255 / 0.28);
@@ -52,18 +52,16 @@
 html {
   width: 100%;
   max-width: 100%;
-  /* Largest viewport so Chrome/Safari URL-bar hide never leaves a black gap. */
-  min-height: 100%;
   min-height: 100dvh;
-  min-height: 100lvh;
   min-height: -webkit-fill-available;
   overflow-x: clip;
   color-scheme: dark;
+  /* Always-on fallback so overscroll / URL-bar gaps never flash solid black. */
   background-color: #050505;
   background-image: var(--background-texture);
-  background-repeat: repeat-y;
   background-size: 100vw auto;
-  background-position: center top;
+  background-position: top center;
+  background-repeat: repeat-y;
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
 }
@@ -81,15 +79,10 @@ html:not([data-entry-ok]) body::before {
 body {
   position: relative;
   z-index: 0;
-  min-height: 100%;
   min-height: 100dvh;
-  min-height: 100lvh;
   min-height: -webkit-fill-available;
   background-color: transparent;
-  background-image: var(--background-texture);
-  background-repeat: repeat-y;
-  background-size: 100vw auto;
-  background-position: center top;
+  background-image: none;
   color: var(--foreground);
   font-family: ui-monospace, "SFMono-Regular", "SF Mono", Menlo, Consolas, "Liberation Mono",
     "Courier New", monospace;
@@ -100,30 +93,33 @@ body {
   overscroll-behavior-x: none;
 }
 
-/* Keep page chrome above the fixed camo layer. */
-body > *:not(.site-bg) {
-  position: relative;
-  z-index: 1;
-}
-
 /**
- * Tiled texture, 2× viewport tall, fixed — covers URL-bar show/hide and overscroll.
- * No <img cover> (that zoomed into black grain at the bottom).
+ * Real image layer (more reliable than CSS background on iOS).
+ * Oversized past the viewport so home-indicator / Safari chrome never show black.
  */
 .site-bg {
   position: fixed;
-  top: 0;
+  top: -140px;
+  right: 0;
+  bottom: -180px;
   left: 0;
-  z-index: 0;
-  width: 100vw;
-  height: 200vh;
-  height: 200dvh;
-  height: 200lvh;
+  z-index: -1;
+  overflow: hidden;
   pointer-events: none;
-  background-image: var(--background-texture);
-  background-repeat: repeat-y;
-  background-size: 100vw auto;
-  background-position: center top;
+  background-color: #050505;
+  transform: translateZ(0);
+}
+
+.site-bg__img {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  user-select: none;
+  -webkit-user-drag: none;
 }
 
 /* Back office: white page canvas; header stays black in DashboardHeader. */
@@ -144,11 +140,6 @@ html.dashboard-light body {
 html.dashboard-light body::before,
 html.dashboard-light .site-bg {
   display: none;
-}
-
-html.dashboard-light body > *:not(.site-bg) {
-  position: static;
-  z-index: auto;
 }
 
 ::selection {
