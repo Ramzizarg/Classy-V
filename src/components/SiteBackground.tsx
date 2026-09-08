@@ -1,4 +1,4 @@
-/** Fixed full-viewport camo — independent of page height. */
+/** Fixed full-viewport camo — sits under content, never behind html black. */
 export function SiteBackground() {
   return (
     <div className="site-bg" aria-hidden="true">
@@ -8,7 +8,7 @@ export function SiteBackground() {
         alt=""
         className="site-bg__img"
         decoding="async"
-        fetchPriority="low"
+        fetchPriority="high"
       />
     </div>
   );

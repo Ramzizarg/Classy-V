@@ -52,11 +52,20 @@
 html {
   width: 100%;
   max-width: 100%;
+  min-height: 100%;
   min-height: 100dvh;
   min-height: -webkit-fill-available;
   overflow-x: clip;
   color-scheme: dark;
-  background-color: var(--background);
+  /*
+   * Always paint the camo on the root canvas (tiles down any page height).
+   * This is the last-resort fill so a black strip cannot appear.
+   */
+  background-color: #050505;
+  background-image: var(--background-texture);
+  background-repeat: repeat-y;
+  background-size: 100% auto;
+  background-position: center top;
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
 }
@@ -74,10 +83,14 @@ html:not([data-entry-ok]) body::before {
 body {
   position: relative;
   z-index: 0;
+  min-height: 100%;
   min-height: 100dvh;
   min-height: -webkit-fill-available;
   background-color: transparent;
-  background-image: none;
+  background-image: var(--background-texture);
+  background-repeat: repeat-y;
+  background-size: 100% auto;
+  background-position: center top;
   color: var(--foreground);
   font-family: ui-monospace, "SFMono-Regular", "SF Mono", Menlo, Consolas, "Liberation Mono",
     "Courier New", monospace;
@@ -88,34 +101,48 @@ body {
   overscroll-behavior-x: none;
 }
 
+/* Keep page chrome above the fixed camo layer. */
+body > *:not(.site-bg) {
+  position: relative;
+  z-index: 1;
+}
+
 /**
- * Oversized fixed layer so mobile URL-bar / home-indicator never expose solid black.
- * Real <img> paints more reliably than CSS background on iOS/Chrome.
+ * Fixed viewport camo (z-index 0, never -1) so it cannot fall behind html black.
+ * Stretched past the screen so mobile browser chrome never exposes a strip.
  */
 .site-bg {
   position: fixed;
-  top: -30vh;
+  top: 0;
   left: 0;
-  z-index: -1;
+  right: 0;
+  z-index: 0;
   width: 100%;
-  width: 100vw;
-  height: 160vh;
-  min-height: calc(100lvh + 60vh);
-  min-height: calc(100dvh + 60vh);
+  height: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+  min-height: 100lvh;
+  min-height: -webkit-fill-available;
+  /* Extra reach under the home indicator / URL bar. */
+  padding-bottom: 80px;
+  box-sizing: content-box;
   overflow: hidden;
   pointer-events: none;
-  background-color: var(--background);
-  transform: translateZ(0);
+  background-image: var(--background-texture);
+  background-repeat: repeat-y;
+  background-size: 100% auto;
+  background-position: center top;
 }
 
 .site-bg__img {
   position: absolute;
-  inset: 0;
+  top: 0;
+  left: 0;
   display: block;
   width: 100%;
-  height: 100%;
+  height: calc(100% + 80px);
   object-fit: cover;
-  object-position: center;
+  object-position: center top;
   user-select: none;
   -webkit-user-drag: none;
 }
@@ -138,6 +165,11 @@ html.dashboard-light body {
 html.dashboard-light body::before,
 html.dashboard-light .site-bg {
   display: none;
+}
+
+html.dashboard-light body > *:not(.site-bg) {
+  position: static;
+  z-index: auto;
 }
 
 ::selection {
