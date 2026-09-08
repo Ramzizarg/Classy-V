@@ -65,7 +65,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   const shippingRate = await getShippingRate();
 
   return (
-    <html lang="en" className="min-h-dvh antialiased" suppressHydrationWarning>
+    <html lang="en" className="min-h-lvh antialiased" suppressHydrationWarning>
       <head>
         <script
           dangerouslySetInnerHTML={{
@@ -74,7 +74,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         />
       </head>
       {/* Extensions inject inline styles here before React loads, so ignore body attr drift. */}
-      <body className="flex min-h-dvh flex-col" suppressHydrationWarning>
+      <body className="flex min-h-lvh flex-col" suppressHydrationWarning>
         <SiteBackground />
         <StoreProvider shippingRate={shippingRate}>
           <StoreShell>{children}</StoreShell>

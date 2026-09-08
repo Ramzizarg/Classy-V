@@ -52,19 +52,17 @@
 html {
   width: 100%;
   max-width: 100%;
+  /* Largest viewport so Chrome/Safari URL-bar hide never leaves a black gap. */
   min-height: 100%;
   min-height: 100dvh;
+  min-height: 100lvh;
   min-height: -webkit-fill-available;
   overflow-x: clip;
   color-scheme: dark;
-  /*
-   * Always paint the camo on the root canvas (tiles down any page height).
-   * This is the last-resort fill so a black strip cannot appear.
-   */
   background-color: #050505;
   background-image: var(--background-texture);
   background-repeat: repeat-y;
-  background-size: 100% auto;
+  background-size: 100vw auto;
   background-position: center top;
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
@@ -85,11 +83,12 @@ body {
   z-index: 0;
   min-height: 100%;
   min-height: 100dvh;
+  min-height: 100lvh;
   min-height: -webkit-fill-available;
   background-color: transparent;
   background-image: var(--background-texture);
   background-repeat: repeat-y;
-  background-size: 100% auto;
+  background-size: 100vw auto;
   background-position: center top;
   color: var(--foreground);
   font-family: ui-monospace, "SFMono-Regular", "SF Mono", Menlo, Consolas, "Liberation Mono",
@@ -108,43 +107,23 @@ body > *:not(.site-bg) {
 }
 
 /**
- * Fixed viewport camo (z-index 0, never -1) so it cannot fall behind html black.
- * Stretched past the screen so mobile browser chrome never exposes a strip.
+ * Tiled texture, 2× viewport tall, fixed — covers URL-bar show/hide and overscroll.
+ * No <img cover> (that zoomed into black grain at the bottom).
  */
 .site-bg {
   position: fixed;
   top: 0;
   left: 0;
-  right: 0;
   z-index: 0;
-  width: 100%;
-  height: 100%;
-  min-height: 100vh;
-  min-height: 100dvh;
-  min-height: 100lvh;
-  min-height: -webkit-fill-available;
-  /* Extra reach under the home indicator / URL bar. */
-  padding-bottom: 80px;
-  box-sizing: content-box;
-  overflow: hidden;
+  width: 100vw;
+  height: 200vh;
+  height: 200dvh;
+  height: 200lvh;
   pointer-events: none;
   background-image: var(--background-texture);
   background-repeat: repeat-y;
-  background-size: 100% auto;
+  background-size: 100vw auto;
   background-position: center top;
-}
-
-.site-bg__img {
-  position: absolute;
-  top: 0;
-  left: 0;
-  display: block;
-  width: 100%;
-  height: calc(100% + 80px);
-  object-fit: cover;
-  object-position: center top;
-  user-select: none;
-  -webkit-user-drag: none;
 }
 
 /* Back office: white page canvas; header stays black in DashboardHeader. */
