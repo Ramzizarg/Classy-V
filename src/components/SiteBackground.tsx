@@ -5,7 +5,7 @@ export function SiteBackground() {
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         className="site-bg__img"
-        src="/images/site-bg.png?v=2"
+        src="/images/site-bg.png?v=3"
         alt=""
         decoding="async"
         fetchPriority="low"

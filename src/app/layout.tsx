@@ -15,9 +15,10 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
+  /* Matches the texture's average tone so Safari's toolbar blends with the page. */
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#000000" },
-    { media: "(prefers-color-scheme: dark)", color: "#000000" },
+    { media: "(prefers-color-scheme: light)", color: "#121212" },
+    { media: "(prefers-color-scheme: dark)", color: "#121212" },
   ],
   colorScheme: "dark",
 };

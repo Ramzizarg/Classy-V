@@ -7,7 +7,9 @@
 
 :root {
   --background: #000000;
-  --background-texture: url("/images/site-bg.png?v=2");
+  --background-texture: url("/images/site-bg.png?v=3");
+  /* Average colour of the texture — any uncovered pixel blends instead of reading black. */
+  --canvas: #121212;
   --foreground: #ffffff;
   --muted: #a0a0a0;
   --line: rgb(255 255 255 / 0.28);
@@ -56,8 +58,8 @@ html {
   min-height: -webkit-fill-available;
   overflow-x: clip;
   color-scheme: dark;
-  /* Always-on fallback so overscroll / URL-bar gaps never flash solid black. */
-  background-color: #050505;
+  /* Propagates to the canvas, so overscroll and URL-bar gaps stay textured. */
+  background-color: var(--canvas);
   background-image: var(--background-texture);
   background-size: 100vw auto;
   background-position: top center;
@@ -94,20 +96,21 @@ body {
 }
 
 /**
- * Real image layer (more reliable than CSS background on iOS).
- * Oversized past the viewport so home-indicator / Safari chrome never show black.
+ * Real image layer (more reliable than a CSS background on iOS).
+ * `100lvh` is the *large* viewport, so it still covers the strip behind Safari's
+ * retractable toolbar once that collapses — where a `100%` layer leaves a gap.
  */
 .site-bg {
   position: fixed;
-  top: -140px;
-  right: 0;
-  bottom: -180px;
+  top: 0;
   left: 0;
+  width: 100%;
+  height: 100vh;
+  height: 100lvh;
   z-index: -1;
   overflow: hidden;
   pointer-events: none;
-  background-color: #050505;
-  transform: translateZ(0);
+  background-color: var(--canvas);
 }
 
 .site-bg__img {
