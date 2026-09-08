@@ -79,7 +79,7 @@ export function OrderPlacedModal({ reference, firstName, total, onClose }: Props
         className="fade-in absolute inset-0 bg-black/85"
       />
 
-      <div className="order-panel relative w-full max-w-md border border-line bg-background sm:rounded-2xl">
+      <div className="order-panel camo-surface relative w-full max-w-md border border-line sm:rounded-2xl">
         <button
           ref={closeButton}
           type="button"

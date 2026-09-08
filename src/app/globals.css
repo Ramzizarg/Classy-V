@@ -576,7 +576,7 @@ textarea.checkout-field {
 }
 
 .camo-surface {
-  background-color: rgb(0 0 0 / 0.92);
+  background-color: var(--canvas);
   background-image: var(--background-texture);
   background-size: cover;
   background-position: center;
