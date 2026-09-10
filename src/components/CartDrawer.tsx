@@ -25,7 +25,7 @@ export function CartDrawer() {
       />
 
       {/* `max-w-sm` already caps the desktop width, so the percentage only narrows phones. */}
-      <aside className="camo-surface overlay-panel absolute inset-y-0 right-0 flex w-[76%] max-w-sm flex-col border-l border-line">
+      <aside className="camo-surface drawer-panel overlay-panel absolute inset-y-0 right-0 flex w-[76%] max-w-sm flex-col border-l border-line">
         <div className="flex items-center justify-between gap-3 border-b border-line px-3 py-2.5">
           <span className="ui font-bold">Your cart</span>
           <div className="flex items-center gap-3">

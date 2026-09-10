@@ -6,22 +6,21 @@
  */
 
 :root {
-  --background: #000000;
-  --background-texture: url("/images/site-bg.png?v=3");
-  /* Average colour of the texture — any uncovered pixel blends instead of reading black. */
-  --canvas: #121212;
-  --foreground: #ffffff;
-  --muted: #a0a0a0;
-  --line: rgb(255 255 255 / 0.28);
-  --surface: #141414;
-  --card-bg: rgb(255 255 255 / 0.08);
-  --card-header: rgb(255 255 255 / 0.12);
-  --card-ink: #ffffff;
-  --card-muted: rgb(255 255 255 / 0.62);
-  --card-line: rgb(255 255 255 / 0.28);
+  --background: #f5f6f1;
+  --background-texture: none;
+  --canvas: #f5f6f1;
+  --foreground: #111111;
+  --muted: #6b6b6b;
+  --line: rgb(0 0 0 / 0.14);
+  --surface: #ebece6;
+  --card-bg: rgb(255 255 255 / 0.55);
+  --card-header: rgb(255 255 255 / 0.7);
+  --card-ink: #111111;
+  --card-muted: rgb(0 0 0 / 0.55);
+  --card-line: rgb(0 0 0 / 0.14);
   --danger: #ff6b57;
-  --brand-ink: #ffffff;
-  --price-ink: #ffffff;
+  --brand-ink: #9a2b29;
+  --price-ink: #000000;
   --selected-ink: #e2231a;
   /* Height of the sticky header; the brand rail pins directly beneath it. */
   --header-height: 68px;
@@ -57,13 +56,9 @@ html {
   min-height: 100dvh;
   min-height: -webkit-fill-available;
   overflow-x: clip;
-  color-scheme: dark;
-  /* Propagates to the canvas, so overscroll and URL-bar gaps stay textured. */
-  background-color: var(--canvas);
-  background-image: var(--background-texture);
-  background-size: 100vw auto;
-  background-position: top center;
-  background-repeat: repeat-y;
+  color-scheme: light;
+  background-color: #f5f6f1;
+  background-image: none;
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
 }
@@ -74,7 +69,7 @@ html:not([data-entry-ok]) body::before {
   position: fixed;
   inset: 0;
   z-index: 9989;
-  background: #000;
+  background: #f5f6f1;
   pointer-events: none;
 }
 
@@ -83,7 +78,7 @@ body {
   z-index: 0;
   min-height: 100dvh;
   min-height: -webkit-fill-available;
-  background-color: transparent;
+  background-color: #f5f6f1;
   background-image: none;
   color: var(--foreground);
   font-family: ui-monospace, "SFMono-Regular", "SF Mono", Menlo, Consolas, "Liberation Mono",
@@ -95,34 +90,9 @@ body {
   overscroll-behavior-x: none;
 }
 
-/**
- * Real image layer (more reliable than a CSS background on iOS).
- * `100lvh` is the *large* viewport, so it still covers the strip behind Safari's
- * retractable toolbar once that collapses — where a `100%` layer leaves a gap.
- */
+/* Solid page fill — no background image. */
 .site-bg {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100vh;
-  height: 100lvh;
-  z-index: -1;
-  overflow: hidden;
-  pointer-events: none;
-  background-color: var(--canvas);
-}
-
-.site-bg__img {
-  position: absolute;
-  inset: 0;
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center;
-  user-select: none;
-  -webkit-user-drag: none;
+  display: none;
 }
 
 /* Back office: white page canvas; header stays black in DashboardHeader. */
@@ -244,7 +214,38 @@ html.dashboard-light select option {
 }
 
 .product-price__current {
-  color: #f5d000;
+  color: #000000;
+}
+
+/* Product gallery image dots */
+.gallery-dots {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.gallery-dots__dot {
+  width: 7px;
+  height: 7px;
+  padding: 0;
+  border: 1px solid rgb(0 0 0 / 0.18);
+  border-radius: 999px;
+  background: #ffffff;
+  cursor: pointer;
+  transition: background-color 160ms ease, border-color 160ms ease, transform 160ms ease;
+}
+
+.gallery-dots__dot:hover {
+  border-color: rgb(0 0 0 / 0.4);
+}
+
+.gallery-dots__dot--active {
+  background: #000000;
+  border-color: #000000;
+  transform: scale(1.08);
 }
 
 .product-price .text-muted.line-through {
@@ -366,15 +367,15 @@ textarea.field {
 
 /**
  * Checkout runs its own focused flow, so it swaps the storefront's transparent
- * fields for solid rounded inputs that read clearly against the dark panel.
+ * fields for solid rounded inputs that read clearly against the page.
  */
 .checkout-field {
   width: 100%;
   padding: 13px 14px;
-  border: 1px solid transparent;
+  border: 1px solid #d8d9d2;
   border-radius: 10px;
   background: #ffffff;
-  color: #121212;
+  color: #171717;
   font-size: 12px;
   line-height: 1.2;
   letter-spacing: normal;
@@ -383,20 +384,20 @@ textarea.field {
 }
 
 .checkout-field::placeholder {
-  color: #6f6f6f;
+  color: #7a7a72;
   text-transform: none;
   letter-spacing: normal;
 }
 
 .checkout-field:focus {
-  border-color: #121212;
-  box-shadow: 0 0 0 2px rgb(255 255 255 / 0.35);
+  border-color: #171717;
+  box-shadow: 0 0 0 3px rgb(23 23 23 / 0.08);
 }
 
 select.checkout-field,
 .checkout-field--menu {
   appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%23121212' stroke-width='1.5'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%23171717' stroke-width='1.5'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 14px center;
   background-size: 11px;
@@ -406,7 +407,8 @@ select.checkout-field,
 
 .checkout-field--invalid,
 .checkout-field--invalid:focus {
-  border-color: #d21c1c;
+  border-color: #c62828;
+  box-shadow: 0 0 0 3px rgb(198 40 40 / 0.12);
 }
 
 textarea.checkout-field {
@@ -443,10 +445,10 @@ textarea.checkout-field {
   max-height: 252px;
   overflow-y: auto;
   padding: 6px;
-  border: 1px solid #e0e0e0;
+  border: 1px solid #d8d9d2;
   border-radius: 10px;
   background: #ffffff;
-  box-shadow: 0 14px 30px rgb(0 0 0 / 0.3);
+  box-shadow: 0 12px 28px rgb(0 0 0 / 0.12);
 }
 
 .checkout-option {
@@ -457,7 +459,7 @@ textarea.checkout-field {
   padding: 9px 10px;
   border-radius: 7px;
   background: transparent;
-  color: #121212;
+  color: #171717;
   font-size: 12px;
   line-height: 1.2;
   letter-spacing: normal;
@@ -466,7 +468,7 @@ textarea.checkout-field {
 }
 
 .checkout-option[data-active="true"] {
-  background: #f0f0f0;
+  background: #f0f1eb;
 }
 
 .checkout-option[aria-selected="true"] {
@@ -475,55 +477,82 @@ textarea.checkout-field {
 
 .checkout-menu-empty {
   padding: 10px;
-  color: #6f6f6f;
+  color: #7a7a72;
   font-size: 12px;
   letter-spacing: normal;
   text-transform: none;
 }
 
-/** Order summary column: black panel, white type. */
+/** Order summary: soft charcoal panel, warm ink, brand accent on total. */
 .checkout-summary {
-  background: #000000;
-  color: #ffffff;
-  border-color: rgb(255 255 255 / 0.22);
+  background: #1c1c1a;
+  color: #f5f6f1;
+  border-color: rgb(245 246 241 / 0.14);
 }
 
 .checkout-summary .text-muted {
-  color: rgb(255 255 255 / 0.62);
+  color: rgb(245 246 241 / 0.58);
 }
 
 .checkout-summary .border-line,
 .checkout-summary.border-y,
 .checkout-summary.border-l {
-  border-color: rgb(255 255 255 / 0.22);
+  border-color: rgb(245 246 241 / 0.14);
 }
 
-.checkout-summary .checkout-amount,
-.checkout-summary .checkout-total {
-  color: #ffffff;
+.checkout-summary .checkout-amount {
+  color: #f5f6f1;
 }
 
 .checkout-summary .checkout-total {
-  color: #facc15;
+  color: #d5d132;
 }
 
 .checkout-summary .btn {
-  border-color: #ffffff;
-  color: #ffffff;
+  border-color: rgb(245 246 241 / 0.55);
+  background: transparent;
+  color: #f5f6f1;
 }
 
 .checkout-summary .btn:hover {
-  background: #ffffff;
-  color: #000000;
+  background: #f5f6f1;
+  color: #1c1c1a;
+}
+
+.checkout-summary .btn--solid {
+  background: #f5f6f1;
+  border-color: #f5f6f1;
+  color: #1c1c1a;
+}
+
+.checkout-summary .btn--solid:hover {
+  background: transparent;
+  color: #f5f6f1;
 }
 
 .checkout-summary .media-frame {
-  border-color: rgb(255 255 255 / 0.22);
+  border-color: rgb(245 246 241 / 0.2);
+  background: #ffffff;
 }
 
 .checkout-summary .bg-foreground.text-background {
-  background: #ffffff;
-  color: #000000;
+  background: #f5f6f1;
+  color: #1c1c1a;
+}
+
+.checkout-summary .checkout-field {
+  border-color: transparent;
+  background: #f5f6f1;
+  color: #1c1c1a;
+}
+
+.checkout-summary .checkout-field::placeholder {
+  color: #7a7a72;
+}
+
+.checkout-summary .checkout-field:focus {
+  border-color: #d5d132;
+  box-shadow: 0 0 0 3px rgb(213 209 50 / 0.22);
 }
 
 /* Money in the summary is set larger than the labels around it so totals lead. */
@@ -567,8 +596,7 @@ textarea.checkout-field {
 }
 
 /**
- * Sidebar stays clear so the fixed `.site-bg` shows through (perfect match).
- * Drawers/search keep an opaque camo panel so content stays readable.
+ * Drawers / menus / toasts — solid cream, no texture image.
  */
 .brand-rail {
   background-color: transparent;
@@ -576,11 +604,8 @@ textarea.checkout-field {
 }
 
 .camo-surface {
-  background-color: var(--canvas);
-  background-image: var(--background-texture);
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
+  background-color: #f5f6f1;
+  background-image: none;
 }
 
 .site-shell {
@@ -590,49 +615,638 @@ textarea.checkout-field {
   min-height: 0;
 }
 
-/* Site footer -------------------------------------------------------------- */
-
-.site-footer {
-  /* Sit at the bottom of the page column (classic footer on short mobile pages). */
-  margin-top: auto;
-  border-top: 1px solid var(--line);
-  background: transparent;
-  padding: 18px 12px calc(22px + env(safe-area-inset-bottom, 0px));
-}
-
-.site-footer__copy {
-  margin: 0;
-  text-align: center;
-  color: var(--foreground);
-}
-
-@media (min-width: 640px) {
-  .site-footer {
-    padding-inline: 20px;
-    padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
-  }
-}
-
 @media (min-width: 1024px) {
-  .site-footer {
-    /* Match ShopIndex inset so the copyright lines up with the product grid. */
-    padding: 24px 12rem calc(32px + env(safe-area-inset-bottom, 0px)) 5rem;
-  }
-
-  .site-shell {
+  .site-shell:not(.site-shell--lookbook) {
     grid-template-columns: 240px minmax(0, 1fr);
     column-gap: 32px;
   }
 }
 
 @media (min-width: 1440px) {
-  .site-footer {
-    padding: 24px 18rem calc(36px + env(safe-area-inset-bottom, 0px)) 7rem;
-  }
-
-  .site-shell {
+  .site-shell:not(.site-shell--lookbook) {
     grid-template-columns: 280px minmax(0, 1fr);
     column-gap: 40px;
+  }
+}
+
+/* Home lookbook — illicitbloc-style dense portrait grid -------------------- */
+
+.lookbook {
+  width: 100%;
+  padding: 0 0 40px;
+}
+
+/* Mobile full-bleed hero (illicitbloc-style first screen). */
+.lookbook-hero {
+  position: relative;
+  width: 100%;
+  height: 85svh;
+  min-height: 480px;
+  overflow: hidden;
+  background: #c4b49a;
+}
+
+.lookbook-hero__img {
+  object-fit: cover;
+  object-position: center top;
+}
+
+/* Desktop: illicitbloc-style landscape banner — full photo, natural ratio. */
+@media (min-width: 1024px) {
+  .lookbook-hero--desktop {
+    height: auto;
+    min-height: 0;
+    aspect-ratio: 1024 / 521;
+  }
+
+  .lookbook-hero__img--desktop {
+    object-fit: cover;
+    object-position: center center;
+  }
+}
+
+.lookbook-hero__shade {
+  position: absolute;
+  inset: auto 0 0;
+  height: 42%;
+  background: linear-gradient(to top, rgb(0 0 0 / 0.55), transparent);
+  pointer-events: none;
+}
+
+.lookbook-hero__foot {
+  position: absolute;
+  inset: auto 0 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  max-width: 28rem;
+  margin-inline: auto;
+  padding: 0 20px calc(28px + env(safe-area-inset-bottom, 0px));
+  text-align: center;
+}
+
+.lookbook-hero__quote {
+  margin: 0;
+  width: 100%;
+  font-family: Georgia, "Times New Roman", Times, serif;
+  font-size: clamp(1.35rem, 5.5vw, 1.75rem);
+  font-weight: 700;
+  font-style: italic;
+  line-height: 1.25;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  text-wrap: pretty;
+  color: #ffffff;
+  text-shadow: 0 2px 18px rgb(0 0 0 / 0.35);
+}
+
+.lookbook-hero__brand {
+  margin: 0;
+  width: 100%;
+  font-family: Georgia, "Times New Roman", Times, serif;
+  font-size: clamp(0.55rem, 1.8vw, 0.68rem);
+  font-weight: 600;
+  font-style: normal;
+  line-height: 1.3;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #ffffff;
+  text-shadow: 0 1px 12px rgb(0 0 0 / 0.35);
+}
+
+.lookbook-hero__title {
+  margin: 0;
+  font-family: Georgia, "Times New Roman", Times, serif;
+  font-size: clamp(28px, 9vw, 40px);
+  font-weight: 700;
+  font-style: italic;
+  line-height: 1.05;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #ffffff;
+  text-shadow: 0 2px 18px rgb(0 0 0 / 0.35);
+}
+
+.lookbook-hero__cta {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #ffffff;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+/* Home: fixed transparent bar — stays on screen while you scroll. */
+.site-header--home {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: transparent;
+  color: #000000;
+}
+
+.site-header--home .brand-mark-tint {
+  background-color: #9a2b29;
+}
+
+/* Menu + cart: force black writing on cream panels. */
+.drawer-panel {
+  color: #000000;
+}
+
+.drawer-panel .text-muted,
+.drawer-panel .ui.text-muted,
+.drawer-panel .ui-sm.text-muted {
+  color: #222222;
+}
+
+.drawer-panel a,
+.drawer-panel button,
+.drawer-panel .ui,
+.drawer-panel .ui-sm,
+.drawer-panel .product-card__title {
+  color: #000000;
+}
+
+.drawer-panel .btn--solid {
+  background: #111111;
+  color: #ffffff;
+}
+
+.drawer-panel .btn--solid:hover {
+  background: transparent;
+  color: #111111;
+}
+
+.drawer-panel .product-price__current {
+  color: #000000;
+}
+
+.drawer-panel .field,
+.drawer-panel input {
+  color: #000000;
+  border-color: rgb(0 0 0 / 0.25);
+}
+
+.drawer-panel .brand-mark-tint {
+  background-color: #9a2b29;
+}
+
+.lookbook__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 14px 18px;
+}
+
+@media (min-width: 768px) {
+  .lookbook__header {
+    padding: 18px 20px 22px;
+  }
+}
+
+.lookbook__title {
+  margin: 0;
+  font-family: Georgia, "Times New Roman", Times, serif;
+  font-size: clamp(22px, 5vw, 42px);
+  font-weight: 700;
+  font-style: italic;
+  line-height: 1.05;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: #111111;
+}
+
+.lookbook__all {
+  flex-shrink: 0;
+  font-family: Georgia, "Times New Roman", Times, serif;
+  font-size: 12px;
+  font-style: italic;
+  line-height: 1.2;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #666666;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.lookbook__all:hover {
+  color: #111111;
+}
+
+.lookbook__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 40px 14px;
+  color: #111111;
+}
+
+/* Product grid — match illicitbloc cream shop wall 100%. */
+.lookbook__shop {
+  background: #f5f6f1;
+  color: #111111;
+  padding: 28px 14px 48px;
+}
+
+@media (min-width: 768px) {
+  .lookbook__shop {
+    padding: 36px 28px 64px;
+  }
+}
+
+@media (min-width: 1280px) {
+  .lookbook__shop {
+    padding: 44px 40px 80px;
+  }
+}
+
+.lookbook__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 20px;
+  row-gap: 40px;
+}
+
+@media (min-width: 768px) {
+  .lookbook__grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    column-gap: 32px;
+    row-gap: 52px;
+  }
+}
+
+@media (min-width: 1280px) {
+  .lookbook__grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    column-gap: 40px;
+    row-gap: 60px;
+  }
+}
+
+.lookbook-card {
+  min-width: 0;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.lookbook-card__link {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  color: inherit;
+  text-decoration: none;
+}
+
+.lookbook-card__media {
+  position: relative;
+  aspect-ratio: 1 / 1.05;
+  width: 100%;
+  overflow: visible;
+  background: transparent;
+}
+
+.lookbook-card__img {
+  object-fit: contain;
+  object-position: center center;
+  /* Soft floating shadow like illicitbloc cutouts */
+  filter: drop-shadow(0 12px 18px rgb(0 0 0 / 0.14));
+  transition: opacity 220ms ease;
+}
+
+.lookbook-card__img--primary {
+  opacity: 1;
+}
+
+.lookbook-card__img--secondary {
+  opacity: 0;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .lookbook-card:hover .lookbook-card__img--primary {
+    opacity: 0;
+  }
+
+  .lookbook-card:hover .lookbook-card__img--secondary {
+    opacity: 1;
+  }
+}
+
+.lookbook-card__badge {
+  position: absolute;
+  top: 8px;
+  left: 0;
+  z-index: 1;
+  padding: 3px 0;
+  color: #111111;
+  font-family: Georgia, "Times New Roman", Times, serif;
+  font-size: 10px;
+  font-style: italic;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.lookbook-card__copy {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 0 0;
+  text-align: center;
+}
+
+@media (min-width: 768px) {
+  .lookbook-card__copy {
+    padding-top: 12px;
+    gap: 8px;
+  }
+}
+
+.lookbook-card__title {
+  margin: 0;
+  max-width: 100%;
+  font-family: var(--font-instrument), "Instrument Serif", Georgia, "Times New Roman", serif;
+  font-size: 0.95rem;
+  font-weight: 500;
+  font-style: italic;
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  text-wrap: pretty;
+  color: #000000;
+  -webkit-text-stroke: 0.3px currentColor;
+}
+
+@media (min-width: 768px) {
+  .lookbook-card__title {
+    font-size: 1.05rem;
+  }
+}
+
+.lookbook-card__price {
+  margin: 0;
+  font-family: var(--font-instrument), "Instrument Serif", Georgia, "Times New Roman", serif;
+  font-size: 0.95rem;
+  font-weight: 400;
+  font-style: italic;
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+  color: #000000;
+}
+
+@media (min-width: 768px) {
+  .lookbook-card__price {
+    font-size: 1.05rem;
+  }
+}
+
+/* Full-screen search overlay ------------------------------------------------ */
+
+.search-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 220;
+  display: flex;
+  flex-direction: column;
+  background: #f5f6f1;
+  color: #111111;
+}
+
+.search-overlay__bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+  padding: 14px 16px;
+  border-bottom: 1px solid rgb(0 0 0 / 0.1);
+}
+
+.search-overlay__input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  font-family: var(--font-gelasio), Gelasio, Georgia, "Times New Roman", serif;
+  font-size: 1rem;
+  font-style: italic;
+  font-weight: 400;
+  line-height: 1.3;
+  color: #111111;
+}
+
+.search-overlay__input::placeholder {
+  color: #6b6b6b;
+  opacity: 1;
+}
+
+.search-overlay__close {
+  display: inline-flex;
+  padding: 2px;
+  color: #111111;
+}
+
+.search-overlay__body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 18px 14px calc(28px + env(safe-area-inset-bottom, 0px));
+}
+
+.search-overlay__heading {
+  margin: 0 0 16px;
+  font-family: var(--font-gelasio), Gelasio, Georgia, "Times New Roman", serif;
+  font-size: 0.95rem;
+  font-style: italic;
+  font-weight: 400;
+  color: #111111;
+}
+
+.search-overlay__empty {
+  margin: 0;
+  font-family: var(--font-gelasio), Gelasio, Georgia, "Times New Roman", serif;
+  font-size: 0.9rem;
+  font-style: italic;
+  color: #6b6b6b;
+}
+
+.search-overlay__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 22px 12px;
+}
+
+.search-overlay__card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  text-decoration: none;
+  color: inherit;
+}
+
+.search-overlay__media {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  background: transparent;
+  margin-bottom: 6px;
+}
+
+.search-overlay__img {
+  object-fit: contain;
+  object-position: center;
+}
+
+.search-overlay__title {
+  font-family: var(--font-gelasio), Gelasio, Georgia, "Times New Roman", serif;
+  font-size: 0.72rem;
+  font-style: italic;
+  font-weight: 600;
+  line-height: 1.35;
+  text-wrap: pretty;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.search-overlay__price {
+  font-family: var(--font-gelasio), Gelasio, Georgia, "Times New Roman", serif;
+  font-size: 0.72rem;
+  font-style: italic;
+  font-weight: 400;
+  line-height: 1.3;
+}
+
+@media (min-width: 768px) {
+  .search-overlay__bar {
+    padding: 18px 28px;
+  }
+
+  .search-overlay__body {
+    padding: 24px 28px 40px;
+  }
+
+  .search-overlay__grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 28px 18px;
+  }
+}
+
+/* Site footer — full-bleed white, illicitbloc-style -------------------------- */
+
+.site-footer {
+  margin-top: auto;
+  position: relative;
+  width: 100vw;
+  max-width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+  border-top: none;
+  background: #ffffff;
+  color: #111111;
+  padding: 24px 20px calc(16px + env(safe-area-inset-bottom, 0px));
+}
+
+.site-footer__inner {
+  position: relative;
+  width: 100%;
+  max-width: var(--shell-max);
+  margin-inline: auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 28px;
+}
+
+.site-footer__nav {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.site-footer__link {
+  font-family: var(--font-gelasio), Gelasio, Georgia, "Times New Roman", serif;
+  font-size: clamp(0.8rem, 1.8vw, 0.95rem);
+  font-style: italic;
+  font-weight: 400;
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+  color: #111111;
+  text-decoration: none;
+}
+
+.site-footer__link:hover {
+  opacity: 0.65;
+}
+
+.site-footer__brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding-bottom: 2px;
+}
+
+.site-footer .brand-mark-tint {
+  background-color: #9a2b29;
+}
+
+.site-footer__social {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.site-footer__social-link {
+  display: inline-flex;
+  color: #333333;
+  opacity: 0.9;
+}
+
+.site-footer__social-link:hover {
+  opacity: 1;
+}
+
+@media (min-width: 640px) {
+  .site-footer {
+    padding-inline: 28px;
+    padding-top: 28px;
+    padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .site-footer__inner {
+    gap: 32px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .site-footer {
+    padding: 32px 40px calc(22px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .site-footer__nav {
+    gap: 9px;
+  }
+}
+
+@media (min-width: 1440px) {
+  .site-footer {
+    padding-inline: 48px;
   }
 }
 
@@ -790,7 +1404,7 @@ textarea.checkout-field {
   font-weight: 700;
   line-height: 1.2;
   white-space: nowrap;
-  color: #f5d000;
+  color: #000000;
 }
 
 @media (min-width: 640px) {

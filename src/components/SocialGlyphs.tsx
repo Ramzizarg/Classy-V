@@ -63,7 +63,7 @@ export function MenuGlyph({ className = "h-5 w-5" }: GlyphProps) {
       aria-hidden
       className={className}
     >
-      <path d="M3 6.5h18M3 12h18M3 17.5h18" />
+      <path d="M4 9h16M4 15h16" />
     </svg>
   );
 }
@@ -95,6 +95,30 @@ export function BagGlyph({ className = "h-4 w-4" }: GlyphProps) {
         strokeWidth="1.8"
         strokeLinecap="round"
       />
+    </svg>
+  );
+}
+
+export function HeartGlyph({ className = "h-4 w-4" }: GlyphProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinejoin="round"
+      aria-hidden
+      className={className}
+    >
+      <path d="M12 20.4S3.5 15.2 3.5 9.6A4.4 4.4 0 0 1 12 7.2a4.4 4.4 0 0 1 8.5 2.4C20.5 15.2 12 20.4 12 20.4Z" />
+    </svg>
+  );
+}
+
+export function TikTokGlyph({ className = "h-4 w-4" }: GlyphProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden className={className}>
+      <path d="M14.2 3h2.1c.2 1.7 1.2 3.2 2.7 4.1v2.3a6.6 6.6 0 0 1-2.7-.7v5.6a5.9 5.9 0 1 1-5.9-5.9c.3 0 .6 0 .9.1v2.5a3.4 3.4 0 1 0 2.5 3.3V3Z" />
     </svg>
   );
 }

@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { Gelasio, Instrument_Serif } from "next/font/google";
 import { StoreProvider } from "@/components/StoreProvider";
 import { StoreShell } from "@/components/StoreShell";
 import { Toaster } from "@/components/Toaster";
@@ -11,16 +12,32 @@ import { getShippingRate } from "@/lib/shipping.server";
 import { SITE } from "@/lib/site";
 import "./globals.css";
 
+const gelasio = Gelasio({
+  subsets: ["latin"],
+  weight: ["400", "600", "700"],
+  style: ["normal", "italic"],
+  variable: "--font-gelasio",
+  display: "swap",
+});
+
+/** Editorial italic serif — matches illicitbloc product titles. */
+const instrumentSerif = Instrument_Serif({
+  subsets: ["latin"],
+  weight: "400",
+  style: ["normal", "italic"],
+  variable: "--font-instrument",
+  display: "swap",
+});
+
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  /* Matches the texture's average tone so Safari's toolbar blends with the page. */
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#121212" },
-    { media: "(prefers-color-scheme: dark)", color: "#121212" },
+    { media: "(prefers-color-scheme: light)", color: "#f5f6f1" },
+    { media: "(prefers-color-scheme: dark)", color: "#f5f6f1" },
   ],
-  colorScheme: "dark",
+  colorScheme: "light",
 };
 
 export const metadata: Metadata = {
@@ -66,7 +83,11 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   const shippingRate = await getShippingRate();
 
   return (
-    <html lang="en" className="min-h-dvh antialiased" suppressHydrationWarning>
+    <html
+      lang="en"
+      className={`min-h-dvh antialiased ${gelasio.variable} ${instrumentSerif.variable}`}
+      suppressHydrationWarning
+    >
       <head>
         <script
           dangerouslySetInnerHTML={{

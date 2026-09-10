@@ -53,27 +53,17 @@ export function ProductGallery({ images, name }: { images: string[]; name: strin
       </div>
 
       {images.length > 1 ? (
-        <div className="mt-2 flex flex-wrap justify-center gap-2">
+        <div className="gallery-dots" role="tablist" aria-label="Product images">
           {images.map((image, index) => (
             <button
-              key={image}
+              key={`${image}-${index}`}
               type="button"
+              role="tab"
               onClick={() => setActive(index)}
               aria-label={`Show view ${index + 1}`}
-              aria-current={index === active}
-              className={`media-frame aspect-square w-16 transition-opacity sm:w-20 ${
-                index === active ? "opacity-100" : "opacity-40 hover:opacity-70"
-              }`}
-            >
-              <Image
-                src={image}
-                alt=""
-                aria-hidden
-                fill
-                sizes="20vw"
-                className="h-full w-full object-contain"
-              />
-            </button>
+              aria-selected={index === active}
+              className={`gallery-dots__dot ${index === active ? "gallery-dots__dot--active" : ""}`}
+            />
           ))}
         </div>
       ) : null}

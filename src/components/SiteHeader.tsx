@@ -1,180 +1,114 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import { BrandMark } from "@/components/BrandMark";
 import { replaySplash } from "@/components/SiteLoadSplash";
+import { SearchOverlay } from "@/components/SearchOverlay";
 import { BagGlyph, MenuGlyph, SearchGlyph } from "@/components/SocialGlyphs";
 import { SocialLinks } from "@/components/SocialLinks";
 import { useStore } from "@/components/StoreProvider";
-import { formatPrice } from "@/lib/format";
-import { CATEGORIES, COLLECTIONS, effectivePrice, filterProducts } from "@/lib/products";
-import { SITE } from "@/lib/site";
-import type { Product } from "@/lib/types";
-
-const SUGGESTION_LIMIT = 6;
-
-/** Live catalog from Neon — fetched once when search opens. */
-function SearchResults({ term, onPick }: { term: string; onPick: () => void }) {
-  const [catalog, setCatalog] = useState<Product[]>([]);
-
-  useEffect(() => {
-    let cancelled = false;
-    fetch("/api/catalog")
-      .then((res) => (res.ok ? res.json() : Promise.reject()))
-      .then((data: { products?: Product[] }) => {
-        if (!cancelled) setCatalog(Array.isArray(data.products) ? data.products : []);
-      })
-      .catch(() => {
-        if (!cancelled) setCatalog([]);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  const matches = useMemo(() => filterProducts({ query: term, source: catalog }), [term, catalog]);
-  const shown = matches.slice(0, SUGGESTION_LIMIT);
-
-  if (shown.length === 0) {
-    return <p className="ui-sm px-3 py-3 text-muted">No products match</p>;
-  }
-
-  return (
-    <>
-      {shown.map((product) => (
-        <Link
-          key={product.id}
-          href={`/collection/${product.slug}`}
-          onClick={onPick}
-          className="flex items-center gap-3 border-b border-line px-3 py-2 hover:bg-surface"
-        >
-          <span className="block h-12 w-10 shrink-0 border border-line">
-            <Image
-              src={product.images[0]}
-              alt=""
-              aria-hidden
-              width={80}
-              height={100}
-              className="h-full w-full object-contain p-0.5"
-            />
-          </span>
-          <span className="ui min-w-0 flex-1">
-            {product.name}
-          </span>
-          <span className="ui shrink-0 tabular-nums text-price">
-            {formatPrice(effectivePrice(product))}
-          </span>
-        </Link>
-      ))}
-
-      {matches.length > shown.length ? (
-        <Link
-          href={`/collection?q=${encodeURIComponent(term)}`}
-          onClick={onPick}
-          className="ui-sm hover-underline block px-3 py-2 text-muted"
-        >
-          See all {matches.length} results
-        </Link>
-      ) : null}
-    </>
-  );
-}
+import { CATEGORIES, COLLECTIONS } from "@/lib/products";
 
 export function SiteHeader() {
   const pathname = usePathname();
-  const router = useRouter();
   const { count, openCart, hydrated } = useStore();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [query, setQuery] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
   const [lastPath, setLastPath] = useState(pathname);
 
-  /** Navigating away closes the menu (state adjusted during render, not in an effect). */
+  /** Navigating away closes overlays (state adjusted during render, not in an effect). */
   if (lastPath !== pathname) {
     setLastPath(pathname);
     setMenuOpen(false);
+    setSearchOpen(false);
   }
 
   useEffect(() => {
-    document.body.style.overflow = menuOpen ? "hidden" : "";
+    document.body.style.overflow = menuOpen || searchOpen ? "hidden" : "";
     return () => {
       document.body.style.overflow = "";
     };
-  }, [menuOpen]);
+  }, [menuOpen, searchOpen]);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setMenuOpen(false);
+      if (event.key === "Escape") {
+        setMenuOpen(false);
+        setSearchOpen(false);
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  const term = query.trim();
-
-  const submitSearch = (event: React.FormEvent) => {
-    event.preventDefault();
-    router.push(term ? `/collection?q=${encodeURIComponent(term)}` : "/collection");
-    setQuery("");
-  };
-
   return (
     <>
       {/*
-        Scrolls away on mobile; only the desktop bar sticks, since the rail pins beneath it.
-        No surface of its own: the page's fixed camo reads straight through, so the bar
-        never shows as a separate band against the content below it.
+        Home: fixed over the hero so it stays with you while scrolling.
+        Elsewhere: sticky bar.
       */}
-      <header className="z-[100] px-3 pt-3 pb-2 sm:px-5 lg:sticky lg:top-0 lg:pt-7 lg:pb-2">
-        {/* Mobile bar: menu left, mark centred, bag right. Yields to the open menu panel. */}
+      <header
+        className={`z-[100] bg-transparent px-3 pt-3 pb-2 text-black sm:px-5 lg:pt-7 lg:pb-2 ${
+          pathname === "/" ? "site-header--home" : "sticky top-0"
+        }`}
+      >
+        {/* Mobile: menu + search left, mark centre, bag right. */}
         <div
-          className={`shell-width items-center justify-between lg:hidden ${
-            menuOpen ? "hidden" : "flex"
+          className={`shell-width grid grid-cols-3 items-center lg:hidden ${
+            menuOpen || searchOpen ? "hidden" : ""
+          }`}
+        >
+          <div className="flex items-center justify-start gap-0.5">
+            <button
+              type="button"
+              onClick={() => setMenuOpen(true)}
+              aria-label="Open menu"
+              className="-m-1 p-1"
+            >
+              <MenuGlyph className="h-6 w-6" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setSearchOpen(true)}
+              aria-label="Search"
+              className="-m-1 p-1"
+            >
+              <SearchGlyph className="h-6 w-6" />
+            </button>
+          </div>
+
+          <div className="flex justify-center">
+            <BrandMark className="h-12 w-auto" onClick={() => replaySplash()} />
+          </div>
+
+          <div className="flex items-center justify-end">
+            <button
+              type="button"
+              onClick={openCart}
+              aria-label={`Cart (${hydrated ? count : 0})`}
+              className="-m-1 flex items-center gap-1 p-1"
+            >
+              <BagGlyph className="h-6 w-6" />
+              {hydrated && count > 0 ? <span className="ui-sm">{count}</span> : null}
+            </button>
+          </div>
+        </div>
+
+        <div
+          className={`shell-width hidden items-center justify-end gap-5 sm:gap-7 lg:flex ${
+            searchOpen ? "!hidden" : ""
           }`}
         >
           <button
             type="button"
-            onClick={() => setMenuOpen(true)}
-            aria-label="Open menu"
+            onClick={() => setSearchOpen(true)}
+            aria-label="Search"
             className="-m-1 p-1"
           >
-            <MenuGlyph className="h-6 w-6" />
+            <SearchGlyph className="h-5 w-5" />
           </button>
-
-          <BrandMark className="h-12 w-auto" onClick={() => replaySplash()} />
-
-          <button
-            type="button"
-            onClick={openCart}
-            aria-label={`Cart (${hydrated ? count : 0})`}
-            className="-m-1 flex items-center gap-1 p-1"
-          >
-            <BagGlyph className="h-6 w-6" />
-            {hydrated && count > 0 ? <span className="ui-sm">{count}</span> : null}
-          </button>
-        </div>
-
-        <div className="shell-width hidden items-center justify-end gap-5 sm:gap-7 lg:flex">
-          <div className="relative">
-            <form onSubmit={submitSearch} className="flex items-center gap-2">
-              <SearchGlyph />
-              <input
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search"
-                aria-label="Search products"
-                className="field field--line ui w-24 sm:w-40"
-              />
-            </form>
-
-            {term ? (
-              <div className="camo-surface absolute top-[calc(100%+8px)] right-0 z-20 w-80 border border-line">
-                <SearchResults term={term} onPick={() => setQuery("")} />
-              </div>
-            ) : null}
-          </div>
 
           <button type="button" onClick={openCart} className="flex items-center gap-2">
             <BagGlyph />
@@ -182,6 +116,8 @@ export function SiteHeader() {
           </button>
         </div>
       </header>
+
+      {searchOpen ? <SearchOverlay onClose={() => setSearchOpen(false)} /> : null}
 
       {menuOpen ? (
         <div className="fixed inset-0 z-[200] lg:hidden">
@@ -191,7 +127,7 @@ export function SiteHeader() {
             onClick={() => setMenuOpen(false)}
             className="absolute inset-0 bg-black/80"
           />
-          <nav className="camo-surface overlay-panel--left absolute inset-y-0 left-0 flex w-[82%] max-w-xs flex-col overflow-y-auto border-r border-line">
+          <nav className="camo-surface drawer-panel overlay-panel--left absolute inset-y-0 left-0 flex w-[82%] max-w-xs flex-col overflow-y-auto border-r border-line">
             <div className="flex items-start justify-between px-4 py-3">
               <BrandMark className="h-14 w-auto" onClick={() => replaySplash()} />
               <button
@@ -224,28 +160,23 @@ export function SiteHeader() {
               ))}
             </div>
 
-            <form onSubmit={submitSearch} className="flex items-center gap-2 px-4 pb-8">
+            <button
+              type="button"
+              onClick={() => {
+                setMenuOpen(false);
+                setSearchOpen(true);
+              }}
+              className="mx-4 mb-8 flex items-center gap-2"
+            >
               <SearchGlyph />
-              <input
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search"
-                aria-label="Search products"
-                className="field field--line ui flex-1"
-              />
-            </form>
+              <span className="ui hover-underline">Search</span>
+            </button>
 
             <div className="mx-4 border-t border-line" aria-hidden="true" />
 
             <div className="px-4 pt-6 pb-6">
               <SocialLinks />
             </div>
-
-            {term ? (
-              <div className="mx-4 mb-4 border border-line">
-                <SearchResults term={term} onPick={() => setQuery("")} />
-              </div>
-            ) : null}
           </nav>
         </div>
       ) : null}
