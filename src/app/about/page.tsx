@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 };
 
 const TIMELINE = [
-  { year: "2023", copy: "One heavyweight tee, sold out of a backpack in Valencia." },
+  { year: "2023", copy: "One heavyweight tee, sold out of a backpack in Tunis." },
   { year: "2024", copy: "First fleece programme. The Legacy hoodie becomes the house piece." },
   { year: "2025", copy: "Headwear line launches. First 500-order month." },
   { year: "2026", copy: "Season 01 — tees, fleece, outerwear, bottoms, headwear." },
@@ -27,7 +27,7 @@ export default function AboutPage() {
         </p>
         <p>
           Fabric is chosen for weight and how it ages — 300 gsm jersey, 480 gsm loopback fleece,
-          melton wool. Production stays small: a few hundred pieces per drop, cut and sewn in Europe,
+          melton wool. Production stays small: a few hundred pieces per drop, cut and sewn in Tunisia,
           washed in batches so each garment carries its own tone. When a colourway sells out, it stays
           out.
         </p>

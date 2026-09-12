@@ -55,11 +55,16 @@ export function CartView() {
             </Link>
 
             <div className="flex flex-1 flex-col">
-              <Link href={`/collection/${line.slug}`} className="product-card__title hover-underline">
-                {line.name}
-              </Link>
-              <p className="ui mt-1 text-muted text-base">{line.size}</p>
-              <p className="ui mt-1 text-yellow-400 text-lg font-bold">{formatPrice(line.unitPrice)} each</p>
+              <div className="flex items-start justify-between gap-3">
+                <Link href={`/collection/${line.slug}`} className="product-card__title hover-underline">
+                  {line.name}
+                </Link>
+                <span className="product-price__current shrink-0 text-[16px] font-bold tabular-nums sm:text-base">
+                  {formatPrice(line.unitPrice)}
+                </span>
+              </div>
+
+              <p className="ui mt-1.5 text-muted">Size {line.size}</p>
 
               <div className="mt-auto flex flex-wrap items-center justify-between gap-3 pt-3">
                 <div className="flex items-center border border-line">
@@ -67,23 +72,24 @@ export function CartView() {
                     type="button"
                     onClick={() => setQuantity(line, line.quantity - 1)}
                     aria-label="Decrease quantity"
-                    className="ui h-8 w-8"
+                    className="ui flex h-8 w-8 items-center justify-center"
                   >
                     −
                   </button>
-                  <span className="ui w-8 text-center tabular-nums">{line.quantity}</span>
+                  <span className="ui flex h-8 w-9 items-center justify-center border-x border-line tabular-nums">
+                    {line.quantity}
+                  </span>
                   <button
                     type="button"
                     onClick={() => setQuantity(line, line.quantity + 1)}
                     aria-label="Increase quantity"
-                    className="ui h-8 w-8"
+                    className="ui flex h-8 w-8 items-center justify-center"
                   >
                     +
                   </button>
                 </div>
 
                 <div className="flex items-center gap-4">
-                  <p className="ui tabular-nums text-yellow-400 text-lg font-bold">{formatPrice(line.unitPrice * line.quantity)}</p>
                   <button
                     type="button"
                     onClick={() => removeLine(line)}
@@ -107,15 +113,19 @@ export function CartView() {
 
         <div className="ui mt-3 flex justify-between">
           <span className="text-muted">Subtotal</span>
-          <span className="tabular-nums">{formatPrice(subtotal)}</span>
+          <span className="tabular-nums font-bold">{formatPrice(subtotal)}</span>
         </div>
         <div className="ui mt-1.5 flex justify-between">
           <span className="text-muted">Shipping</span>
-          <span className="tabular-nums">{shipping === 0 ? "Free" : formatPrice(shipping)}</span>
+          <span className="tabular-nums font-bold">
+            {shipping === 0 ? "Free" : formatPrice(shipping)}
+          </span>
         </div>
-        <div className="ui mt-1.5 flex justify-between border-t border-line pt-2 font-bold">
+        <div className="ui mt-2 flex items-baseline justify-between border-t border-line pt-2 font-bold">
           <span>Total</span>
-          <span className="tabular-nums">{formatPrice(subtotal + shipping)}</span>
+          <span className="product-price__current text-[20px] tabular-nums">
+            {formatPrice(subtotal + shipping)}
+          </span>
         </div>
 
         <Link href="/checkout" className="btn btn--solid mt-3 w-full">

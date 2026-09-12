@@ -50,10 +50,11 @@ export function SiteHeader() {
         Elsewhere: sticky bar.
       */}
       <header
-        className={`z-[100] bg-transparent px-3 pt-3 pb-2 text-black sm:px-5 lg:pt-7 lg:pb-2 ${
-          pathname === "/" ? "site-header--home" : "sticky top-0"
+        className={`site-header z-[100] bg-transparent px-3 pt-3 pb-2 sm:px-5 lg:pt-7 lg:pb-2 ${
+          pathname === "/" ? "site-header--home" : "sticky top-0 text-[var(--foreground)]"
         }`}
       >
+        <div className="site-top-line" aria-hidden="true" />
         {/* Mobile: menu + search left, mark centre, bag right. */}
         <div
           className={`shell-width grid grid-cols-3 items-center lg:hidden ${

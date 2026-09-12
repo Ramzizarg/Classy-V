@@ -41,6 +41,8 @@ export function CheckoutForm() {
   const [coupon, setCoupon] = useState<AppliedCoupon | null>(null);
   const [couponError, setCouponError] = useState("");
   const [checkingCode, setCheckingCode] = useState(false);
+  /** Mobile accordion for the order summary; desktop stays always open. */
+  const [summaryOpen, setSummaryOpen] = useState(false);
 
   const shipping = shippingCost(subtotal, shippingRate);
   const discount = coupon?.discount ?? 0;
@@ -172,15 +174,15 @@ export function CheckoutForm() {
             <BrandMark width={120} label="Classy V home" />
           </div>
 
-          <nav aria-label="Checkout" className="ui-sm mt-6 flex flex-wrap justify-center gap-2">
-            <Link href="/cart" className="hover-underline text-muted">
+          <nav aria-label="Checkout" className="ui-sm mt-6 flex flex-wrap justify-center gap-2 text-white">
+            <Link href="/cart" className="hover-underline text-white">
               Cart
             </Link>
             <span className="flex items-center gap-2">
-              <span aria-hidden className="text-muted">
+              <span aria-hidden className="text-white">
                 ›
               </span>
-              <span aria-current="page" className="font-bold text-foreground">
+              <span aria-current="page" className="font-bold text-white">
                 Checkout
               </span>
             </span>
@@ -338,113 +340,148 @@ export function CheckoutForm() {
       </div>
 
       {/*
-       * Summary. Ordered above the form on phones so the product and total are the first
-       * things read; on desktop it becomes the full-height right column.
+       * Summary. On phones: sticky accordion bar (open/close). On desktop: always-open
+       * right column.
        */}
-      <aside className="checkout-summary order-2 border-y border-line px-4 py-7 sm:px-6 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:border-y-0 lg:border-l lg:px-10 lg:py-12">
-        <div className="mx-auto w-full max-w-[400px]">
-          <h2 className="sr-only">Order summary</h2>
+      <aside className="checkout-summary order-2 lg:col-start-2 lg:row-span-2 lg:row-start-1">
+        <button
+          type="button"
+          className="checkout-summary__toggle lg:hidden"
+          aria-expanded={summaryOpen}
+          aria-controls="checkout-summary-panel"
+          onClick={() => setSummaryOpen((open) => !open)}
+        >
+          <span className="checkout-summary__toggle-label">
+            Order summary
+            <svg
+              className={`checkout-summary__chevron ${summaryOpen ? "checkout-summary__chevron--open" : ""}`}
+              width="12"
+              height="12"
+              viewBox="0 0 12 12"
+              aria-hidden
+            >
+              <path
+                d="M2.5 4.5 L6 8 L9.5 4.5"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </span>
+          <span className="checkout-summary__toggle-total tabular-nums">{formatPrice(total)}</span>
+        </button>
 
-          <ul className="space-y-4">
-            {lines.map((line) => (
-              <li key={`${line.productId}-${line.size}`} className="flex items-start gap-3">
-                {/* The badge sits outside the clipped frame so it is never cut off. */}
-                <span className="relative shrink-0">
-                  <span className="media-frame block h-14 w-14 rounded-lg border border-line">
-                    <Image
-                      src={line.image}
-                      alt={line.name}
-                      fill
-                      sizes="56px"
-                      className="h-full w-full object-contain p-1"
-                    />
+        <div
+          id="checkout-summary-panel"
+          className={`checkout-summary__panel ${summaryOpen ? "checkout-summary__panel--open" : ""}`}
+        >
+          <div className="checkout-summary__inner">
+            <div className="checkout-summary__body">
+            <h2 className="sr-only">Order summary</h2>
+
+            <ul className="checkout-summary__lines">
+              {lines.map((line) => (
+                <li key={`${line.productId}-${line.size}`} className="checkout-summary__line">
+                  <span className="checkout-summary__thumb">
+                    <span className="media-frame checkout-summary__thumb-frame">
+                      <Image
+                        src={line.image}
+                        alt={line.name}
+                        fill
+                        sizes="64px"
+                        className="h-full w-full object-contain p-1"
+                      />
+                    </span>
+                    <span className="checkout-summary__qty">{line.quantity}</span>
                   </span>
-                  <span className="absolute -top-2 -right-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-foreground px-1 text-[9px] font-bold text-background tabular-nums">
-                    {line.quantity}
+                  <span className="checkout-summary__line-copy">
+                    <span className="checkout-summary__line-name">{line.name}</span>
+                    <span className="checkout-summary__line-meta">{line.size}</span>
                   </span>
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="ui block">{line.name}</span>
-                  <span className="ui-sm mt-1 block text-muted">{line.size}</span>
-                </span>
-                <span className="checkout-amount shrink-0 tabular-nums">
-                  {formatPrice(line.unitPrice * line.quantity)}
-                </span>
-              </li>
-            ))}
-          </ul>
+                  <span className="checkout-summary__line-price tabular-nums">
+                    {formatPrice(line.unitPrice * line.quantity)}
+                  </span>
+                </li>
+              ))}
+            </ul>
 
-          <div className="mt-6 border-t border-line pt-5">
-            {coupon ? (
-              <div className="flex items-center justify-between gap-3">
-                <span className="ui-sm">
-                  {coupon.code} · {coupon.label}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setCoupon(null);
-                    setCouponError("");
-                  }}
-                  className="ui-sm hover-underline text-muted"
-                >
-                  Remove
-                </button>
-              </div>
-            ) : (
-              <div className="flex gap-2">
-                <label htmlFor="co-code" className="sr-only">
-                  Discount code
-                </label>
-                <input
-                  id="co-code"
-                  placeholder="Discount code"
-                  value={codeInput}
-                  onChange={(event) => setCodeInput(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter") {
-                      event.preventDefault();
-                      void applyCode();
-                    }
-                  }}
-                  className="checkout-field"
-                />
-                <button
-                  type="button"
-                  onClick={() => void applyCode()}
-                  disabled={checkingCode || !codeInput.trim()}
-                  className="btn shrink-0"
-                >
-                  {checkingCode ? "…" : "Apply"}
-                </button>
-              </div>
-            )}
+            <div className="checkout-summary__discount">
+              {coupon ? (
+                <div className="checkout-summary__coupon-applied">
+                  <span>
+                    {coupon.code} · {coupon.label}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCoupon(null);
+                      setCouponError("");
+                    }}
+                    className="checkout-summary__coupon-remove"
+                  >
+                    Remove
+                  </button>
+                </div>
+              ) : (
+                <div className="checkout-summary__coupon">
+                  <label htmlFor="co-code" className="sr-only">
+                    Discount code
+                  </label>
+                  <input
+                    id="co-code"
+                    placeholder="Discount code"
+                    value={codeInput}
+                    onChange={(event) => setCodeInput(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        event.preventDefault();
+                        void applyCode();
+                      }
+                    }}
+                    className="checkout-summary__coupon-input"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => void applyCode()}
+                    disabled={checkingCode || !codeInput.trim()}
+                    className="checkout-summary__coupon-apply"
+                  >
+                    {checkingCode ? "…" : "Apply"}
+                  </button>
+                </div>
+              )}
 
-            {couponError ? <p className="ui-sm mt-2 text-danger">{couponError}</p> : null}
-          </div>
-
-          <div className="mt-5 space-y-2.5 border-t border-line pt-5">
-            <div className="flex items-center justify-between gap-3">
-              <span className="ui text-muted">Subtotal</span>
-              <span className="checkout-amount tabular-nums">{formatPrice(subtotal)}</span>
+              {couponError ? <p className="checkout-summary__coupon-error">{couponError}</p> : null}
             </div>
-            {discount > 0 ? (
-              <div className="flex items-center justify-between gap-3">
-                <span className="ui text-muted">Discount</span>
-                <span className="checkout-amount tabular-nums">−{formatPrice(discount)}</span>
-              </div>
-            ) : null}
-            <div className="flex items-center justify-between gap-3">
-              <span className="ui text-muted">Delivery</span>
-              <span className="checkout-amount tabular-nums">
-                {shipping === 0 ? "Free" : formatPrice(shipping)}
-              </span>
-            </div>
-          </div>
 
-          <div className="mt-4 flex items-baseline justify-between gap-3 border-t border-line pt-4">
-            <span className="ui font-bold">Total</span>
-            <span className="checkout-total tabular-nums">{formatPrice(total)}</span>
+            <div className="checkout-summary__totals">
+              <div className="checkout-summary__row">
+                <span>Subtotal</span>
+                <span className="tabular-nums">{formatPrice(subtotal)}</span>
+              </div>
+              {discount > 0 ? (
+                <div className="checkout-summary__row">
+                  <span>Discount</span>
+                  <span className="tabular-nums">−{formatPrice(discount)}</span>
+                </div>
+              ) : null}
+              <div className="checkout-summary__row">
+                <span>Shipping</span>
+                <span className="tabular-nums">
+                  {shipping === 0 ? "Free" : formatPrice(shipping)}
+                </span>
+              </div>
+              <div className="checkout-summary__row checkout-summary__row--total">
+                <span>Total</span>
+                <span className="checkout-summary__grand tabular-nums">
+                  <span className="checkout-summary__currency">TND</span>
+                  {formatPrice(total)}
+                </span>
+              </div>
+            </div>
+            </div>
           </div>
         </div>
       </aside>

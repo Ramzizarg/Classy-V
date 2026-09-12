@@ -26,7 +26,7 @@ export const LEGAL_PAGES: LegalPage[] = [
         heading: "Prices and payment",
         body: [
           "Prices are shown in DT (Tunisian dinar) and include VAT where applicable. Shipping is added at checkout and shown before you confirm.",
-          "Duties and import taxes for destinations outside the European Union are payable by the receiver.",
+          "Delivery is currently available within Tunisia only.",
         ],
       },
       {

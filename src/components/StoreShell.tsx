@@ -40,20 +40,18 @@ export function StoreShell({ children }: { children: React.ReactNode }) {
   return (
     <>
       <SiteHeader />
-      <div className={`site-shell shell-width flex-1 ${isHome ? "site-shell--lookbook" : ""}`}>
-        {!isHome ? (
-          <Suspense fallback={<div className="hidden lg:block" />}>
-            <ShopRail />
-          </Suspense>
-        ) : null}
+      <div className="site-shell shell-width flex-1">
+        <Suspense fallback={<div className="hidden lg:block" />}>
+          <ShopRail />
+        </Suspense>
         <div
-          className={`flex min-w-0 flex-1 flex-col lg:min-h-0 ${
+          className={`site-shell__main flex min-w-0 flex-1 flex-col lg:min-h-0 ${
             isHome ? "min-h-dvh" : "min-h-[calc(100dvh-var(--header-height))]"
           }`}
         >
           <main className="flex-1">{children}</main>
-          <SiteFooter />
         </div>
+        <SiteFooter />
       </div>
       <CartDrawer />
     </>

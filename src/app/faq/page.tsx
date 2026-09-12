@@ -29,11 +29,11 @@ const GROUPS = [
     items: [
       {
         q: "How long does delivery take?",
-        a: "Orders leave Valencia within 48 working hours. Spain 1–2 working days, rest of Europe 3–5, worldwide 5–10.",
+        a: "Orders leave Tunis within 48 working hours. Delivery across Tunisia typically takes 1–3 working days.",
       },
       {
         q: "Do you ship worldwide?",
-        a: "Yes. Duties and import taxes outside the EU are the responsibility of the receiver.",
+        a: "Delivery is currently available across Tunisia only (all governorates).",
       },
       {
         q: "How much is delivery?",

@@ -1,4 +1,4 @@
-/** Page fill is solid CSS (`#f5f6f1`) — no background image layer. */
+/** Page fill is solid CSS (`#000000`) — no background image layer. */
 export function SiteBackground() {
   return null;
 }

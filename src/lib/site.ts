@@ -1,13 +1,12 @@
 export const SITE = {
   name: "CLASSY V",
   legalName: "CLASSY V",
-  tagline: "Clothing",
+  tagline: "N4E",
   url: "https://classy-v.com",
-  description:
-    "Classy V — heavyweight t-shirts, jerseys, fleece, jackets, denim and hats. Small runs, shipped worldwide.",
+  description: "NOT FOR EVERYONE.",
   email: "hello@classyv.store",
-  phone: "+34 600 000 000",
-  city: "Valencia, Spain",
+  phone: "+216 00 000 000",
+  city: "Tunis, Tunisia",
   instagram: "https://www.instagram.com/classyv.tn?igsh=YXR2OTJoNnA4d2s5",
   tiktok: "https://tiktok.com",
   standardShipping: 8,

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ProductCard } from "@/components/ProductCard";
 import { ProductGallery } from "@/components/ProductGallery";
+import { ProductInfoAccordion } from "@/components/ProductInfoAccordion";
 import { ProductPurchasePanel } from "@/components/ProductPurchasePanel";
 import { ShippingPolicyTrigger } from "@/components/ShippingPolicyTrigger";
 import {
@@ -96,30 +97,49 @@ export default async function ProductPage({ params }: { params: Params }) {
         <div>
           <ProductPurchasePanel product={product} variants={colourVariants(product, catalog)} />
 
-          <div className="prose-raw mt-8 border-t border-line pt-4">
-            <p className="section-title">Description</p>
-            <p className="mt-2">{product.description}</p>
-            <ul className="mt-3 list-disc pl-4">
-              {product.details.map((detail) => (
-                <li key={detail}>{detail}</li>
-              ))}
-            </ul>
-          </div>
-
-          <div className="prose-raw mt-6 border-t border-line pt-4">
-            <p className="section-title">Fabric &amp; care</p>
-            <p className="mt-2">{product.materials}</p>
-            <p>{product.care}</p>
-          </div>
-
-          <div className="prose-raw mt-6 border-t border-line pt-4">
-            <p className="section-title">Shipping &amp; returns</p>
-            <p className="mt-2">
-              Dispatched from {SITE.city} within 48 working hours. Delivery costs {shippingRate} DT.
-              30 days to return unworn pieces — see{" "}
-              <ShippingPolicyTrigger />.
-            </p>
-          </div>
+          <ProductInfoAccordion
+            items={[
+              {
+                id: "description",
+                title: "Description",
+                body: (
+                  <div className="prose-raw">
+                    <p>{product.description}</p>
+                    {product.details.length > 0 ? (
+                      <ul className="mt-3 list-disc pl-4">
+                        {product.details.map((detail) => (
+                          <li key={detail}>{detail}</li>
+                        ))}
+                      </ul>
+                    ) : null}
+                  </div>
+                ),
+              },
+              {
+                id: "fabric",
+                title: "Fabric & care",
+                body: (
+                  <div className="prose-raw">
+                    <p>{product.materials}</p>
+                    <p>{product.care}</p>
+                  </div>
+                ),
+              },
+              {
+                id: "shipping",
+                title: "Shipping & returns",
+                body: (
+                  <div className="prose-raw">
+                    <p>
+                      Dispatched from {SITE.city} within 48 working hours. Delivery costs{" "}
+                      {shippingRate} DT. 30 days to return unworn pieces — see{" "}
+                      <ShippingPolicyTrigger />.
+                    </p>
+                  </div>
+                ),
+              },
+            ]}
+          />
         </div>
       </div>
 

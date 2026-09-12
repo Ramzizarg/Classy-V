@@ -92,7 +92,7 @@ export function CartDrawer() {
                       </span>
                     </div>
 
-                    <p className="ui-sm mt-1 text-muted">Size {line.size}</p>
+                    <p className="ui mt-1.5 text-muted">Size {line.size}</p>
 
                     <div className="mt-auto flex items-center justify-between gap-2 pt-2">
                       <div className="flex items-center border border-line">
