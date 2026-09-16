@@ -71,34 +71,36 @@ export function SearchOverlay({ onClose }: { onClose: () => void }) {
       <div className="search-overlay__body">
         <h2 className="search-overlay__heading">Products</h2>
 
-        {!ready ? (
-          <p className="search-overlay__empty">Loading…</p>
-        ) : matches.length === 0 ? (
-          <p className="search-overlay__empty">No products match</p>
-        ) : (
-          <div className="search-overlay__grid">
-            {matches.map((product) => (
-              <Link
-                key={product.id}
-                href={`/collection/${product.slug}`}
-                onClick={onClose}
-                className="search-overlay__card"
-              >
-                <span className="search-overlay__media">
-                  <Image
-                    src={product.images[0]}
-                    alt={product.name}
-                    fill
-                    sizes="(min-width: 768px) 25vw, 50vw"
-                    className="search-overlay__img"
-                  />
-                </span>
-                <span className="search-overlay__title">{product.name}</span>
-                <span className="search-overlay__price">{formatPrice(effectivePrice(product))}</span>
-              </Link>
-            ))}
-          </div>
-        )}
+        <div className="search-overlay__scroll">
+          {!ready ? (
+            <p className="search-overlay__empty">Loading…</p>
+          ) : matches.length === 0 ? (
+            <p className="search-overlay__empty">No products match</p>
+          ) : (
+            <div className="search-overlay__grid">
+              {matches.map((product) => (
+                <Link
+                  key={product.id}
+                  href={`/collection/${product.slug}`}
+                  onClick={onClose}
+                  className="search-overlay__card"
+                >
+                  <span className="search-overlay__media">
+                    <Image
+                      src={product.images[0]}
+                      alt={product.name}
+                      fill
+                      sizes="(min-width: 768px) 25vw, 50vw"
+                      className="search-overlay__img"
+                    />
+                  </span>
+                  <span className="search-overlay__title">{product.name}</span>
+                  <span className="search-overlay__price">{formatPrice(effectivePrice(product))}</span>
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { BrandMark } from "@/components/BrandMark";
 import { replaySplash } from "@/components/SiteLoadSplash";
@@ -13,17 +13,22 @@ import { CATEGORIES, COLLECTIONS } from "@/lib/products";
 
 export function SiteHeader() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { count, openCart, hydrated } = useStore();
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [lastPath, setLastPath] = useState(pathname);
+  const [lastLocation, setLastLocation] = useState(`${pathname}?${searchParams.toString()}`);
 
-  /** Navigating away closes overlays (state adjusted during render, not in an effect). */
-  if (lastPath !== pathname) {
-    setLastPath(pathname);
+  const locationKey = `${pathname}?${searchParams.toString()}`;
+
+  /** Any route or filter change closes overlays (including same-page category clicks). */
+  if (lastLocation !== locationKey) {
+    setLastLocation(locationKey);
     setMenuOpen(false);
     setSearchOpen(false);
   }
+
+  const closeMenu = () => setMenuOpen(false);
 
   useEffect(() => {
     document.body.style.overflow = menuOpen || searchOpen ? "hidden" : "";
@@ -130,7 +135,13 @@ export function SiteHeader() {
           />
           <nav className="camo-surface drawer-panel overlay-panel--left absolute inset-y-0 left-0 flex w-[82%] max-w-xs flex-col overflow-y-auto border-r border-line">
             <div className="flex items-start justify-between px-4 py-3">
-              <BrandMark className="h-14 w-auto" onClick={() => replaySplash()} />
+              <BrandMark
+                className="h-14 w-auto"
+                onClick={() => {
+                  setMenuOpen(false);
+                  replaySplash();
+                }}
+              />
               <button
                 type="button"
                 onClick={() => setMenuOpen(false)}
@@ -145,6 +156,7 @@ export function SiteHeader() {
                 <Link
                   key={entry.key}
                   href={entry.key === "new" ? "/collection" : `/collection?collection=${entry.key}`}
+                  onClick={closeMenu}
                   className="ui hover-underline py-1.5"
                 >
                   {entry.label}
@@ -154,6 +166,7 @@ export function SiteHeader() {
                 <Link
                   key={category.slug}
                   href={`/collection?category=${category.slug}`}
+                  onClick={closeMenu}
                   className="ui hover-underline py-1.5"
                 >
                   {category.name}

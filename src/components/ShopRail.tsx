@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { BrandMark } from "@/components/BrandMark";
 import { SocialLinks } from "@/components/SocialLinks";
+import { replaySplash } from "@/components/SiteLoadSplash";
 import { CATEGORIES, COLLECTIONS } from "@/lib/products";
 
 /** Site-wide brand rail: mark on top, single column of drops, social links at the foot. */
@@ -16,7 +17,7 @@ export function ShopRail() {
 
   return (
     <aside className="brand-rail hidden lg:flex">
-      <BrandMark width={146} />
+      <BrandMark width={146} onClick={() => replaySplash()} />
 
       <nav className="mt-8 flex flex-col" aria-label="Shop">
         {COLLECTIONS.map((entry) => (

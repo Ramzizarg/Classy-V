@@ -15,7 +15,6 @@ export const SITE = {
 /** Secondary links shown under the category rail, in the mobile menu and in the footer. */
 export const INFO_NAV = [
   { href: "/about", label: "Archive" },
-  { href: "/size-guide", label: "Size guide" },
   { href: "/shipping-returns", label: "Shipping policy" },
   { href: "/legal/refund-policy", label: "Refund policy" },
   { href: "/legal/terms", label: "Terms of service" },

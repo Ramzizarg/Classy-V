@@ -12,7 +12,7 @@ const GROUPS = [
     items: [
       {
         q: "Which payment methods do you accept?",
-        a: "Cash on delivery and bank transfer are available at checkout. Card, Apple Pay, Google Pay and Klarna appear where your region supports them.",
+        a: "Cash on delivery only. Pay the courier in cash when your parcel arrives.",
       },
       {
         q: "Can I change or cancel my order?",

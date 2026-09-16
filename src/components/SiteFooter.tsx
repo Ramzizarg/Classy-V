@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BrandMark } from "@/components/BrandMark";
+import { BrandMark, BRAND_MARK_FOOTER_SRC } from "@/components/BrandMark";
 import { InstagramGlyph } from "@/components/SocialGlyphs";
 import { INFO_NAV, SITE } from "@/lib/site";
 
@@ -16,7 +16,7 @@ export function SiteFooter() {
         </nav>
 
         <div className="site-footer__brand">
-          <BrandMark width={92} className="h-9 w-auto" />
+          <BrandMark width={92} className="h-9 w-auto" src={BRAND_MARK_FOOTER_SRC} />
           <div className="site-footer__social">
             <a
               href={SITE.instagram}

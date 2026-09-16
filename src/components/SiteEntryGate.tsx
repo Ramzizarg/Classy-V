@@ -126,13 +126,13 @@ export function SiteEntryGate() {
 
       {!opening ? (
         <div className="relative z-10 flex h-full items-center justify-center">
-          <div className="entry-gate__panel w-full max-w-[420px] px-6 pb-10 pt-12 text-center sm:pb-12 sm:pt-14">
+          <div className="entry-gate__panel w-full max-w-[420px] px-6 pb-10 pt-12 text-center text-[#ffe600] sm:pb-12 sm:pt-14">
             {/* Decorative top line */}
-            <span className="entry-gate__line mx-auto mb-8 block h-px w-12 bg-white/20" />
+            <span className="entry-gate__line mx-auto mb-8 block h-px w-12 bg-[#ffe600]/35" />
 
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="/brand/classy-v-splash.png"
+              src="/images/ClassyV.png"
               alt=""
               aria-hidden
               className="entry-gate__mark mx-auto h-auto w-[min(48vw,180px)]"
@@ -142,27 +142,27 @@ export function SiteEntryGate() {
               <>
                 <h2
                   id="entry-gate-title"
-                  className="entry-gate__welcome mt-8 text-[13px] font-bold tracking-[0.28em] text-white uppercase sm:text-[15px]"
+                  className="entry-gate__welcome mt-8 text-[13px] font-bold tracking-[0.28em] text-[#ffe600] uppercase sm:text-[15px]"
                 >
                   Welcome to {SITE.name}
                 </h2>
-                <p className="entry-gate__welcome mt-3 text-[10px] tracking-[0.22em] text-white/50 uppercase sm:text-[11px]">
+                <p className="entry-gate__welcome mt-3 text-[10px] tracking-[0.22em] text-[#ffe600]/55 uppercase sm:text-[11px]">
                   Step in.
                 </p>
-                <span className="entry-gate__progress mx-auto mt-8 block h-[2px] w-16 overflow-hidden rounded-full bg-white/10">
-                  <span className="entry-gate__progress-bar block h-full bg-white/60" />
+                <span className="entry-gate__progress mx-auto mt-8 block h-[2px] w-16 overflow-hidden rounded-full bg-[#ffe600]/15">
+                  <span className="entry-gate__progress-bar block h-full bg-[#ffe600]" />
                 </span>
               </>
             ) : visiblePhase === "rejected" ? (
               <>
                 <h2
                   id="entry-gate-title"
-                  className="mt-8 text-[13px] font-bold text-white uppercase sm:text-[15px]"
+                  className="mt-8 text-[13px] font-bold text-[#ffe600] uppercase sm:text-[15px]"
                 >
                   <span className="tracking-[0.28em]">{SITE.name}</span>
                   <span className="tracking-[0.12em] normal-case"> isn&apos;t for everyone.</span>
                 </h2>
-                <p className="mt-3 text-[10px] tracking-[0.18em] text-white/40 uppercase sm:text-[11px]">
+                <p className="mt-3 text-[10px] tracking-[0.18em] text-[#ffe600]/45 uppercase sm:text-[11px]">
                   This side is for those who move different.
                 </p>
                 <button
@@ -177,7 +177,7 @@ export function SiteEntryGate() {
               <>
                 <h2
                   id="entry-gate-title"
-                  className="mt-8 text-[15px] font-bold tracking-[0.28em] text-white uppercase sm:text-[18px]"
+                  className="mt-8 text-[15px] font-bold tracking-[0.28em] text-[#ffe600] uppercase sm:text-[18px]"
                 >
                   Are you really different?
                 </h2>

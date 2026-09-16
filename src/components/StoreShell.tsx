@@ -29,7 +29,9 @@ export function StoreShell({ children }: { children: React.ReactNode }) {
   if (matchesPath(pathname, HEADER_ONLY_PATHS)) {
     return (
       <>
-        <SiteHeader />
+        <Suspense fallback={null}>
+          <SiteHeader />
+        </Suspense>
         <main className="flex min-h-[calc(100%-var(--header-height))] flex-1 flex-col">
           {children}
         </main>
@@ -39,7 +41,9 @@ export function StoreShell({ children }: { children: React.ReactNode }) {
 
   return (
     <>
-      <SiteHeader />
+      <Suspense fallback={null}>
+        <SiteHeader />
+      </Suspense>
       <div className="site-shell shell-width flex-1">
         <Suspense fallback={<div className="hidden lg:block" />}>
           <ShopRail />

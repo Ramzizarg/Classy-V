@@ -2,7 +2,9 @@ import Link from "next/link";
 import type { CSSProperties } from "react";
 import { SITE } from "@/lib/site";
 
-const BRAND_MARK_SRC = "/brand/classy-v-4.png";
+const BRAND_MARK_SRC = "/images/ClassyV.png";
+/** Footer keeps the previous lockup. */
+export const BRAND_MARK_FOOTER_SRC = "/brand/classy-v-4.png";
 
 /**
  * Sparkle lockup tinted with `--brand-ink`. A hidden `<img>` sets the box size

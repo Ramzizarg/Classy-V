@@ -12,7 +12,6 @@ export const CATEGORIES: Category[] = [
   { slug: "hats", name: "Hats", tagline: "Fitted caps, strapbacks, beanies" },
   { slug: "bags", name: "Bags", tagline: "Canvas carry, built to last" },
   { slug: "accessories", name: "Accessories", tagline: "Socks, belts, everyday extras" },
-  { slug: "womens", name: "Womens", tagline: "Cut and graded for women" },
 ];
 
 /** Catalog lives in Neon — kept empty so the storefront never falls back to demo data. */
