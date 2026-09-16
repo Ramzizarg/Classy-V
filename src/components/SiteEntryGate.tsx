@@ -77,12 +77,29 @@ export function SiteEntryGate() {
 
   useEffect(() => {
     if (exempt || storedChoice === "yes") return;
-    if (phase !== "question" && phase !== "welcome" && phase !== "opening" && storedChoice !== "no") return;
+    if (phase === "idle" && storedChoice !== "no") return;
 
-    const previousOverflow = document.body.style.overflow;
+    const html = document.documentElement;
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousHtmlOverflow = html.style.overflow;
+    const previousBodyTouch = document.body.style.touchAction;
+
     document.body.style.overflow = "hidden";
+    html.style.overflow = "hidden";
+    document.body.style.touchAction = "none";
+
+    const blockScroll = (event: Event) => {
+      event.preventDefault();
+    };
+    document.addEventListener("touchmove", blockScroll, { passive: false });
+    document.addEventListener("wheel", blockScroll, { passive: false });
+
     return () => {
-      document.body.style.overflow = previousOverflow;
+      document.body.style.overflow = previousBodyOverflow;
+      html.style.overflow = previousHtmlOverflow;
+      document.body.style.touchAction = previousBodyTouch;
+      document.removeEventListener("touchmove", blockScroll);
+      document.removeEventListener("wheel", blockScroll);
     };
   }, [exempt, phase, storedChoice]);
 
@@ -111,7 +128,7 @@ export function SiteEntryGate() {
 
   return createPortal(
     <div
-      className={`fixed inset-0 z-[9990] ${opening ? "pointer-events-none" : "bg-black"}`}
+      className={`entry-gate fixed inset-0 z-[9990] overflow-hidden overscroll-none ${opening ? "pointer-events-none" : "bg-black"}`}
       role="dialog"
       aria-modal
       aria-labelledby="entry-gate-title"
@@ -125,7 +142,7 @@ export function SiteEntryGate() {
       ) : null}
 
       {!opening ? (
-        <div className="relative z-10 flex h-full items-center justify-center">
+        <div className="relative z-10 flex h-full max-h-dvh items-center justify-center overflow-hidden">
           <div className="entry-gate__panel w-full max-w-[420px] px-6 pb-10 pt-12 text-center text-[#ffe600] sm:pb-12 sm:pt-14">
             {/* Decorative top line */}
             <span className="entry-gate__line mx-auto mb-8 block h-px w-12 bg-[#ffe600]/35" />

@@ -27,6 +27,8 @@ export function LookbookCard({
             fill
             sizes={sizes}
             priority={priority}
+            loading={priority ? "eager" : "lazy"}
+            fetchPriority={priority ? "high" : "auto"}
             className="lookbook-card__img lookbook-card__img--primary"
           />
           {product.images[1] ? (
