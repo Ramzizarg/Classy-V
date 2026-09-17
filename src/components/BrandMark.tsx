@@ -2,9 +2,11 @@ import Link from "next/link";
 import type { CSSProperties } from "react";
 import { SITE } from "@/lib/site";
 
-const BRAND_MARK_SRC = "/images/ClassyV.png";
+const BRAND_MARK_SRC = "/images/logo.png";
 /** Footer keeps the previous lockup. */
 export const BRAND_MARK_FOOTER_SRC = "/brand/classy-v-4.png";
+/** Shared logo for header, sidebar, entry gate and splash. */
+export const BRAND_LOGO_SRC = BRAND_MARK_SRC;
 
 /**
  * Sparkle lockup tinted with `--brand-ink`. A hidden `<img>` sets the box size

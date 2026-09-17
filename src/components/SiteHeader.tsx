@@ -86,7 +86,7 @@ export function SiteHeader() {
           </div>
 
           <div className="flex justify-center">
-            <BrandMark className="h-12 w-auto" onClick={() => replaySplash()} />
+            <BrandMark className="h-14 w-auto" onClick={() => replaySplash()} />
           </div>
 
           <div className="flex items-center justify-end">

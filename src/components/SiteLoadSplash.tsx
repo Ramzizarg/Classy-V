@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { BRAND_LOGO_SRC } from "@/components/BrandMark";
 
 /** Matches the `splash-cover` / `splash-mark` animations in globals.css. */
 const SPLASH_MS = 1500;
@@ -68,7 +69,7 @@ export function SiteLoadSplash() {
     <div className="splash" aria-hidden>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src="/brand/classy-v-splash.png"
+        src={BRAND_LOGO_SRC}
         alt=""
         fetchPriority="high"
         className="splash-mark"

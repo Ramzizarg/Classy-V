@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { usePathname } from "next/navigation";
 import { SITE } from "@/lib/site";
+import { BRAND_LOGO_SRC } from "@/components/BrandMark";
 
 /** Welcome text holds, then the curtain split plays. */
 const WELCOME_MS = 1400;
@@ -149,7 +150,7 @@ export function SiteEntryGate() {
 
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="/images/ClassyV.png"
+              src={BRAND_LOGO_SRC}
               alt=""
               aria-hidden
               className="entry-gate__mark mx-auto h-auto w-[min(48vw,180px)]"
