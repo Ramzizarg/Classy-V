@@ -32,6 +32,7 @@ export function StoreShell({ children }: { children: React.ReactNode }) {
         <Suspense fallback={null}>
           <SiteHeader />
         </Suspense>
+        <div className="site-header-spacer" aria-hidden="true" />
         <main className="flex min-h-[calc(100%-var(--header-height))] flex-1 flex-col">
           {children}
         </main>
@@ -44,6 +45,7 @@ export function StoreShell({ children }: { children: React.ReactNode }) {
       <Suspense fallback={null}>
         <SiteHeader />
       </Suspense>
+      {!isHome ? <div className="site-header-spacer" aria-hidden="true" /> : null}
       <div className="site-shell shell-width flex-1">
         <Suspense fallback={<div className="hidden lg:block" />}>
           <ShopRail />

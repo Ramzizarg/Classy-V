@@ -63,7 +63,36 @@ export function SiteLoadSplash() {
     return () => window.clearTimeout(timer);
   }, [ready, entryOk, finished]);
 
-  if (!ready || !entryOk || finished) return null;
+  const visible = ready && entryOk && !finished;
+
+  useEffect(() => {
+    if (!visible) return;
+
+    const html = document.documentElement;
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousHtmlOverflow = html.style.overflow;
+    const previousBodyTouch = document.body.style.touchAction;
+
+    document.body.style.overflow = "hidden";
+    html.style.overflow = "hidden";
+    document.body.style.touchAction = "none";
+
+    const blockScroll = (event: Event) => {
+      event.preventDefault();
+    };
+    document.addEventListener("touchmove", blockScroll, { passive: false });
+    document.addEventListener("wheel", blockScroll, { passive: false });
+
+    return () => {
+      document.body.style.overflow = previousBodyOverflow;
+      html.style.overflow = previousHtmlOverflow;
+      document.body.style.touchAction = previousBodyTouch;
+      document.removeEventListener("touchmove", blockScroll);
+      document.removeEventListener("wheel", blockScroll);
+    };
+  }, [visible]);
+
+  if (!visible) return null;
 
   return (
     <div className="splash" aria-hidden>

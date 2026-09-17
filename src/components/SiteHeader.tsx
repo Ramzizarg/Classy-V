@@ -51,12 +51,12 @@ export function SiteHeader() {
   return (
     <>
       {/*
-        Home: fixed over the hero so it stays with you while scrolling.
-        Elsewhere: sticky bar.
+        Home: fixed over the hero so content scrolls beneath it.
+        Elsewhere: fixed with solid ground so scroll does not shimmer through.
       */}
       <header
-        className={`site-header z-[100] bg-transparent px-3 pt-3 pb-2 sm:px-5 lg:pt-7 lg:pb-2 ${
-          pathname === "/" ? "site-header--home" : "sticky top-0 text-[var(--foreground)]"
+        className={`site-header z-[100] px-3 pt-3 pb-2 sm:px-5 lg:pt-7 lg:pb-2 ${
+          pathname === "/" ? "site-header--home" : "site-header--store text-[var(--foreground)]"
         }`}
       >
         <div className="site-top-line" aria-hidden="true" />
