@@ -153,7 +153,7 @@ export function SiteEntryGate() {
               src={BRAND_LOGO_SRC}
               alt=""
               aria-hidden
-              className="entry-gate__mark mx-auto h-auto w-[min(48vw,180px)]"
+              className="entry-gate__mark mx-auto h-auto w-[min(32vw,120px)]"
             />
 
             {visiblePhase === "welcome" ? (

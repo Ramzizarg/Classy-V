@@ -171,7 +171,7 @@ export function CheckoutForm() {
       <header className="order-1 px-4 pt-8 pb-6 sm:px-6 lg:col-start-1 lg:row-start-1 lg:px-10 lg:pt-12 lg:pb-0">
         <div className="mx-auto w-full max-w-[420px]">
           <div className="flex justify-center">
-            <BrandMark width={100} label="Classy V home" />
+            <BrandMark width={72} label="Classy V home" />
           </div>
 
           <nav aria-label="Checkout" className="ui-sm mt-6 flex flex-wrap justify-center gap-2 text-white">
