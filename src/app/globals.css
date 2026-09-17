@@ -62,7 +62,40 @@ html {
   background-image: none;
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
-  overscroll-behavior: none;
+  /* Anchor / programmatic scroll lands below the fixed header. */
+  scroll-padding-top: calc(var(--header-height) + 20px);
+  /* Softer bounce so a transparent fixed header doesn’t shimmer. */
+  overscroll-behavior-y: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+/* Brand scrollbar — storefront only (dashboard keeps the OS default). */
+html:not(.dashboard-light) {
+  scrollbar-width: thin;
+  scrollbar-color: #ffe600 #111111;
+}
+
+html:not(.dashboard-light)::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+html:not(.dashboard-light)::-webkit-scrollbar-track {
+  background: #0a0a0a;
+}
+
+html:not(.dashboard-light)::-webkit-scrollbar-thumb {
+  background: #ffe600;
+  border: 2px solid #0a0a0a;
+}
+
+html:not(.dashboard-light)::-webkit-scrollbar-thumb:hover {
+  background: #fff066;
 }
 
 /* Cover the catalog until the entry gate hydrates (or session already said yes). */
@@ -90,9 +123,23 @@ body {
   line-height: 1.45;
   letter-spacing: 0.04em;
   overflow-x: clip;
-  overscroll-behavior: none;
-  /* Paint into the home-indicator gap (Instagram / Safari). */
-  padding-bottom: env(safe-area-inset-bottom, 0px);
+  overscroll-behavior-x: none;
+  overscroll-behavior-y: none;
+}
+
+/*
+ * Paint black into the iOS / Instagram home-indicator inset only when present.
+ */
+body::after {
+  content: "";
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10060;
+  height: env(safe-area-inset-bottom, 0px);
+  background: #000000;
+  pointer-events: none;
 }
 
 /* White top hairline — sits on the header so it moves with fixed/sticky chrome. */
@@ -112,20 +159,9 @@ body {
   pointer-events: none;
 }
 
-/**
- * Fixed black canvas behind the whole app. Instagram’s in-app browser often
- * shows a grey strip at the bottom on overscroll / safe-area; this fills it.
- */
+/* Solid page fill — no background image. */
 .site-bg {
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  width: 100%;
-  height: 100%;
-  min-height: 100dvh;
-  min-height: -webkit-fill-available;
-  background-color: #000000;
-  pointer-events: none;
+  display: none;
 }
 
 /* Back office: white page canvas; header stays black in DashboardHeader. */
@@ -144,6 +180,7 @@ html.dashboard-light body {
 }
 
 html.dashboard-light body::before,
+html.dashboard-light body::after,
 html.dashboard-light .site-bg {
   display: none;
 }
@@ -1464,11 +1501,9 @@ textarea.checkout-field {
   margin-left: 0;
   margin-right: 0;
   border-top: 1px solid rgb(255 230 0 / 0.2);
-  background: var(--background);
+  background: #000000;
   color: #ffe600;
-  padding: 24px 20px 28px;
-  /* Extra black band under the footer for Instagram / iOS home indicator. */
-  box-shadow: 0 80px 0 0 #000000;
+  padding: 24px 20px calc(16px + env(safe-area-inset-bottom, 0px));
 }
 
 .site-footer__inner {
@@ -2242,11 +2277,60 @@ textarea.checkout-field {
   display: none;
 }
 
+/* Back to top — square Corteiz-style chip, not a pill. */
+.back-to-top {
+  position: fixed;
+  right: max(12px, env(safe-area-inset-right));
+  bottom: max(16px, env(safe-area-inset-bottom));
+  z-index: 90;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid #ffe600;
+  background: #000000;
+  color: #ffe600;
+  font-family: ui-monospace, "SFMono-Regular", "SF Mono", Menlo, Consolas, "Liberation Mono",
+    "Courier New", monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.back-to-top:hover {
+  background: #ffe600;
+  color: #000000;
+}
+
+.back-to-top:focus-visible {
+  outline: 2px solid #ffe600;
+  outline-offset: 3px;
+}
+
+@media (min-width: 640px) {
+  .back-to-top {
+    right: max(20px, env(safe-area-inset-right));
+    bottom: max(24px, env(safe-area-inset-bottom));
+    min-height: 44px;
+    padding: 0 16px;
+    font-size: 11px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
+  }
+
+  html {
+    scroll-behavior: auto;
   }
 }

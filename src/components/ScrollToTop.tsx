@@ -14,7 +14,8 @@ export function ScrollToTop() {
   }, []);
 
   useEffect(() => {
-    window.scrollTo(0, 0);
+    /* Instant jump on route change — never animate from mid-page. */
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
   }, [pathname]);
 
   return null;

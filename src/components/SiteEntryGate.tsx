@@ -144,7 +144,7 @@ export function SiteEntryGate() {
 
       {!opening ? (
         <div className="relative z-10 flex h-full max-h-dvh items-center justify-center overflow-hidden">
-          <div className="entry-gate__panel w-full max-w-[420px] px-6 pb-10 pt-12 text-center text-[#ffe600] sm:pb-12 sm:pt-14">
+          <div className="entry-gate__panel w-full max-w-[420px] -translate-y-8 px-6 pb-10 pt-12 text-center text-[#ffe600] sm:-translate-y-10 sm:pb-12 sm:pt-14">
             {/* Decorative top line */}
             <span className="entry-gate__line mx-auto mb-8 block h-px w-12 bg-[#ffe600]/35" />
 

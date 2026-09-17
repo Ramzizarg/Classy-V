@@ -1,4 +1,4 @@
-/** Full-bleed black fill — covers overscroll / safe-area gaps in Instagram & iOS WebViews. */
+/** Page fill is solid CSS (`#000000`) — no background image layer. */
 export function SiteBackground() {
-  return <div className="site-bg" aria-hidden="true" />;
+  return null;
 }

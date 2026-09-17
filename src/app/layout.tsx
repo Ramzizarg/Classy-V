@@ -8,6 +8,7 @@ import { ComingSoonGate } from "@/components/ComingSoonGate";
 import { SiteBackground } from "@/components/SiteBackground";
 import { SiteEntryGate } from "@/components/SiteEntryGate";
 import { SiteLoadSplash } from "@/components/SiteLoadSplash";
+import { BackToTop } from "@/components/BackToTop";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import { getShippingRate } from "@/lib/shipping.server";
 import { SITE } from "@/lib/site";
@@ -34,7 +35,10 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: "#000000",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#000000" },
+    { media: "(prefers-color-scheme: dark)", color: "#000000" },
+  ],
   colorScheme: "dark",
 };
 
@@ -89,7 +93,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
       <head>
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{document.documentElement.style.backgroundColor="#000";}catch(e){}try{if("scrollRestoration"in history)history.scrollRestoration="manual";}catch(e){}window.scrollTo(0,0);var p=location.pathname;if(/^\\/(dashboard|admin|api|backoffice|login)(\\/|$)/i.test(p)){document.documentElement.setAttribute("data-entry-ok","1");return;}try{if(sessionStorage.getItem("classyv-entry-gate")==="yes")document.documentElement.setAttribute("data-entry-ok","1");}catch(e){}})();`,
+            __html: `(function(){try{if("scrollRestoration"in history)history.scrollRestoration="manual";}catch(e){}window.scrollTo(0,0);var p=location.pathname;if(/^\\/(dashboard|admin|api|backoffice|login)(\\/|$)/i.test(p)){document.documentElement.setAttribute("data-entry-ok","1");return;}try{if(sessionStorage.getItem("classyv-entry-gate")==="yes")document.documentElement.setAttribute("data-entry-ok","1");}catch(e){}})();`,
           }}
         />
       </head>
@@ -98,6 +102,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         <SiteBackground />
         <StoreProvider shippingRate={shippingRate}>
           <ScrollToTop />
+          <BackToTop />
           <StoreShell>{children}</StoreShell>
           <Toaster />
           <PresenceBeacon />
