@@ -3,7 +3,17 @@
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 
-const SHOW_AFTER_PX = 480;
+/** Home only shows 9 lookbook tiles — keep this low so ↑ Top still appears. */
+const SHOW_AFTER_PX = 220;
+
+function scrollTop() {
+  return (
+    window.scrollY ||
+    document.documentElement.scrollTop ||
+    document.body.scrollTop ||
+    0
+  );
+}
 
 /** Minimal “back to top” control for long storefront pages. */
 export function BackToTop() {
@@ -23,12 +33,16 @@ export function BackToTop() {
     }
 
     const onScroll = () => {
-      setVisible(window.scrollY > SHOW_AFTER_PX);
+      setVisible(scrollTop() > SHOW_AFTER_PX);
     };
 
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    document.addEventListener("scroll", onScroll, { passive: true, capture: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      document.removeEventListener("scroll", onScroll, true);
+    };
   }, [hide, pathname]);
 
   if (hide || !visible) return null;

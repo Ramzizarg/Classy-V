@@ -64,8 +64,6 @@ html {
   text-size-adjust: 100%;
   /* Anchor / programmatic scroll lands below the fixed header. */
   scroll-padding-top: calc(var(--header-height) + 20px);
-  /* Softer bounce so a transparent fixed header doesn’t shimmer. */
-  overscroll-behavior-y: none;
 }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -124,22 +122,6 @@ body {
   letter-spacing: 0.04em;
   overflow-x: clip;
   overscroll-behavior-x: none;
-  overscroll-behavior-y: none;
-}
-
-/*
- * Paint black into the iOS / Instagram home-indicator inset only when present.
- */
-body::after {
-  content: "";
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 10060;
-  height: env(safe-area-inset-bottom, 0px);
-  background: #000000;
-  pointer-events: none;
 }
 
 /* White top hairline — sits on the header so it moves with fixed/sticky chrome. */
@@ -180,7 +162,6 @@ html.dashboard-light body {
 }
 
 html.dashboard-light body::before,
-html.dashboard-light body::after,
 html.dashboard-light .site-bg {
   display: none;
 }
@@ -1052,14 +1033,14 @@ textarea.checkout-field {
 
 .site-header-spacer {
   /* Mobile bar is taller than --header-height (logo row). */
-  height: calc(var(--header-height) + 12px);
+  height: calc(var(--header-height) + 4px);
   flex-shrink: 0;
   pointer-events: none;
 }
 
 @media (min-width: 1024px) {
   .site-header-spacer {
-    height: calc(var(--header-height) + 4px);
+    height: var(--header-height);
   }
 }
 
@@ -2282,7 +2263,8 @@ textarea.checkout-field {
   position: fixed;
   right: max(12px, env(safe-area-inset-right));
   bottom: max(16px, env(safe-area-inset-bottom));
-  z-index: 90;
+  /* Above fixed header (z-100), below drawers / splash. */
+  z-index: 110;
   display: inline-flex;
   align-items: center;
   justify-content: center;

@@ -66,7 +66,7 @@ export default async function ProductPage({ params }: { params: Params }) {
   };
 
   return (
-    <div className="px-3 pt-2 pb-6 sm:px-4 lg:pt-10 lg:pr-40">
+    <div className="px-3 pt-0 pb-6 sm:px-4 lg:pt-4 lg:pr-40">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
@@ -91,7 +91,7 @@ export default async function ProductPage({ params }: { params: Params }) {
         <span className="text-foreground">{product.name}</span>
       </nav>
 
-      <div className="mt-4 grid gap-6 lg:mt-6 lg:grid-cols-[1fr_1.15fr] lg:gap-12">
+      <div className="mt-1 grid gap-6 lg:mt-4 lg:grid-cols-[1fr_1.15fr] lg:gap-12">
         <ProductGallery images={product.images} name={product.name} />
 
         <div>
