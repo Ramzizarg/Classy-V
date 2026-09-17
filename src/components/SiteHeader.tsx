@@ -48,15 +48,17 @@ export function SiteHeader() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+  const isLookbookShop = pathname === "/" || pathname === "/collection";
+
   return (
     <>
       {/*
-        Home: fixed over the hero so content scrolls beneath it.
-        Elsewhere: fixed with solid ground so scroll does not shimmer through.
+        Lookbook shop (home + collection): fixed over the hero.
+        Elsewhere: fixed store bar.
       */}
       <header
         className={`site-header z-[100] px-3 pt-3 pb-2 sm:px-5 lg:pt-7 lg:pb-2 ${
-          pathname === "/" ? "site-header--home" : "site-header--store text-[var(--foreground)]"
+          isLookbookShop ? "site-header--home" : "site-header--store text-[var(--foreground)]"
         }`}
       >
         <div className="site-top-line" aria-hidden="true" />
@@ -157,7 +159,7 @@ export function SiteHeader() {
                   key={entry.key}
                   href={entry.key === "new" ? "/collection" : `/collection?collection=${entry.key}`}
                   onClick={closeMenu}
-                  className="ui hover-underline py-1.5"
+                  className="rail-link hover-underline"
                 >
                   {entry.label}
                 </Link>
@@ -167,7 +169,7 @@ export function SiteHeader() {
                   key={category.slug}
                   href={`/collection?category=${category.slug}`}
                   onClick={closeMenu}
-                  className="ui hover-underline py-1.5"
+                  className="rail-link hover-underline"
                 >
                   {category.name}
                 </Link>

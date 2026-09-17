@@ -1,17 +1,15 @@
 import type { Category, CategorySlug, Product } from "@/lib/types";
 
 export const CATEGORIES: Category[] = [
-  { slug: "t-shirts", name: "T-Shirts", tagline: "Heavyweight jersey, boxy cuts" },
-  { slug: "tops-jerseys", name: "Tops / Jerseys", tagline: "Mesh panels and match jerseys" },
-  { slug: "sweatshirts", name: "Sweatshirts", tagline: "Loopback fleece, washed finishes" },
-  { slug: "jackets", name: "Jackets", tagline: "Wool varsities and coach jackets" },
-  { slug: "knitwear", name: "Knitwear", tagline: "Merino knits and mesh vests" },
   { slug: "bottoms", name: "Bottoms", tagline: "Tailored cargos and wide trousers" },
-  { slug: "shorts", name: "Shorts", tagline: "Fleece and ripstop, mid length" },
-  { slug: "denim", name: "Denim", tagline: "Handwritten wash, baggy fits" },
-  { slug: "hats", name: "Hats", tagline: "Fitted caps, strapbacks, beanies" },
-  { slug: "bags", name: "Bags", tagline: "Canvas carry, built to last" },
+  { slug: "sweatshirts", name: "Sweatshirts", tagline: "Loopback fleece, washed finishes" },
+  { slug: "hoodies", name: "Hoodies", tagline: "Heavyweight hoods, everyday layers" },
+  { slug: "jackets", name: "Jackets", tagline: "Wool varsities and coach jackets" },
+  { slug: "t-shirts", name: "T-Shirts", tagline: "Heavyweight jersey, boxy cuts" },
+  { slug: "knitwear", name: "Knitwear", tagline: "Merino knits and mesh vests" },
+  { slug: "hats", name: "HATS", tagline: "Fitted caps, strapbacks, beanies" },
   { slug: "accessories", name: "Accessories", tagline: "Socks, belts, everyday extras" },
+  { slug: "bags", name: "Bags", tagline: "Canvas carry, built to last" },
 ];
 
 /** Catalog lives in Neon — kept empty so the storefront never falls back to demo data. */
@@ -73,12 +71,11 @@ export function categoryCount(slug: CategorySlug, source: Product[] = PRODUCTS):
 }
 
 /** Curated drops that sit above the category list in the rail. */
-export type CollectionKey = "new" | "classics" | "combos";
+export type CollectionKey = "new" | "best-sellers";
 
 export const COLLECTIONS: { key: CollectionKey; label: string }[] = [
   { key: "new", label: "New" },
-  { key: "classics", label: "Classics" },
-  { key: "combos", label: "Combos" },
+  { key: "best-sellers", label: "Best Sellers" },
 ];
 
 export function filterProducts(options: {
@@ -102,6 +99,7 @@ export function filterProducts(options: {
 
   const filtered = source.filter((product) => {
     if (category && product.categorySlug !== category) return false;
+    if (collection === "best-sellers" && !product.featured) return false;
     if (collection === "classics" && !product.featured) return false;
     if (collection === "combos" && !(product.featured || product.categorySlug === "denim")) return false;
     if (inStockOnly && isSoldOut(product)) return false;

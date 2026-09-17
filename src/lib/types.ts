@@ -2,6 +2,7 @@ export type CategorySlug =
   | "t-shirts"
   | "tops-jerseys"
   | "sweatshirts"
+  | "hoodies"
   | "jackets"
   | "knitwear"
   | "bottoms"

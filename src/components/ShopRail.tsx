@@ -17,9 +17,9 @@ export function ShopRail() {
 
   return (
     <aside className="brand-rail hidden lg:flex">
-      <BrandMark width={146} onClick={() => replaySplash()} />
+      <BrandMark width={100} onClick={() => replaySplash()} />
 
-      <nav className="mt-8 flex flex-col" aria-label="Shop">
+      <nav className="mt-3 flex flex-col" aria-label="Shop">
         {COLLECTIONS.map((entry) => (
           <Link
             key={entry.key}

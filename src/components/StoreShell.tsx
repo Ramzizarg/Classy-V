@@ -20,7 +20,8 @@ function matchesPath(pathname: string, paths: string[]) {
 
 export function StoreShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const isHome = pathname === "/";
+  /** Home + catalog index share the lookbook chrome (no header spacer). */
+  const isLookbookShop = pathname === "/" || pathname === "/collection";
 
   if (matchesPath(pathname, CHROMELESS_PATHS) || CHROMELESS_EXACT.includes(pathname)) {
     return <>{children}</>;
@@ -45,14 +46,14 @@ export function StoreShell({ children }: { children: React.ReactNode }) {
       <Suspense fallback={null}>
         <SiteHeader />
       </Suspense>
-      {!isHome ? <div className="site-header-spacer" aria-hidden="true" /> : null}
+      {!isLookbookShop ? <div className="site-header-spacer" aria-hidden="true" /> : null}
       <div className="site-shell shell-width flex-1">
         <Suspense fallback={<div className="hidden lg:block" />}>
           <ShopRail />
         </Suspense>
         <div
           className={`site-shell__main flex min-w-0 flex-1 flex-col lg:min-h-0 ${
-            isHome ? "min-h-dvh" : "min-h-[calc(100dvh-var(--header-height))]"
+            isLookbookShop ? "min-h-dvh" : "min-h-[calc(100dvh-var(--header-height))]"
           }`}
         >
           <main className="flex-1">{children}</main>
