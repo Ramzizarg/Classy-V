@@ -168,13 +168,13 @@ export function CheckoutForm() {
   return (
     <div className="flex flex-col lg:grid lg:min-h-screen lg:grid-cols-[1.1fr_0.9fr] lg:grid-rows-[auto_1fr]">
       {/* Brand and trail lead at every width. */}
-      <header className="order-1 px-4 pt-4 pb-6 sm:px-6 lg:col-start-1 lg:row-start-1 lg:px-10 lg:pt-6 lg:pb-0">
+      <header className="order-1 px-4 pt-3 pb-3 sm:px-6 lg:col-start-1 lg:row-start-1 lg:px-10 lg:pt-5 lg:pb-0">
         <div className="mx-auto w-full max-w-[420px]">
           <div className="flex justify-center">
-            <BrandMark width={72} label="Classy V home" />
+            <BrandMark width={128} label="Classy V home" />
           </div>
 
-          <nav aria-label="Checkout" className="ui-sm mt-6 flex flex-wrap justify-center gap-2 text-white">
+          <nav aria-label="Checkout" className="ui-sm mt-2 flex flex-wrap justify-center gap-2 text-white">
             <Link href="/cart" className="hover-underline text-white">
               Cart
             </Link>

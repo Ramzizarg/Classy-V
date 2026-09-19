@@ -15,8 +15,8 @@ const RAIL_SOURCE = { file: join(root, "public", "brand", "Classy V 2.png"), lig
 const SPLASH_SOURCE = { file: join(root, "public", "brand", "classy v 4.png"), lightInk: true };
 
 const DISC = [10, 10, 11];
-/** Tab and app icons are stamped in brand yellow; the storefront rail mark stays white. */
-const ICON_INK = [255, 212, 0];
+/** Tab and app icons are stamped in pure white; the storefront rail mark stays white. */
+const ICON_INK = [255, 255, 255];
 const RAIL_INK = [255, 255, 255];
 
 const TARGETS = [

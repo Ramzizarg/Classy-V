@@ -33,7 +33,7 @@ export function ShopIndex({
           ) : (
             <div className="lookbook__grid">
               {products.map((product, index) => (
-                <LookbookCard key={product.id} product={product} priority={index < 3} />
+                <LookbookCard key={product.id} product={product} priority={index < 4} />
               ))}
             </div>
           )}

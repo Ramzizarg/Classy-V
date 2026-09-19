@@ -10,6 +10,7 @@ import { SiteEntryGate } from "@/components/SiteEntryGate";
 import { SiteLoadSplash } from "@/components/SiteLoadSplash";
 import { BackToTop } from "@/components/BackToTop";
 import { ScrollToTop } from "@/components/ScrollToTop";
+import { ProductPageThemeSync } from "@/components/ProductPageThemeSync";
 import { getShippingRate } from "@/lib/shipping.server";
 import { SITE } from "@/lib/site";
 import "./globals.css";
@@ -103,6 +104,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         <StoreProvider shippingRate={shippingRate}>
           <ScrollToTop />
           <BackToTop />
+          <ProductPageThemeSync />
           <StoreShell>{children}</StoreShell>
           <Toaster />
           <PresenceBeacon />

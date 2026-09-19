@@ -45,7 +45,7 @@ export function ProductPurchasePanel({
 
   return (
     <div>
-      <h1 className="product-title text-center font-bold lg:text-left">
+      <h1 className="product-title text-center font-black lg:text-left">
         {product.name}
       </h1>
 

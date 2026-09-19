@@ -3,7 +3,6 @@
 import { Suspense } from "react";
 import { usePathname } from "next/navigation";
 import { CartDrawer } from "@/components/CartDrawer";
-import { ShopRail } from "@/components/ShopRail";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 
@@ -20,8 +19,10 @@ function matchesPath(pathname: string, paths: string[]) {
 
 export function StoreShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  /** Home + catalog index share the lookbook chrome (no header spacer). */
-  const isLookbookShop = pathname === "/" || pathname === "/collection";
+  /** Home is a full-bleed hero; collection keeps the lookbook chrome (no header spacer). */
+  const isHome = pathname === "/";
+  const isLookbookShop = isHome || pathname === "/collection";
+  const isProductPage = /^\/collection\/[^/]+/.test(pathname);
 
   if (matchesPath(pathname, CHROMELESS_PATHS) || CHROMELESS_EXACT.includes(pathname)) {
     return <>{children}</>;
@@ -46,11 +47,16 @@ export function StoreShell({ children }: { children: React.ReactNode }) {
       <Suspense fallback={null}>
         <SiteHeader />
       </Suspense>
-      {!isLookbookShop ? <div className="site-header-spacer" aria-hidden="true" /> : null}
-      <div className="site-shell shell-width flex-1">
-        <Suspense fallback={<div className="hidden lg:block" />}>
-          <ShopRail />
-        </Suspense>
+      {!isLookbookShop ? (
+        <div
+          className={`site-header-spacer${isProductPage ? " site-header-spacer--product" : ""}`}
+          aria-hidden="true"
+        />
+      ) : null}
+      {/* Desktop shop links live in the header — shell is always a single column. */}
+      <div
+        className={`site-shell shell-width flex-1 site-shell--no-rail${isHome ? " site-shell--home" : ""}`}
+      >
         <div
           className={`site-shell__main flex min-w-0 flex-1 flex-col lg:min-h-0 ${
             isLookbookShop ? "min-h-dvh" : "min-h-[calc(100dvh-var(--header-height))]"

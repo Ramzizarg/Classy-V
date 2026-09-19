@@ -38,7 +38,7 @@ export default function AboutPage() {
       </div>
 
       <div className="mt-8 max-w-2xl border-t border-line pt-4">
-        <p className="section-title">Timeline</p>
+        <p className="section-title">Now we start</p>
         <ul className="mt-3">
           {TIMELINE.map((entry) => (
             <li key={entry.year} className="ui flex gap-4 py-1.5">

@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /**
- * Corteiz-style storefront: black ground, yellow ink, monospace uppercase type.
+ * Corteiz-style storefront: black ground, white ink, monospace uppercase type.
  * No radii, no shadows, hairlines only where a form needs an edge.
  */
 
@@ -9,17 +9,17 @@
   --background: #000000;
   --background-texture: none;
   --canvas: #000000;
-  --foreground: #ffe600;
-  --muted: #a89b00;
-  --line: rgb(255 230 0 / 0.28);
+  --foreground: #ffffff;
+  --muted: #9a9a9a;
+  --line: rgb(255 255 255 / 0.28);
   --surface: #0a0a0a;
-  --card-bg: rgb(255 230 0 / 0.06);
-  --card-header: rgb(255 230 0 / 0.1);
-  --card-ink: #ffe600;
-  --card-muted: rgb(255 230 0 / 0.55);
-  --card-line: rgb(255 230 0 / 0.28);
+  --card-bg: rgb(255 255 255 / 0.06);
+  --card-header: rgb(255 255 255 / 0.1);
+  --card-ink: #ffffff;
+  --card-muted: rgb(255 255 255 / 0.55);
+  --card-line: rgb(255 255 255 / 0.28);
   --danger: #ff6b57;
-  --brand-ink: #ffe600;
+  --brand-ink: #ffffff;
   --price-ink: #e72400;
   --selected-ink: #e72400;
   /* Height of the sticky header; the brand rail pins directly beneath it. */
@@ -50,6 +50,18 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+/* Hide native number-input stepper arrows. */
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
 html {
   width: 100%;
   max-width: 100%;
@@ -75,7 +87,7 @@ html {
 /* Brand scrollbar — storefront only (dashboard keeps the OS default). */
 html:not(.dashboard-light) {
   scrollbar-width: thin;
-  scrollbar-color: #ffe600 #111111;
+  scrollbar-color: #ffffff #000000;
 }
 
 html:not(.dashboard-light)::-webkit-scrollbar {
@@ -84,16 +96,52 @@ html:not(.dashboard-light)::-webkit-scrollbar {
 }
 
 html:not(.dashboard-light)::-webkit-scrollbar-track {
-  background: #0a0a0a;
+  background: #000000;
 }
 
 html:not(.dashboard-light)::-webkit-scrollbar-thumb {
-  background: #ffe600;
-  border: 2px solid #0a0a0a;
+  background-color: #ffffff;
+  border: 2px solid #000000;
+  border-radius: 0;
 }
 
 html:not(.dashboard-light)::-webkit-scrollbar-thumb:hover {
-  background: #fff066;
+  background-color: #ffffff;
+}
+
+html:not(.dashboard-light)::-webkit-scrollbar-corner {
+  background: #000000;
+}
+
+/* Nested panels (drawers, search, etc.) use the same white thumb. */
+html:not(.dashboard-light) * {
+  scrollbar-width: thin;
+  scrollbar-color: #ffffff #000000;
+}
+
+html:not(.dashboard-light) *::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+html:not(.dashboard-light) *::-webkit-scrollbar-track {
+  background: #000000;
+}
+
+html:not(.dashboard-light) *::-webkit-scrollbar-thumb {
+  background-color: #ffffff;
+  border: 1px solid #000000;
+}
+
+html:not(.dashboard-light) *::-webkit-scrollbar-thumb:hover {
+  background-color: #ffffff;
+}
+
+/* Hide classic OS scrollbar ▲▼ buttons (they show as a black chip in the header). */
+html:not(.dashboard-light) *::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
 }
 
 /* Cover the catalog until the entry gate hydrates (or session already said yes). */
@@ -164,6 +212,243 @@ html.dashboard-light body {
 html.dashboard-light body::before,
 html.dashboard-light .site-bg {
   display: none;
+}
+
+/* Product PDP: white page + black ink. */
+html.product-light {
+  background-color: #ffffff;
+  background-image: none;
+  color: #111111;
+  color-scheme: light;
+}
+
+html.product-light body {
+  background-color: #ffffff;
+  background-image: none;
+  color: #111111;
+  color-scheme: light;
+}
+
+html.product-light body::before,
+html.product-light .site-bg {
+  display: none;
+}
+
+html.product-light {
+  --background: #ffffff;
+  --foreground: #111111;
+  --muted: #6b6b6b;
+  --line: rgb(17 17 17 / 0.18);
+  --surface: #f5f5f5;
+  --card-bg: rgb(17 17 17 / 0.04);
+  --card-header: rgb(17 17 17 / 0.06);
+  --card-ink: #111111;
+  --card-muted: rgb(17 17 17 / 0.55);
+  --card-line: rgb(17 17 17 / 0.18);
+  --brand-ink: #111111;
+}
+
+html.product-light .site-header--store {
+  background: #ffffff;
+  color: #111111;
+}
+
+html.product-light .site-header--product {
+  background: #ffffff;
+}
+
+html.product-light .site-header .brand-mark-tint {
+  background-color: #111111;
+}
+
+/* Sidebar + cart stay black / white like home. */
+html.product-light .brand-rail {
+  background-color: #000000;
+  color: #ffffff;
+}
+
+html.product-light .brand-rail .brand-mark-tint {
+  background-color: #ffffff;
+}
+
+html.product-light .brand-rail .rail-link {
+  color: #ffffff;
+}
+
+html.product-light .brand-rail .rail-link[data-active="true"] {
+  color: #ffffff;
+}
+
+html.product-light .brand-rail .social-chip {
+  border-color: rgb(255 255 255 / 0.28);
+  color: #ffffff;
+}
+
+html.product-light .drawer-panel {
+  background-color: #000000 !important;
+  background-image: none !important;
+  color: #ffffff;
+  --background: #000000;
+  --foreground: #ffffff;
+  --muted: #9a9a9a;
+  --line: rgb(255 255 255 / 0.28);
+  --brand-ink: #ffffff;
+}
+
+html.product-light .drawer-panel .btn--solid {
+  background: #ffffff;
+  color: #000000;
+}
+
+html.product-light .drawer-panel .btn--solid:hover {
+  background: transparent;
+  color: #ffffff;
+}
+
+html.product-light .drawer-panel .product-card__title,
+html.product-light .drawer-panel a,
+html.product-light .drawer-panel .ui,
+html.product-light .drawer-panel .ui-sm {
+  color: #ffffff;
+}
+
+html.product-light .drawer-panel .product-price__current {
+  color: #e72400;
+}
+
+html.product-light .drawer-panel .text-muted,
+html.product-light .drawer-panel .ui.text-muted,
+html.product-light .drawer-panel .ui-sm.text-muted {
+  color: #9a9a9a;
+}
+
+/* Footer keeps the same black / white look as home (do not restyle here). */
+
+html.product-light .gallery-dots__dot {
+  border-color: rgb(17 17 17 / 0.35);
+}
+
+html.product-light .gallery-dots__dot:hover,
+html.product-light .gallery-dots__dot--active {
+  border-color: #111111;
+  background: #111111;
+}
+
+html.product-light .product-page .product-card__title,
+html.product-light .product-page .product-card__footer-price,
+html.product-light .product-page .page-title,
+html.product-light main .product-card__title,
+html.product-light main .product-card__footer-price,
+html.product-light main .page-title {
+  color: #111111;
+}
+
+html.product-light .btn--solid {
+  background: #111111;
+  color: #ffffff;
+}
+
+html.product-light .btn--solid:hover {
+  background: transparent;
+  color: #111111;
+}
+
+html.product-light .back-to-top {
+  border-color: #111111;
+  background: #ffffff;
+  color: #111111;
+}
+
+html.product-light .back-to-top:hover {
+  background: #111111;
+  color: #ffffff;
+}
+
+html.product-light ::selection {
+  background: #111111;
+  color: #ffffff;
+}
+
+/* Category / shop lookbook on white. */
+html.product-light .lookbook-hero {
+  background: #ffffff;
+  color: #111111;
+}
+
+html.product-light .lookbook__shop,
+html.product-light .lookbook__empty {
+  color: #111111;
+}
+
+html.product-light .lookbook__title {
+  color: #111111;
+}
+
+html.product-light .lookbook__all {
+  color: #6b6b6b;
+}
+
+html.product-light .lookbook-hero .lookbook-card__title,
+html.product-light .lookbook-hero .lookbook-card__price,
+html.product-light .lookbook-hero .lookbook-card__badge,
+html.product-light .lookbook-card__title,
+html.product-light .lookbook-card__price {
+  color: #111111;
+}
+
+html.product-light .lookbook-hero .lookbook-card__img {
+  filter: drop-shadow(0 12px 18px rgb(0 0 0 / 0.1));
+}
+
+html.product-light .lookbook-card__dot {
+  background: rgb(17 17 17 / 0.22);
+}
+
+html.product-light .lookbook-card__dot:hover {
+  background: rgb(17 17 17 / 0.45);
+}
+
+html.product-light .lookbook-card__dot--active {
+  background: #111111;
+}
+
+html.product-light .lookbook-hero .lookbook-card__nav,
+html.product-light .lookbook-hero .lookbook-card__size {
+  color: #111111;
+}
+
+html.product-light .lookbook-hero .lookbook-card__size--gone {
+  color: rgb(17 17 17 / 0.28);
+}
+
+/* Collection header sits on white — dark chrome + mark. */
+html.product-light .site-header--home {
+  color: #111111;
+}
+
+html.product-light .site-header--home .brand-mark-tint {
+  background-color: #111111;
+}
+
+/* Desktop: shop links live in the header (no left rail). */
+.header-shop-nav__link {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0;
+  white-space: nowrap;
+  color: inherit;
+  text-decoration: none;
+}
+
+.header-shop-nav__link[data-active="true"] {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+html.product-light .header-shop-nav__link {
+  color: #111111;
 }
 
 ::selection {
@@ -251,6 +536,7 @@ html.dashboard-light select option {
 /** Product page headline: reads large and centred on a phone, chrome-sized beside the gallery. */
 .product-title {
   font-size: 15px;
+  font-weight: 900;
   line-height: 1.4;
   text-transform: uppercase;
   letter-spacing: 0.1em;
@@ -282,7 +568,7 @@ html.dashboard-light select option {
   width: 7px;
   height: 7px;
   padding: 0;
-  border: 1px solid rgb(255 230 0 / 0.35);
+  border: 1px solid rgb(255 255 255 / 0.35);
   border-radius: 999px;
   background: transparent;
   cursor: pointer;
@@ -290,13 +576,157 @@ html.dashboard-light select option {
 }
 
 .gallery-dots__dot:hover {
-  border-color: #ffe600;
+  border-color: #ffffff;
 }
 
 .gallery-dots__dot--active {
-  background: #ffe600;
-  border-color: #ffe600;
+  background: #ffffff;
+  border-color: #ffffff;
   transform: scale(1.08);
+}
+
+/* Product PDP gallery — thumbs left, main image right (desktop). */
+.product-gallery {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  width: 100%;
+  max-width: 420px;
+  margin-inline: auto;
+}
+
+.product-gallery__thumbs {
+  display: none;
+}
+
+.product-gallery__stage {
+  position: relative;
+  min-width: 0;
+  width: 100%;
+}
+
+.product-gallery__main {
+  display: block;
+  aspect-ratio: 1 / 1;
+  width: 100%;
+}
+
+.product-gallery__chevron {
+  position: absolute;
+  top: 50%;
+  z-index: 1;
+  padding: 8px;
+  color: rgb(17 17 17 / 0.55);
+  transform: translateY(-50%);
+}
+
+.product-gallery__chevron:hover {
+  color: #111111;
+}
+
+.product-gallery__chevron--prev {
+  left: 4px;
+}
+
+.product-gallery__chevron--next {
+  right: 4px;
+}
+
+@media (min-width: 640px) {
+  .product-gallery {
+    max-width: 480px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .product-gallery {
+    grid-template-columns: 56px minmax(0, 1fr);
+    align-items: start;
+    /* Same as .product-layout lg:gap-36 (144px): thumbs → main → buy. */
+    column-gap: 144px;
+    row-gap: 0;
+    width: max-content;
+    max-width: 100%;
+    margin-inline: 0;
+    justify-self: start;
+  }
+
+  .product-gallery__thumbs {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 520px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    padding: 0;
+    scrollbar-width: thin;
+  }
+
+  .product-gallery__thumb {
+    position: relative;
+    flex-shrink: 0;
+    width: 56px;
+    height: 56px;
+    padding: 0;
+    border: 1px solid transparent;
+    background: #f5f5f5;
+    cursor: pointer;
+  }
+
+  .product-gallery__thumb--active {
+    border-color: #111111;
+  }
+
+  .product-gallery__thumb:hover {
+    border-color: rgb(17 17 17 / 0.35);
+  }
+
+  .product-gallery__stage {
+    width: 460px;
+    max-width: min(460px, 48vw);
+    justify-self: start;
+    margin-left: 0;
+    margin-top: 28px;
+  }
+
+  .product-gallery__main {
+    aspect-ratio: 3 / 4;
+    width: 100%;
+  }
+
+  .product-gallery__main img {
+    object-position: center top;
+  }
+
+  /* Desktop uses left thumbs — hide dots + side chevrons. */
+  .product-gallery__dots,
+  .product-gallery__chevron {
+    display: none;
+  }
+}
+
+@media (min-width: 1280px) {
+  .product-gallery {
+    grid-template-columns: 64px minmax(0, 1fr);
+    /* Same as .product-layout xl:gap-40 (160px). */
+    column-gap: 160px;
+  }
+
+  .product-gallery__thumb {
+    width: 64px;
+    height: 64px;
+  }
+
+  .product-gallery__thumbs {
+    max-height: 580px;
+  }
+
+  .product-gallery__stage {
+    width: 520px;
+    max-width: min(520px, 44vw);
+    margin-left: 0;
+    margin-top: 36px;
+  }
 }
 
 .product-price .text-muted.line-through {
@@ -978,6 +1408,17 @@ textarea.checkout-field {
     grid-template-columns: 240px minmax(0, 1fr);
     column-gap: 32px;
   }
+
+  .site-shell--home,
+  .site-shell--no-rail,
+  .site-shell--product {
+    grid-template-columns: 1fr;
+    column-gap: 0;
+  }
+
+  .site-shell--home {
+    max-width: none;
+  }
 }
 
 @media (min-width: 1440px) {
@@ -985,16 +1426,421 @@ textarea.checkout-field {
     grid-template-columns: 280px minmax(0, 1fr);
     column-gap: 40px;
   }
+
+  .site-shell--home,
+  .site-shell--no-rail,
+  .site-shell--product {
+    grid-template-columns: 1fr;
+    column-gap: 0;
+  }
 }
 
-/* Home lookbook — illicitbloc-style dense portrait grid -------------------- */
+/* Home: sticky lifestyle hero + scroll-up product drop --------------------- */
+
+.home-drop-page {
+  width: 100%;
+  background: #000000;
+}
+
+.home-hero-sticky {
+  position: sticky;
+  top: 0;
+  z-index: 0;
+  /* Mobile: shorter frame so the drop peeks in (Martra-style). */
+  height: min(62svh, 540px);
+  overflow: hidden;
+  background: #000000;
+}
+
+@media (min-width: 768px) {
+  .home-hero-sticky {
+    height: 100svh;
+    height: 100dvh;
+  }
+}
+
+.home-hero {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #000000;
+}
+
+.home-hero__media {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+
+.home-hero__img {
+  object-fit: cover;
+  object-position: center 30%;
+  image-rendering: auto;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+}
+
+.home-hero__img--desktop {
+  display: none !important;
+}
+
+@media (min-width: 768px) {
+  .home-hero__img--mobile {
+    display: none !important;
+  }
+
+  .home-hero__img--desktop {
+    display: block !important;
+    object-position: center center;
+  }
+}
+
+.home-hero__shade {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgb(0 0 0 / 0.28) 0%, transparent 28%, transparent 48%, rgb(0 0 0 / 0.55) 100%);
+}
+
+.home-hero__copy {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: max(48px, calc(env(safe-area-inset-bottom, 0px) + 32px));
+  z-index: 3;
+  color: #ffffff;
+  pointer-events: none;
+  animation: home-hero-copy-in 900ms cubic-bezier(0.22, 1, 0.36, 1) 120ms both;
+}
+
+@media (min-width: 768px) {
+  .home-hero__copy {
+    left: 40px;
+    right: auto;
+    bottom: 56px;
+    max-width: min(52vw, 640px);
+  }
+}
+
+@media (min-width: 1280px) {
+  .home-hero__copy {
+    left: 56px;
+    bottom: 64px;
+  }
+}
+
+.home-hero__eyebrow {
+  margin: 0 0 6px;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #ffffff;
+  text-shadow: 0 1px 12px rgb(0 0 0 / 0.35);
+}
+
+@media (min-width: 768px) {
+  .home-hero__eyebrow {
+    font-size: 13px;
+    letter-spacing: 0.16em;
+    color: #ffffff;
+  }
+}
+
+.home-hero__title {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: clamp(56px, 18vw, 120px);
+  font-weight: 800;
+  line-height: 0.88;
+  letter-spacing: -0.04em;
+  text-transform: uppercase;
+  color: #ffffff;
+  text-shadow: 0 2px 24px rgb(0 0 0 / 0.35);
+}
+
+@keyframes home-hero-copy-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-hero__copy {
+    transition: none;
+    animation: none;
+    transform: none;
+  }
+}
+
+.home-products {
+  position: relative;
+  z-index: 1;
+  margin-top: -36px;
+  padding: 22px 14px 56px;
+  border-radius: 28px 28px 0 0;
+  background: #ffffff;
+  color: #111111;
+  box-shadow: 0 -12px 40px rgb(0 0 0 / 0.18);
+}
+
+@media (min-width: 768px) {
+  .home-products {
+    margin-top: -40px;
+    padding: 32px 28px 72px;
+    border-radius: 36px 36px 0 0;
+  }
+}
+
+@media (min-width: 1280px) {
+  .home-products {
+    margin-top: -48px;
+    padding: 40px clamp(40px, 6vw, 80px) 96px;
+  }
+}
+
+.home-products__inner {
+  width: 100%;
+  max-width: var(--shell-max);
+  margin-inline: auto;
+}
+
+.home-products__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+@media (min-width: 768px) {
+  .home-products__header {
+    margin-bottom: 28px;
+  }
+}
+
+.home-products__title {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: clamp(18px, 4.2vw, 28px);
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #111111;
+}
+
+.home-products__view-all {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  min-height: 34px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: #111111;
+  color: #ffffff;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition: transform 160ms ease, background-color 160ms ease;
+}
+
+.home-products__view-all:hover {
+  background: #000000;
+  transform: translateY(-1px);
+}
+
+.home-products__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 24px 0 8px;
+  color: #111111;
+}
+
+.home-products__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 14px;
+  row-gap: 28px;
+}
+
+@media (min-width: 768px) {
+  .home-products__grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    column-gap: 24px;
+    row-gap: 40px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .home-products__grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    column-gap: 20px;
+    row-gap: 40px;
+  }
+}
+
+@media (min-width: 1280px) {
+  .home-products__grid {
+    column-gap: 28px;
+    row-gap: 48px;
+  }
+}
+
+.home-products .lookbook-card__title,
+.home-products .lookbook-card__price,
+.home-products .lookbook-card__badge {
+  color: #111111;
+}
+
+.home-products .lookbook-card__copy {
+  align-items: center;
+  text-align: center;
+}
+
+.home-products .lookbook-card__img {
+  filter: none;
+}
+
+.home-products .lookbook-card__dot {
+  background: rgb(17 17 17 / 0.2);
+}
+
+.home-products .lookbook-card__dot:hover {
+  background: rgb(17 17 17 / 0.45);
+}
+
+.home-products .lookbook-card__dot--active {
+  background: #111111;
+}
+
+.home-products .lookbook-card__dots {
+  justify-content: center;
+}
+
+/* Desktop hover: sizes under image + photo arrows (Mertra-style). */
+.lookbook-card__nav {
+  display: none;
+}
+
+.lookbook-card__sizes {
+  display: none;
+}
+
+@media (hover: hover) and (min-width: 1024px) {
+  .lookbook-card__nav {
+    display: flex;
+    position: absolute;
+    top: 50%;
+    z-index: 2;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: #111111;
+    font-size: 28px;
+    line-height: 1;
+    cursor: pointer;
+    opacity: 0;
+    transform: translateY(-50%);
+    transition: opacity 140ms ease;
+    /* Keep clicks from leaving a focused state that would pin the hover chrome open. */
+    outline: none;
+  }
+
+  .lookbook-card__nav--prev {
+    left: 4px;
+  }
+
+  .lookbook-card__nav--next {
+    right: 4px;
+  }
+
+  .lookbook-card__sizes {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 10px 14px;
+    max-height: 0;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    opacity: 0;
+    pointer-events: none;
+    transition:
+      max-height 160ms ease,
+      opacity 140ms ease,
+      margin 160ms ease,
+      padding 160ms ease;
+  }
+
+  .lookbook-card__size {
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    line-height: 1.2;
+    text-transform: uppercase;
+    text-decoration: none;
+    color: #111111;
+  }
+
+  .lookbook-card__size--gone {
+    color: rgb(17 17 17 / 0.28);
+    pointer-events: none;
+    text-decoration: line-through;
+  }
+
+  /* Hover only — not :focus-within, so sizes hide as soon as the mouse leaves. */
+  .lookbook-card:hover .lookbook-card__nav {
+    opacity: 1;
+  }
+
+  .lookbook-card:hover .lookbook-card__sizes {
+    max-height: 48px;
+    margin: 4px 0 0;
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .lookbook-hero .lookbook-card__nav,
+  .lookbook-hero .lookbook-card__size {
+    color: #ffffff;
+  }
+
+  .lookbook-hero .lookbook-card__size--gone {
+    color: rgb(255 255 255 / 0.28);
+  }
+}
+
+/* Collection lookbook — illicitbloc-style dense portrait grid -------------- */
 
 .lookbook {
   width: 100%;
   padding: 0 0 40px;
 }
 
-/* Corteiz-style: black ground, yellow ink, products in the same section. */
+/* Corteiz-style: black ground, white ink, products in the same section. */
 .lookbook-hero {
   position: relative;
   display: flex;
@@ -1004,17 +1850,18 @@ textarea.checkout-field {
   min-height: 100svh;
   overflow: hidden;
   background: #000000;
-  color: #ffe600;
+  color: #ffffff;
 }
 
-/* Home: fixed transparent bar — content scrolls beneath it. */
+/* Home: fixed transparent bar over the lifestyle hero. */
 .site-header--home {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
+  overflow: hidden;
   background: transparent;
-  color: #ffe600;
+  color: #ffffff;
 }
 
 /* Store pages: fixed transparent bar (same as home). */
@@ -1024,8 +1871,9 @@ textarea.checkout-field {
   left: 0;
   right: 0;
   z-index: 100;
+  overflow: hidden;
   background: transparent;
-  color: #ffe600;
+  color: #ffffff;
   isolation: isolate;
   transform: translateZ(0);
   backface-visibility: hidden;
@@ -1038,9 +1886,18 @@ textarea.checkout-field {
   pointer-events: none;
 }
 
+.site-header-spacer--product {
+  height: calc(var(--header-height) + 8px);
+}
+
 @media (min-width: 1024px) {
   .site-header-spacer {
     height: var(--header-height);
+  }
+
+  /* Product header includes logo + shop links — keep content clear below it. */
+  .site-header-spacer--product {
+    height: calc(var(--header-height) + 28px);
   }
 }
 
@@ -1050,15 +1907,15 @@ textarea.checkout-field {
   background-color: #ffffff;
 }
 
-/* Menu + cart: yellow writing on black panels. */
+/* Menu + cart: white writing on black panels. */
 .drawer-panel {
-  color: #ffe600;
+  color: #ffffff;
 }
 
 .drawer-panel .text-muted,
 .drawer-panel .ui.text-muted,
 .drawer-panel .ui-sm.text-muted {
-  color: #a89b00;
+  color: #9a9a9a;
 }
 
 .drawer-panel a,
@@ -1066,17 +1923,17 @@ textarea.checkout-field {
 .drawer-panel .ui,
 .drawer-panel .ui-sm,
 .drawer-panel .product-card__title {
-  color: #ffe600;
+  color: #ffffff;
 }
 
 .drawer-panel .btn--solid {
-  background: #ffe600;
+  background: #ffffff;
   color: #000000;
 }
 
 .drawer-panel .btn--solid:hover {
   background: transparent;
-  color: #ffe600;
+  color: #ffffff;
 }
 
 .drawer-panel .product-price__current {
@@ -1085,8 +1942,8 @@ textarea.checkout-field {
 
 .drawer-panel .field,
 .drawer-panel input {
-  color: #ffe600;
-  border-color: rgb(255 230 0 / 0.35);
+  color: #ffffff;
+  border-color: rgb(255 255 255 / 0.35);
 }
 
 .drawer-panel .brand-mark-tint {
@@ -1116,7 +1973,7 @@ textarea.checkout-field {
   line-height: 1.05;
   letter-spacing: 0.02em;
   text-transform: uppercase;
-  color: #ffe600;
+  color: #ffffff;
 }
 
 .lookbook__all {
@@ -1128,7 +1985,7 @@ textarea.checkout-field {
   line-height: 1.2;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: #a89b00;
+  color: #9a9a9a;
   text-decoration: none;
 }
 
@@ -1138,36 +1995,36 @@ textarea.checkout-field {
   align-items: flex-start;
   gap: 16px;
   padding: 40px 14px;
-  color: #ffe600;
+  color: #ffffff;
 }
 
 /* Product grid sits inside the black hero. */
 .lookbook__shop {
   background: transparent;
-  color: #ffe600;
-  padding: calc(var(--header-height) + 12px) 14px 48px;
+  color: #ffffff;
+  padding: calc(var(--header-height) + 36px) 14px 48px;
 }
 
 @media (min-width: 768px) {
   .lookbook__shop {
-    padding: calc(var(--header-height) + 20px) 28px 64px;
+    padding: calc(var(--header-height) + 48px) 28px 64px;
   }
 }
 
 @media (min-width: 1280px) {
   .lookbook__shop {
-    padding: calc(var(--header-height) + 24px) 40px 80px;
+    padding: calc(var(--header-height) + 56px) 40px 80px;
   }
 }
 
 .lookbook-hero .lookbook-card__title,
 .lookbook-hero .lookbook-card__price,
 .lookbook-hero .lookbook-card__badge {
-  color: #ffe600;
+  color: #ffffff;
 }
 
 .lookbook-hero .lookbook-card__img {
-  filter: drop-shadow(0 12px 18px rgb(255 230 0 / 0.12));
+  filter: drop-shadow(0 12px 18px rgb(255 255 255 / 0.12));
 }
 
 .lookbook__grid {
@@ -1179,7 +2036,7 @@ textarea.checkout-field {
 
 @media (min-width: 768px) {
   .lookbook__grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     column-gap: 32px;
     row-gap: 52px;
   }
@@ -1193,52 +2050,44 @@ textarea.checkout-field {
 }
 
 .lookbook-card {
+  display: flex;
+  flex-direction: column;
   min-width: 0;
+  height: 100%;
   -webkit-touch-callout: none;
   -webkit-user-select: none;
   user-select: none;
-}
-
-.lookbook-card__link {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  color: inherit;
-  text-decoration: none;
 }
 
 .lookbook-card__media {
   position: relative;
   aspect-ratio: 1 / 1.05;
   width: 100%;
-  overflow: visible;
+  overflow: hidden;
   background: transparent;
+  cursor: pointer;
+  -webkit-user-drag: none;
+}
+
+/* Horizontal swipe changes photos; vertical page scroll still works. */
+.lookbook-card__media--swipe {
+  touch-action: pan-y;
 }
 
 .lookbook-card__img {
   object-fit: contain;
-  object-position: center center;
+  object-position: center bottom;
   /* Soft floating shadow like illicitbloc cutouts */
   filter: drop-shadow(0 12px 18px rgb(0 0 0 / 0.14));
-  transition: opacity 220ms ease;
-}
-
-.lookbook-card__img--primary {
-  opacity: 1;
-}
-
-.lookbook-card__img--secondary {
   opacity: 0;
+  transition: opacity 180ms ease;
+  pointer-events: none;
+  -webkit-user-drag: none;
+  user-select: none;
 }
 
-@media (hover: hover) and (pointer: fine) {
-  .lookbook-card:hover .lookbook-card__img--primary {
-    opacity: 0;
-  }
-
-  .lookbook-card:hover .lookbook-card__img--secondary {
-    opacity: 1;
-  }
+.lookbook-card__img--active {
+  opacity: 1;
 }
 
 .lookbook-card__badge {
@@ -1247,13 +2096,44 @@ textarea.checkout-field {
   left: 0;
   z-index: 1;
   padding: 3px 0;
-  color: #ffe600;
+  color: #ffffff;
   font-family: Georgia, "Times New Roman", Times, serif;
   font-size: 10px;
   font-style: italic;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
+}
+
+/* Pagination bulls under product photos (home + category grids). */
+.lookbook-card__dots {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 10px 0 0;
+  padding: 0;
+}
+
+.lookbook-card__dot {
+  width: 6px;
+  height: 6px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.28);
+  cursor: pointer;
+  transition: background-color 140ms ease, transform 140ms ease;
+}
+
+.lookbook-card__dot:hover {
+  background: rgb(255 255 255 / 0.55);
+}
+
+.lookbook-card__dot--active {
+  background: #ffffff;
+  transform: scale(1.15);
 }
 
 .lookbook-card__copy {
@@ -1263,6 +2143,12 @@ textarea.checkout-field {
   gap: 6px;
   padding: 10px 0 0;
   text-align: center;
+  color: inherit;
+  text-decoration: none;
+}
+
+.lookbook-card__dots + .lookbook-card__copy {
+  padding-top: 8px;
 }
 
 @media (min-width: 768px) {
@@ -1283,7 +2169,7 @@ textarea.checkout-field {
   letter-spacing: 0;
   text-transform: none;
   text-wrap: pretty;
-  color: #ffe600;
+  color: #ffffff;
 }
 
 @media (min-width: 768px) {
@@ -1302,7 +2188,7 @@ textarea.checkout-field {
   line-height: 1.2;
   letter-spacing: 0;
   text-transform: none;
-  color: #ffe600;
+  color: #ffffff;
 }
 
 @media (min-width: 768px) {
@@ -1322,8 +2208,8 @@ textarea.checkout-field {
   height: 100dvh;
   max-height: 100dvh;
   overflow: hidden;
-  background: var(--background);
-  color: #ffe600;
+  background: #ffffff;
+  color: #111111;
 }
 
 .search-overlay__bar {
@@ -1332,7 +2218,7 @@ textarea.checkout-field {
   gap: 12px;
   flex-shrink: 0;
   padding: 14px 16px;
-  border-bottom: 1px solid rgb(255 230 0 / 0.2);
+  border-bottom: 1px solid rgb(17 17 17 / 0.12);
 }
 
 .search-overlay__input {
@@ -1346,18 +2232,19 @@ textarea.checkout-field {
   font-style: italic;
   font-weight: 400;
   line-height: 1.3;
-  color: #ffe600;
+  color: #111111;
+  caret-color: #111111;
 }
 
 .search-overlay__input::placeholder {
-  color: #a89b00;
+  color: #6b6b6b;
   opacity: 1;
 }
 
 .search-overlay__close {
   display: inline-flex;
   padding: 2px;
-  color: #ffe600;
+  color: #111111;
 }
 
 .search-overlay__body {
@@ -1376,7 +2263,7 @@ textarea.checkout-field {
   font-size: 0.95rem;
   font-style: italic;
   font-weight: 400;
-  color: #ffe600;
+  color: #111111;
 }
 
 .search-overlay__scroll {
@@ -1394,7 +2281,7 @@ textarea.checkout-field {
   font-family: var(--font-gelasio), Gelasio, Georgia, "Times New Roman", serif;
   font-size: 0.9rem;
   font-style: italic;
-  color: #a89b00;
+  color: #6b6b6b;
 }
 
 .search-overlay__grid {
@@ -1409,7 +2296,7 @@ textarea.checkout-field {
   align-items: center;
   gap: 0;
   text-decoration: none;
-  color: inherit;
+  color: #111111;
   text-align: center;
 }
 
@@ -1436,6 +2323,7 @@ textarea.checkout-field {
   text-wrap: pretty;
   text-align: center;
   margin-top: -36px;
+  color: #111111;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -1449,8 +2337,27 @@ textarea.checkout-field {
   font-weight: 400;
   line-height: 1.2;
   text-align: center;
-  color: #ffe600;
+  color: #111111;
   margin-top: 1px;
+}
+
+html.product-light .search-overlay {
+  background: #ffffff;
+  color: #111111;
+}
+
+html.product-light .search-overlay__input,
+html.product-light .search-overlay__close,
+html.product-light .search-overlay__heading,
+html.product-light .search-overlay__title,
+html.product-light .search-overlay__price,
+html.product-light .search-overlay__card {
+  color: #111111;
+}
+
+html.product-light .search-overlay__input::placeholder,
+html.product-light .search-overlay__empty {
+  color: #6b6b6b;
 }
 
 @media (min-width: 768px) {
@@ -1481,9 +2388,9 @@ textarea.checkout-field {
   max-width: none;
   margin-left: 0;
   margin-right: 0;
-  border-top: 1px solid rgb(255 230 0 / 0.2);
+  border-top: 1px solid rgb(255 255 255 / 0.2);
   background: #000000;
-  color: #ffe600;
+  color: #ffffff;
   padding: 24px 20px calc(16px + env(safe-area-inset-bottom, 0px));
 }
 
@@ -1513,7 +2420,7 @@ textarea.checkout-field {
   font-weight: 400;
   line-height: 1.2;
   letter-spacing: 0.01em;
-  color: #ffe600;
+  color: #ffffff;
   text-decoration: none;
 }
 
@@ -1531,7 +2438,7 @@ textarea.checkout-field {
 }
 
 .site-footer .brand-mark-tint {
-  background-color: #ffe600;
+  background-color: #ffffff;
 }
 
 .site-footer__social {
@@ -1543,7 +2450,7 @@ textarea.checkout-field {
 
 .site-footer__social-link {
   display: inline-flex;
-  color: #ffe600;
+  color: #ffffff;
   opacity: 0.9;
 }
 
@@ -1624,6 +2531,9 @@ textarea.checkout-field {
     background-color: var(--brand-ink);
     -webkit-mask-image: var(--brand-mark-image);
     mask-image: var(--brand-mark-image);
+    /* Black-ink PNGs (loogo) need alpha masks — luminance would hide them. */
+    -webkit-mask-mode: alpha;
+    mask-mode: alpha;
     -webkit-mask-size: contain;
     mask-size: contain;
     -webkit-mask-repeat: no-repeat;
@@ -1680,6 +2590,41 @@ textarea.checkout-field {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 24px 20px;
   }
+
+  .product-grid--4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* Related products on PDP — same lookbook tiles as home (dots + hover sizes). */
+.product-related .lookbook-card__title,
+.product-related .lookbook-card__price,
+.product-related .lookbook-card__badge {
+  color: #111111;
+}
+
+.product-related .lookbook-card__img {
+  filter: drop-shadow(0 8px 14px rgb(0 0 0 / 0.08));
+}
+
+.product-related .lookbook-card__dot {
+  background: rgb(17 17 17 / 0.22);
+}
+
+.product-related .lookbook-card__dot:hover {
+  background: rgb(17 17 17 / 0.45);
+}
+
+.product-related .lookbook-card__dot--active {
+  background: #111111;
+}
+
+.product-related .lookbook-card__size {
+  color: #111111;
+}
+
+.product-related .lookbook-card__size--gone {
+  color: rgb(17 17 17 / 0.28);
 }
 
 .product-card--catalog {
@@ -1740,7 +2685,7 @@ textarea.checkout-field {
   font-weight: 700;
   line-height: 1.2;
   white-space: nowrap;
-  color: #ffe600;
+  color: #ffffff;
 }
 
 @media (min-width: 640px) {
@@ -1884,9 +2829,8 @@ textarea.checkout-field {
 
 .entry-gate__mark {
   animation: entry-gate-mark 800ms cubic-bezier(0.22, 1, 0.36, 1) 200ms both;
-  /* Force splash mark to brand yellow (#ffe600). */
-  filter: brightness(0) saturate(100%) invert(86%) sepia(61%) saturate(2000%) hue-rotate(5deg)
-    brightness(1.08) contrast(1.05);
+  /* Black-ink logo → pure white on the black gate. */
+  filter: brightness(0) invert(1);
 }
 
 .entry-gate__welcome {
@@ -1908,26 +2852,26 @@ textarea.checkout-field {
 }
 
 .entry-gate__btn-solid {
-  background: #ffe600;
+  background: #ffffff;
   color: #000000;
   border: 1px solid transparent;
 }
 
 .entry-gate__btn-solid:hover {
   background: transparent;
-  color: #ffe600;
-  border-color: rgb(255 230 0 / 0.45);
+  color: #ffffff;
+  border-color: rgb(255 255 255 / 0.45);
 }
 
 .entry-gate__btn-outline {
   background: transparent;
-  color: #ffe600;
-  border: 1px solid rgb(255 230 0 / 0.35);
+  color: #ffffff;
+  border: 1px solid rgb(255 255 255 / 0.35);
 }
 
 .entry-gate__btn-outline:hover {
-  color: #ffe600;
-  border-color: #ffe600;
+  color: #ffffff;
+  border-color: #ffffff;
 }
 
 .entry-gate__progress-bar {
@@ -2040,9 +2984,10 @@ textarea.checkout-field {
 }
 
 .splash-mark {
-  width: min(28vw, 200px);
+  width: min(42vw, 280px);
   height: auto;
   animation: splash-mark 1500ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  /* Black-ink logo → pure white on black splash. */
   filter: brightness(0) invert(1);
 }
 
@@ -2270,9 +3215,9 @@ textarea.checkout-field {
   justify-content: center;
   min-height: 40px;
   padding: 0 14px;
-  border: 1px solid #ffe600;
+  border: 1px solid #ffffff;
   background: #000000;
-  color: #ffe600;
+  color: #ffffff;
   font-family: ui-monospace, "SFMono-Regular", "SF Mono", Menlo, Consolas, "Liberation Mono",
     "Courier New", monospace;
   font-size: 10px;
@@ -2285,12 +3230,12 @@ textarea.checkout-field {
 }
 
 .back-to-top:hover {
-  background: #ffe600;
+  background: #ffffff;
   color: #000000;
 }
 
 .back-to-top:focus-visible {
-  outline: 2px solid #ffe600;
+  outline: 2px solid #ffffff;
   outline-offset: 3px;
 }
 
@@ -2310,6 +3255,12 @@ textarea.checkout-field {
   *::after {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
+  }
+
+  /* Keep the page-transition splash visible on every device. */
+  .splash,
+  .splash-mark {
+    animation-duration: 1500ms !important;
   }
 
   html {

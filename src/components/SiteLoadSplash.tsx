@@ -1,69 +1,97 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import { BRAND_LOGO_SRC } from "@/components/BrandMark";
 
 /** Matches the `splash-cover` / `splash-mark` animations in globals.css. */
 const SPLASH_MS = 1500;
-const SEEN_KEY = "classyv:splash-seen";
 const REPLAY_EVENT = "classyv:replay-splash";
 const ENTRY_KEY = "classyv-entry-gate";
 
-/**
- * Call this before navigating home so the splash replays as a transition.
- * It clears the session flag and fires a custom event that the already-mounted
- * `SiteLoadSplash` listens for.
- */
+/** Call from logo clicks that return home — replays only once `/` is active. */
 export function replaySplash() {
-  try {
-    sessionStorage.removeItem(SEEN_KEY);
-  } catch {}
   window.dispatchEvent(new Event(REPLAY_EVENT));
 }
 
 /**
- * Black cover with the wordmark zoom animation. Plays once on the first visit,
- * then again whenever `replaySplash()` is called (e.g. clicking the header logo).
- *
- * Session flags are read only after mount so SSR HTML matches the first client paint.
+ * Logo splash animation — home page only, all devices.
  */
 export function SiteLoadSplash() {
+  const pathname = usePathname();
+  const isHome = pathname === "/";
   const [ready, setReady] = useState(false);
   const [entryOk, setEntryOk] = useState(false);
-  const [finished, setFinished] = useState(true);
+  const [playId, setPlayId] = useState(0);
+  const [visible, setVisible] = useState(false);
+  const pendingReplay = useRef(false);
+  const wasHome = useRef(false);
 
   useEffect(() => {
     try {
       setEntryOk(sessionStorage.getItem(ENTRY_KEY) === "yes");
-      setFinished(sessionStorage.getItem(SEEN_KEY) === "1");
     } catch {
       setEntryOk(false);
-      setFinished(true);
+    }
+    if (document.documentElement.getAttribute("data-entry-ok") === "1") {
+      setEntryOk(true);
     }
     setReady(true);
   }, []);
 
   useEffect(() => {
+    if (entryOk) return;
+    const sync = () => {
+      if (document.documentElement.getAttribute("data-entry-ok") === "1") {
+        setEntryOk(true);
+      }
+    };
+    sync();
+    const observer = new MutationObserver(sync);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["data-entry-ok"],
+    });
+    return () => observer.disconnect();
+  }, [entryOk]);
+
+  useEffect(() => {
     const handle = () => {
       setEntryOk(true);
-      setFinished(false);
+      if (pathname === "/") {
+        setPlayId((id) => id + 1);
+      } else {
+        pendingReplay.current = true;
+      }
     };
     window.addEventListener(REPLAY_EVENT, handle);
     return () => window.removeEventListener(REPLAY_EVENT, handle);
-  }, []);
+  }, [pathname]);
 
   useEffect(() => {
-    if (!ready || !entryOk || finished) return;
-    const timer = window.setTimeout(() => {
-      try {
-        sessionStorage.setItem(SEEN_KEY, "1");
-      } catch {}
-      setFinished(true);
-    }, SPLASH_MS);
-    return () => window.clearTimeout(timer);
-  }, [ready, entryOk, finished]);
+    if (!ready || !entryOk) return;
 
-  const visible = ready && entryOk && !finished;
+    if (!isHome) {
+      wasHome.current = false;
+      setVisible(false);
+      return;
+    }
+
+    const arriving = !wasHome.current;
+    wasHome.current = true;
+
+    if (arriving || pendingReplay.current) {
+      pendingReplay.current = false;
+      setPlayId((id) => id + 1);
+    }
+  }, [ready, entryOk, isHome]);
+
+  useEffect(() => {
+    if (playId === 0 || !isHome) return;
+    setVisible(true);
+    const timer = window.setTimeout(() => setVisible(false), SPLASH_MS);
+    return () => window.clearTimeout(timer);
+  }, [playId, isHome]);
 
   useEffect(() => {
     if (!visible) return;
@@ -92,10 +120,10 @@ export function SiteLoadSplash() {
     };
   }, [visible]);
 
-  if (!visible) return null;
+  if (!visible || !isHome) return null;
 
   return (
-    <div className="splash" aria-hidden>
+    <div key={playId} className="splash" aria-hidden>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={BRAND_LOGO_SRC}

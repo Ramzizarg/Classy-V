@@ -49,16 +49,26 @@ export function SiteHeader() {
   }, []);
 
   const isLookbookShop = pathname === "/" || pathname === "/collection";
+  const isHome = pathname === "/";
+  const isProductPage = /^\/collection\/[^/]+/.test(pathname);
+  const category = searchParams.get("category");
+  const collection = searchParams.get("collection");
+  const onShop = pathname === "/" || pathname.startsWith("/collection");
 
   return (
     <>
       {/*
         Lookbook shop (home + collection): fixed over the hero.
         Elsewhere: fixed store bar.
+        Desktop: shop links live in the header (no left rail).
       */}
       <header
         className={`site-header z-[100] px-3 pt-3 pb-2 sm:px-5 lg:pt-7 lg:pb-2 ${
-          isLookbookShop ? "site-header--home" : "site-header--store text-[var(--foreground)]"
+          isLookbookShop
+            ? "site-header--home"
+            : isProductPage
+              ? "site-header--store site-header--product"
+              : "site-header--store text-[var(--foreground)]"
         }`}
       >
         <div className="site-top-line" aria-hidden="true" />
@@ -105,23 +115,59 @@ export function SiteHeader() {
         </div>
 
         <div
-          className={`shell-width hidden items-center justify-end gap-5 sm:gap-7 lg:flex ${
+          className={`shell-width hidden items-center gap-5 lg:flex xl:gap-7 ${
             searchOpen ? "!hidden" : ""
           }`}
         >
-          <button
-            type="button"
-            onClick={() => setSearchOpen(true)}
-            aria-label="Search"
-            className="-m-1 p-1"
+          <BrandMark
+            className={`w-auto shrink-0 ${isHome ? "h-14 xl:h-16" : "h-11"}`}
+            onClick={() => replaySplash()}
+          />
+          <nav
+            aria-label="Shop"
+            className="header-shop-nav no-scrollbar flex min-w-0 flex-1 items-center gap-x-4 overflow-x-auto overflow-y-hidden xl:gap-x-5"
           >
-            <SearchGlyph className="h-5 w-5" />
-          </button>
-
-          <button type="button" onClick={openCart} className="flex items-center gap-2">
-            <BagGlyph />
-            <span className="ui hover-underline">Cart ({hydrated ? count : 0})</span>
-          </button>
+            {COLLECTIONS.map((entry) => {
+              const active =
+                onShop &&
+                !category &&
+                (entry.key === "new" ? !collection : collection === entry.key);
+              return (
+                <Link
+                  key={entry.key}
+                  href={entry.key === "new" ? "/collection" : `/collection?collection=${entry.key}`}
+                  data-active={active ? "true" : undefined}
+                  className="header-shop-nav__link hover-underline shrink-0"
+                >
+                  {entry.label}
+                </Link>
+              );
+            })}
+            {CATEGORIES.map((item) => (
+              <Link
+                key={item.slug}
+                href={`/collection?category=${item.slug}`}
+                data-active={category === item.slug ? "true" : undefined}
+                className="header-shop-nav__link hover-underline shrink-0"
+              >
+                {item.name}
+              </Link>
+            ))}
+          </nav>
+          <div className="flex shrink-0 items-center justify-end gap-5 sm:gap-7">
+            <button
+              type="button"
+              onClick={() => setSearchOpen(true)}
+              aria-label="Search"
+              className="-m-1 p-1"
+            >
+              <SearchGlyph className="h-5 w-5" />
+            </button>
+            <button type="button" onClick={openCart} className="flex items-center gap-2">
+              <BagGlyph />
+              <span className="ui hover-underline">Cart ({hydrated ? count : 0})</span>
+            </button>
+          </div>
         </div>
       </header>
 
@@ -164,14 +210,14 @@ export function SiteHeader() {
                   {entry.label}
                 </Link>
               ))}
-              {CATEGORIES.map((category) => (
+              {CATEGORIES.map((entry) => (
                 <Link
-                  key={category.slug}
-                  href={`/collection?category=${category.slug}`}
+                  key={entry.slug}
+                  href={`/collection?category=${entry.slug}`}
                   onClick={closeMenu}
                   className="rail-link hover-underline"
                 >
-                  {category.name}
+                  {entry.name}
                 </Link>
               ))}
             </div>

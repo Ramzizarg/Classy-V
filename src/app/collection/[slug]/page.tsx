@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ProductCard } from "@/components/ProductCard";
+import { LookbookCard } from "@/components/LookbookCard";
 import { ProductGallery } from "@/components/ProductGallery";
 import { ProductInfoAccordion } from "@/components/ProductInfoAccordion";
 import { ProductPurchasePanel } from "@/components/ProductPurchasePanel";
@@ -66,7 +66,7 @@ export default async function ProductPage({ params }: { params: Params }) {
   };
 
   return (
-    <div className="px-3 pt-0 pb-6 sm:px-4 lg:pt-4 lg:pr-40">
+    <div className="product-page px-3 pt-2 pb-6 sm:px-4 lg:pl-4 lg:pr-12 lg:pt-3 xl:pl-6 xl:pr-20">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
@@ -74,7 +74,7 @@ export default async function ProductPage({ params }: { params: Params }) {
 
       <nav
         aria-label="Breadcrumb"
-        className="ui-sm hidden flex-wrap items-center gap-1.5 text-muted lg:flex"
+        className="ui-sm hidden flex-wrap items-center gap-1.5 text-muted lg:mb-4 lg:flex"
       >
         <Link href="/collection" className="hover-underline">
           Shop
@@ -91,10 +91,10 @@ export default async function ProductPage({ params }: { params: Params }) {
         <span className="text-foreground">{product.name}</span>
       </nav>
 
-      <div className="mt-1 grid gap-6 lg:mt-4 lg:grid-cols-[1fr_1.15fr] lg:gap-12">
+      <div className="product-layout mt-0 grid gap-6 lg:mt-0 lg:grid-cols-[auto_minmax(300px,400px)] lg:items-start lg:justify-start lg:gap-36 xl:grid-cols-[auto_minmax(320px,420px)] xl:gap-40">
         <ProductGallery images={product.images} name={product.name} />
 
-        <div>
+        <div className="product-layout__buy w-full">
           <ProductPurchasePanel product={product} variants={colourVariants(product, catalog)} />
 
           <ProductInfoAccordion
@@ -143,14 +143,11 @@ export default async function ProductPage({ params }: { params: Params }) {
         </div>
       </div>
 
-      <section className="mt-12">
+      <section className="product-related mt-12">
         <h2 className="page-title">You may also like</h2>
-        <div className="product-grid mt-3">
-          {/* Four on the 2-col phone grid; the last card drops once the grid goes 3-col. */}
-          {relatedProducts(product, 4, catalog).map((related, index) => (
-            <div key={related.id} className={index === 3 ? "md:hidden" : undefined}>
-              <ProductCard product={related} />
-            </div>
+        <div className="product-grid product-grid--4 mt-3">
+          {relatedProducts(product, 4, catalog).map((related) => (
+            <LookbookCard key={related.id} product={related} />
           ))}
         </div>
       </section>
