@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { usePathname } from "next/navigation";
+import { Suspense, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
 import { BRAND_LOGO_SRC } from "@/components/BrandMark";
 
 /** Matches the `splash-cover` / `splash-mark` animations in globals.css. */
@@ -9,23 +9,60 @@ const SPLASH_MS = 1500;
 const REPLAY_EVENT = "classyv:replay-splash";
 const ENTRY_KEY = "classyv-entry-gate";
 
-/** Call from logo clicks that return home — replays only once `/` is active. */
+function shouldShowSplash(pathname: string) {
+  if (pathname.startsWith("/dashboard")) return false;
+  if (pathname.startsWith("/admin")) return false;
+  if (pathname.startsWith("/login")) return false;
+  if (pathname.startsWith("/api")) return false;
+  return true;
+}
+
+/** Call from logo clicks on home — replays the splash without navigating. */
 export function replaySplash() {
   window.dispatchEvent(new Event(REPLAY_EVENT));
 }
 
-/**
- * Logo splash animation — home page only, all devices.
- */
-export function SiteLoadSplash() {
+function SiteLoadSplashInner() {
   const pathname = usePathname();
-  const isHome = pathname === "/";
+  const searchParams = useSearchParams();
+  const locationKey = `${pathname}?${searchParams.toString()}`;
+  const allowed = shouldShowSplash(pathname);
+
   const [ready, setReady] = useState(false);
   const [entryOk, setEntryOk] = useState(false);
   const [playId, setPlayId] = useState(0);
   const [visible, setVisible] = useState(false);
-  const pendingReplay = useRef(false);
-  const wasHome = useRef(false);
+
+  const lastLocation = useRef<string | null>(null);
+  const bootPlayed = useRef(false);
+  const splashActive = useRef(false);
+  const splashUntil = useRef(0);
+  const hideTimer = useRef<number | null>(null);
+
+  const clearHideTimer = () => {
+    if (hideTimer.current != null) {
+      window.clearTimeout(hideTimer.current);
+      hideTimer.current = null;
+    }
+  };
+
+  const beginSplash = () => {
+    const now = Date.now();
+    /* Already covering from the click — don't restart when the route commits. */
+    if (splashActive.current && now < splashUntil.current - 80) {
+      return;
+    }
+    splashActive.current = true;
+    splashUntil.current = now + SPLASH_MS;
+    setPlayId((id) => id + 1);
+    setVisible(true);
+    clearHideTimer();
+    hideTimer.current = window.setTimeout(() => {
+      splashActive.current = false;
+      setVisible(false);
+      hideTimer.current = null;
+    }, SPLASH_MS);
+  };
 
   useEffect(() => {
     try {
@@ -55,43 +92,81 @@ export function SiteLoadSplash() {
     return () => observer.disconnect();
   }, [entryOk]);
 
+  /* Cover the screen on link click — before the next page paints. */
+  useEffect(() => {
+    if (!ready || !entryOk) return;
+
+    const onClickCapture = (event: MouseEvent) => {
+      if (event.defaultPrevented) return;
+      if (event.button !== 0) return;
+      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      const anchor = target.closest("a");
+      if (!(anchor instanceof HTMLAnchorElement)) return;
+      if (anchor.hasAttribute("download")) return;
+      if (anchor.target && anchor.target !== "_self") return;
+
+      const href = anchor.getAttribute("href");
+      if (!href || href.startsWith("#") || href.startsWith("mailto:") || href.startsWith("tel:")) {
+        return;
+      }
+
+      let url: URL;
+      try {
+        url = new URL(href, window.location.href);
+      } catch {
+        return;
+      }
+      if (url.origin !== window.location.origin) return;
+      if (!shouldShowSplash(url.pathname)) return;
+
+      const nextKey = `${url.pathname}?${url.searchParams.toString()}`;
+      const here = `${window.location.pathname}?${new URLSearchParams(window.location.search).toString()}`;
+      if (nextKey === here) return;
+
+      beginSplash();
+    };
+
+    document.addEventListener("click", onClickCapture, true);
+    return () => document.removeEventListener("click", onClickCapture, true);
+  }, [ready, entryOk]);
+
   useEffect(() => {
     const handle = () => {
       setEntryOk(true);
-      if (pathname === "/") {
-        setPlayId((id) => id + 1);
-      } else {
-        pendingReplay.current = true;
+      if (window.location.pathname === "/") {
+        beginSplash();
       }
     };
     window.addEventListener(REPLAY_EVENT, handle);
     return () => window.removeEventListener(REPLAY_EVENT, handle);
-  }, [pathname]);
+  }, []);
 
-  useEffect(() => {
+  /* Reload / first entry, and history back-forward (before paint). */
+  useLayoutEffect(() => {
     if (!ready || !entryOk) return;
 
-    if (!isHome) {
-      wasHome.current = false;
+    if (!allowed) {
+      clearHideTimer();
+      splashActive.current = false;
       setVisible(false);
+      lastLocation.current = locationKey;
       return;
     }
 
-    const arriving = !wasHome.current;
-    wasHome.current = true;
+    const pathChanged = lastLocation.current !== null && lastLocation.current !== locationKey;
+    const firstBoot = !bootPlayed.current;
+    lastLocation.current = locationKey;
 
-    if (arriving || pendingReplay.current) {
-      pendingReplay.current = false;
-      setPlayId((id) => id + 1);
+    if (firstBoot || pathChanged) {
+      bootPlayed.current = true;
+      beginSplash();
     }
-  }, [ready, entryOk, isHome]);
+  }, [ready, entryOk, allowed, locationKey]);
 
-  useEffect(() => {
-    if (playId === 0 || !isHome) return;
-    setVisible(true);
-    const timer = window.setTimeout(() => setVisible(false), SPLASH_MS);
-    return () => window.clearTimeout(timer);
-  }, [playId, isHome]);
+  useEffect(() => () => clearHideTimer(), []);
 
   useEffect(() => {
     if (!visible) return;
@@ -120,17 +195,20 @@ export function SiteLoadSplash() {
     };
   }, [visible]);
 
-  if (!visible || !isHome) return null;
+  if (!visible) return null;
 
   return (
     <div key={playId} className="splash" aria-hidden>
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={BRAND_LOGO_SRC}
-        alt=""
-        fetchPriority="high"
-        className="splash-mark"
-      />
+      <img src={BRAND_LOGO_SRC} alt="" fetchPriority="high" className="splash-mark" />
     </div>
+  );
+}
+
+export function SiteLoadSplash() {
+  return (
+    <Suspense fallback={null}>
+      <SiteLoadSplashInner />
+    </Suspense>
   );
 }

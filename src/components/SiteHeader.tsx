@@ -72,11 +72,14 @@ export function SiteHeader() {
         }`}
       >
         <div className="site-top-line" aria-hidden="true" />
-        {/* Mobile: menu + search left, mark centre, bag right. */}
+        {/*
+          Mobile everywhere + home desktop: hamburger left, mark centre, bag right.
+          Other desktop pages keep the inline shop nav below.
+        */}
         <div
-          className={`shell-width grid grid-cols-3 items-center lg:hidden ${
-            menuOpen || searchOpen ? "hidden" : ""
-          }`}
+          className={`shell-width grid grid-cols-3 items-center ${
+            isHome ? "" : "lg:hidden"
+          } ${menuOpen || searchOpen ? "hidden" : ""}`}
         >
           <div className="flex items-center justify-start gap-0.5">
             <button
@@ -98,7 +101,12 @@ export function SiteHeader() {
           </div>
 
           <div className="flex justify-center">
-            <BrandMark className="h-14 w-auto" onClick={() => replaySplash()} />
+            <BrandMark
+              className={`w-auto ${isHome ? "h-14 xl:h-16" : "h-14"}`}
+              onClick={() => {
+                if (isHome) replaySplash();
+              }}
+            />
           </div>
 
           <div className="flex items-center justify-end">
@@ -114,14 +122,17 @@ export function SiteHeader() {
           </div>
         </div>
 
+        {/* Desktop (non-home): logo + shop links + cart. */}
         <div
-          className={`shell-width hidden items-center gap-5 lg:flex xl:gap-7 ${
-            searchOpen ? "!hidden" : ""
-          }`}
+          className={`shell-width hidden items-center gap-5 xl:gap-7 ${
+            isHome ? "" : "lg:flex"
+          } ${searchOpen ? "!hidden" : ""}`}
         >
           <BrandMark
-            className={`w-auto shrink-0 ${isHome ? "h-14 xl:h-16" : "h-11"}`}
-            onClick={() => replaySplash()}
+            className="h-11 w-auto shrink-0"
+            onClick={() => {
+              if (isHome) replaySplash();
+            }}
           />
           <nav
             aria-label="Shop"
@@ -174,7 +185,7 @@ export function SiteHeader() {
       {searchOpen ? <SearchOverlay onClose={() => setSearchOpen(false)} /> : null}
 
       {menuOpen ? (
-        <div className="fixed inset-0 z-[200] lg:hidden">
+        <div className={`fixed inset-0 z-[200] ${isHome ? "" : "lg:hidden"}`}>
           <button
             type="button"
             aria-label="Close menu"
@@ -187,7 +198,7 @@ export function SiteHeader() {
                 className="h-14 w-auto"
                 onClick={() => {
                   setMenuOpen(false);
-                  replaySplash();
+                  if (isHome) replaySplash();
                 }}
               />
               <button

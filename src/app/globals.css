@@ -1733,8 +1733,13 @@ textarea.checkout-field {
   justify-content: center;
 }
 
-/* Desktop hover: sizes under image + photo arrows (Mertra-style). */
+/* Desktop hover: sizes under image + photo arrows (Mertra-style).
+   Mobile: + button on the image opens sizes. */
 .lookbook-card__nav {
+  display: none;
+}
+
+.lookbook-card__expand {
   display: none;
 }
 
@@ -1742,7 +1747,114 @@ textarea.checkout-field {
   display: none;
 }
 
+.lookbook-card__size {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  line-height: 1.2;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: #111111;
+}
+
+.lookbook-card__size:hover:not(:disabled) {
+  opacity: 0.65;
+}
+
+.lookbook-card__size:disabled,
+.lookbook-card__size--gone {
+  color: rgb(17 17 17 / 0.28);
+  pointer-events: none;
+  text-decoration: line-through;
+  cursor: default;
+}
+
+/* Mobile: Mertra-style + opens sizes under the image. */
+@media (max-width: 1023px) {
+  .lookbook-card__expand {
+    display: flex;
+    position: absolute;
+    right: 8px;
+    bottom: 8px;
+    z-index: 3;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    margin: 0;
+    padding: 0;
+    border: 1px solid rgb(17 17 17 / 0.18);
+    border-radius: 999px;
+    background: #ffffff;
+    color: #111111;
+    font-size: 18px;
+    font-weight: 400;
+    line-height: 1;
+    cursor: pointer;
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .lookbook-card__expand span {
+    display: block;
+    transform: translateY(-0.5px);
+    transition: transform 160ms ease;
+  }
+
+  .lookbook-card__expand--open span {
+    transform: translateY(-0.5px) rotate(45deg);
+  }
+
+  .lookbook-card__sizes {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 10px 14px;
+    max-height: 0;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    opacity: 0;
+    pointer-events: none;
+    transition:
+      max-height 160ms ease,
+      opacity 140ms ease,
+      margin 160ms ease;
+  }
+
+  .lookbook-card--sizes-open .lookbook-card__sizes {
+    max-height: 48px;
+    margin: 4px 0 0;
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .lookbook-hero .lookbook-card__expand {
+    border-color: rgb(255 255 255 / 0.35);
+    background: rgb(255 255 255 / 0.95);
+  }
+
+  .lookbook-hero .lookbook-card__size {
+    color: #ffffff;
+  }
+
+  .lookbook-hero .lookbook-card__size--gone {
+    color: rgb(255 255 255 / 0.28);
+  }
+}
+
 @media (hover: hover) and (min-width: 1024px) {
+  .lookbook-card__expand {
+    display: none;
+  }
+
   .lookbook-card__nav {
     display: flex;
     position: absolute;
@@ -1792,23 +1904,6 @@ textarea.checkout-field {
       opacity 140ms ease,
       margin 160ms ease,
       padding 160ms ease;
-  }
-
-  .lookbook-card__size {
-    font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    font-size: 13px;
-    font-weight: 600;
-    letter-spacing: 0.06em;
-    line-height: 1.2;
-    text-transform: uppercase;
-    text-decoration: none;
-    color: #111111;
-  }
-
-  .lookbook-card__size--gone {
-    color: rgb(17 17 17 / 0.28);
-    pointer-events: none;
-    text-decoration: line-through;
   }
 
   /* Hover only — not :focus-within, so sizes hide as soon as the mouse leaves. */
@@ -2057,6 +2152,11 @@ textarea.checkout-field {
   -webkit-touch-callout: none;
   -webkit-user-select: none;
   user-select: none;
+}
+
+.lookbook-card__frame {
+  position: relative;
+  width: 100%;
 }
 
 .lookbook-card__media {
@@ -2913,15 +3013,15 @@ html.product-light .search-overlay__empty {
   from {
     opacity: 0;
     transform: scale(0.85);
-    filter: blur(6px);
+    filter: brightness(0) invert(1) blur(6px);
   }
   60% {
-    filter: blur(0);
+    filter: brightness(0) invert(1) blur(0);
   }
   to {
     opacity: 1;
     transform: scale(1);
-    filter: blur(0);
+    filter: brightness(0) invert(1) blur(0);
   }
 }
 
