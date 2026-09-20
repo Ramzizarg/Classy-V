@@ -149,6 +149,27 @@ export function LookbookCard({
       }}
     >
       <div className="lookbook-card__frame">
+        {multi ? (
+          <>
+            <button
+              type="button"
+              className="lookbook-card__nav lookbook-card__nav--prev"
+              aria-label="Previous image"
+              onClick={(event) => stepImage(event, -1)}
+            >
+              ‹
+            </button>
+            <button
+              type="button"
+              className="lookbook-card__nav lookbook-card__nav--next"
+              aria-label="Next image"
+              onClick={(event) => stepImage(event, 1)}
+            >
+              ›
+            </button>
+          </>
+        ) : null}
+
         <div
           className={`lookbook-card__media${multi ? " lookbook-card__media--swipe" : ""}`}
           role="link"
@@ -186,27 +207,6 @@ export function LookbookCard({
             />
           ))}
           {soldOut ? <span className="lookbook-card__badge">Sold out</span> : null}
-
-          {multi ? (
-            <>
-              <button
-                type="button"
-                className="lookbook-card__nav lookbook-card__nav--prev"
-                aria-label="Previous image"
-                onClick={(event) => stepImage(event, -1)}
-              >
-                ‹
-              </button>
-              <button
-                type="button"
-                className="lookbook-card__nav lookbook-card__nav--next"
-                aria-label="Next image"
-                onClick={(event) => stepImage(event, 1)}
-              >
-                ›
-              </button>
-            </>
-          ) : null}
         </div>
 
         {showSizes ? (
