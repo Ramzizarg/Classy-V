@@ -11,6 +11,7 @@ const WELCOME_MS = 1400;
 /** Duration of the curtain-open animation before unmounting. */
 const OPEN_MS = 900;
 const STORAGE_KEY = "classyv-entry-gate";
+const ENTRY_CHANGE = "classyv:entry-gate-change";
 
 type GateChoice = "yes" | "no";
 type GatePhase = "idle" | "question" | "welcome" | "opening" | "rejected";
@@ -35,26 +36,53 @@ function writeChoice(choice: GateChoice) {
   } catch {
     // Private browsing can block storage; the gate still works for this page view.
   }
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event(ENTRY_CHANGE));
+  }
 }
 
 function markEntryPassed() {
   document.documentElement.setAttribute("data-entry-ok", "1");
 }
 
-function subscribeToEntryGate() {
-  return () => {};
+/** Clear scroll locks the gate may have left behind (critical on iOS Safari). */
+function unlockPage() {
+  const html = document.documentElement;
+  html.style.removeProperty("overflow");
+  document.body.style.removeProperty("overflow");
+  document.body.style.removeProperty("touch-action");
+  document.body.style.removeProperty("position");
+  document.body.style.removeProperty("width");
+  document.body.style.removeProperty("top");
+}
+
+function subscribeToEntryGate(onStoreChange: () => void) {
+  if (typeof window === "undefined") return () => {};
+  window.addEventListener(ENTRY_CHANGE, onStoreChange);
+  window.addEventListener("storage", onStoreChange);
+  return () => {
+    window.removeEventListener(ENTRY_CHANGE, onStoreChange);
+    window.removeEventListener("storage", onStoreChange);
+  };
 }
 
 export function SiteEntryGate() {
   const pathname = usePathname();
   const exempt = isExemptPath(pathname);
 
-  const mounted = useSyncExternalStore(subscribeToEntryGate, () => true, () => false);
+  const mounted = useSyncExternalStore(
+    subscribeToEntryGate,
+    () => true,
+    () => false
+  );
   const storedChoice = useSyncExternalStore(subscribeToEntryGate, readChoice, () => null);
   const [phase, setPhase] = useState<GatePhase>("question");
 
   useEffect(() => {
-    if (exempt || storedChoice === "yes") markEntryPassed();
+    if (exempt || storedChoice === "yes") {
+      markEntryPassed();
+      unlockPage();
+    }
   }, [exempt, storedChoice]);
 
   useEffect(() => {
@@ -70,6 +98,7 @@ export function SiteEntryGate() {
     markEntryPassed();
     const timer = window.setTimeout(() => {
       writeChoice("yes");
+      unlockPage();
       setPhase("idle");
     }, OPEN_MS);
 
@@ -77,16 +106,15 @@ export function SiteEntryGate() {
   }, [phase]);
 
   useEffect(() => {
-    if (exempt || storedChoice === "yes") return;
-    if (phase === "idle" && storedChoice !== "no") return;
+    const locked = !exempt && storedChoice !== "yes" && phase !== "idle";
 
-    const html = document.documentElement;
-    const previousBodyOverflow = document.body.style.overflow;
-    const previousHtmlOverflow = html.style.overflow;
-    const previousBodyTouch = document.body.style.touchAction;
+    if (!locked) {
+      unlockPage();
+      return;
+    }
 
     document.body.style.overflow = "hidden";
-    html.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
     document.body.style.touchAction = "none";
 
     const blockScroll = (event: Event) => {
@@ -96,11 +124,9 @@ export function SiteEntryGate() {
     document.addEventListener("wheel", blockScroll, { passive: false });
 
     return () => {
-      document.body.style.overflow = previousBodyOverflow;
-      html.style.overflow = previousHtmlOverflow;
-      document.body.style.touchAction = previousBodyTouch;
       document.removeEventListener("touchmove", blockScroll);
       document.removeEventListener("wheel", blockScroll);
+      unlockPage();
     };
   }, [exempt, phase, storedChoice]);
 
@@ -129,12 +155,13 @@ export function SiteEntryGate() {
 
   return createPortal(
     <div
-      className={`entry-gate fixed inset-0 z-[9990] overflow-hidden overscroll-none ${opening ? "pointer-events-none" : "bg-black"}`}
+      className={`entry-gate fixed inset-0 z-[9990] overflow-hidden overscroll-none ${
+        opening ? "pointer-events-none" : "bg-black"
+      }`}
       role="dialog"
       aria-modal
       aria-labelledby="entry-gate-title"
     >
-      {/* Curtain split: two halves slide apart to reveal the site */}
       {opening ? (
         <>
           <div className="entry-gate__curtain-left entry-gate__curtain--open-left" />
@@ -145,7 +172,6 @@ export function SiteEntryGate() {
       {!opening ? (
         <div className="relative z-10 flex h-full max-h-dvh items-center justify-center overflow-hidden">
           <div className="entry-gate__panel w-full max-w-[420px] -translate-y-8 px-6 pb-10 pt-12 text-center text-[#ffffff] sm:-translate-y-10 sm:pb-12 sm:pt-14">
-            {/* Decorative top line */}
             <span className="entry-gate__line mx-auto mb-8 block h-px w-12 bg-[#ffffff]/35" />
 
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -153,7 +179,7 @@ export function SiteEntryGate() {
               src={BRAND_LOGO_SRC}
               alt=""
               aria-hidden
-              className="entry-gate__mark mx-auto h-auto w-[min(52vw,220px)]"
+              className="entry-gate__mark mx-auto h-auto w-[min(42vw,180px)]"
             />
 
             {visiblePhase === "welcome" ? (

@@ -35,6 +35,8 @@ function SiteLoadSplashInner() {
 
   const lastLocation = useRef<string | null>(null);
   const bootPlayed = useRef(false);
+  /** First visit: skip splash once the entry gate (yes/no) just finished. */
+  const skipBootAfterGate = useRef(false);
   const splashActive = useRef(false);
   const splashUntil = useRef(0);
   const hideTimer = useRef<number | null>(null);
@@ -65,14 +67,20 @@ function SiteLoadSplashInner() {
   };
 
   useEffect(() => {
+    let alreadyPassed = false;
     try {
-      setEntryOk(sessionStorage.getItem(ENTRY_KEY) === "yes");
+      alreadyPassed = sessionStorage.getItem(ENTRY_KEY) === "yes";
     } catch {
-      setEntryOk(false);
+      alreadyPassed = false;
     }
     if (document.documentElement.getAttribute("data-entry-ok") === "1") {
-      setEntryOk(true);
+      alreadyPassed = true;
     }
+    /* Gate still ahead — after Yes/No, don't play the boot splash. */
+    if (!alreadyPassed) {
+      skipBootAfterGate.current = true;
+    }
+    setEntryOk(alreadyPassed);
     setReady(true);
   }, []);
 
@@ -162,6 +170,10 @@ function SiteLoadSplashInner() {
 
     if (firstBoot || pathChanged) {
       bootPlayed.current = true;
+      if (firstBoot && skipBootAfterGate.current) {
+        skipBootAfterGate.current = false;
+        return;
+      }
       beginSplash();
     }
   }, [ready, entryOk, allowed, locationKey]);
