@@ -353,6 +353,14 @@ html.product-light .btn--solid:hover {
   color: #111111;
 }
 
+html.product-light .btn--sold-out,
+html.product-light .btn--sold-out:disabled,
+html.product-light .btn--sold-out:hover {
+  border-color: #e11d2e;
+  background: #e11d2e;
+  color: #ffffff;
+}
+
 html.product-light .back-to-top {
   border-color: #111111;
   background: #ffffff;
@@ -810,6 +818,15 @@ html.dashboard-light select option {
   border-color: var(--line);
   background: transparent;
   color: var(--muted);
+}
+
+.btn--sold-out,
+.btn--sold-out:disabled,
+.btn--sold-out:hover {
+  cursor: not-allowed;
+  border-color: #e11d2e;
+  background: #e11d2e;
+  color: #ffffff;
 }
 
 /**

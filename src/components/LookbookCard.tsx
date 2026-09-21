@@ -272,8 +272,11 @@ export function LookbookCard({
 
       <Link href={href} className="lookbook-card__copy">
         <h3 className="lookbook-card__title">{product.name}</h3>
-        <p className="lookbook-card__price">{formatPrice(price)}</p>
-        {soldOut ? <p className="lookbook-card__sold-out">Sold out</p> : null}
+        {soldOut ? (
+          <p className="lookbook-card__sold-out">Sold out</p>
+        ) : (
+          <p className="lookbook-card__price">{formatPrice(price)}</p>
+        )}
       </Link>
     </article>
   );

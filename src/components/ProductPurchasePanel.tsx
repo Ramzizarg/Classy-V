@@ -131,7 +131,7 @@ export function ProductPurchasePanel({
           type="button"
           onClick={add}
           disabled={soldOut || !size}
-          className="btn btn--solid min-w-[150px]"
+          className={`btn min-w-[150px] ${soldOut ? "btn--sold-out" : "btn--solid"}`}
         >
           {soldOut ? "Sold out" : size ? "Add to cart" : "Select a size"}
         </button>

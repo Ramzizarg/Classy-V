@@ -40,8 +40,11 @@ export function ProductCard({
 
         <div className="product-card__copy">
           <h3 className="product-card__title">{product.name}</h3>
-          <p className="product-card__footer-price">{formatPrice(price)}</p>
-          {soldOut ? <p className="product-card__sold-out">Sold out</p> : null}
+          {soldOut ? (
+            <p className="product-card__sold-out">Sold out</p>
+          ) : (
+            <p className="product-card__footer-price">{formatPrice(price)}</p>
+          )}
         </div>
       </Link>
     </article>
