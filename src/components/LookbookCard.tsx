@@ -6,8 +6,8 @@ import { useRouter } from "next/navigation";
 import { useCallback, useRef, useState } from "react";
 import { useStore } from "@/components/StoreProvider";
 import { formatPrice } from "@/lib/format";
-import { getSizeOptionsForProduct } from "@/lib/productSizesDisplay";
-import { effectivePrice, isSoldOut } from "@/lib/products";
+import { getSizeOptionsForProduct, isProductOutOfStock } from "@/lib/productSizesDisplay";
+import { effectivePrice } from "@/lib/products";
 import type { Product } from "@/lib/types";
 
 const SWIPE_PX = 28;
@@ -23,7 +23,7 @@ export function LookbookCard({
 }) {
   const router = useRouter();
   const { addLine } = useStore();
-  const soldOut = isSoldOut(product);
+  const soldOut = isProductOutOfStock(product);
   const price = effectivePrice(product);
   const onSale = price < product.price;
   const images = product.images.length > 0 ? product.images : ["/images/logo.png"];
@@ -206,8 +206,9 @@ export function LookbookCard({
               draggable={false}
             />
           ))}
-          {soldOut ? <span className="lookbook-card__badge">Sold out</span> : null}
         </div>
+
+        {soldOut ? <span className="lookbook-card__badge">Sold out</span> : null}
 
         {showSizes ? (
           <button
@@ -272,6 +273,7 @@ export function LookbookCard({
       <Link href={href} className="lookbook-card__copy">
         <h3 className="lookbook-card__title">{product.name}</h3>
         <p className="lookbook-card__price">{formatPrice(price)}</p>
+        {soldOut ? <p className="lookbook-card__sold-out">Sold out</p> : null}
       </Link>
     </article>
   );

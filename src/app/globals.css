@@ -390,10 +390,15 @@ html.product-light .lookbook__all {
 
 html.product-light .lookbook-hero .lookbook-card__title,
 html.product-light .lookbook-hero .lookbook-card__price,
-html.product-light .lookbook-hero .lookbook-card__badge,
 html.product-light .lookbook-card__title,
 html.product-light .lookbook-card__price {
   color: #111111;
+}
+
+html.product-light .lookbook-hero .lookbook-card__badge {
+  color: #ffffff;
+  background: #e11d2e;
+  border: 0;
 }
 
 html.product-light .lookbook-hero .lookbook-card__img {
@@ -1703,9 +1708,14 @@ textarea.checkout-field {
 }
 
 .home-products .lookbook-card__title,
-.home-products .lookbook-card__price,
-.home-products .lookbook-card__badge {
+.home-products .lookbook-card__price {
   color: #111111;
+}
+
+.home-products .lookbook-card__badge {
+  color: #ffffff;
+  background: #e11d2e;
+  border: 0;
 }
 
 .home-products .lookbook-card__copy {
@@ -2117,9 +2127,14 @@ textarea.checkout-field {
 }
 
 .lookbook-hero .lookbook-card__title,
-.lookbook-hero .lookbook-card__price,
+.lookbook-hero .lookbook-card__price {
+  color: #ffffff;
+}
+
 .lookbook-hero .lookbook-card__badge {
   color: #ffffff;
+  background: #e11d2e;
+  border: 0;
 }
 
 .lookbook-hero .lookbook-card__img {
@@ -2197,17 +2212,36 @@ textarea.checkout-field {
 
 .lookbook-card__badge {
   position: absolute;
-  top: 8px;
-  left: 0;
-  z-index: 1;
-  padding: 3px 0;
+  top: 10px;
+  right: 10px;
+  left: auto;
+  z-index: 4;
+  margin: 0;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: 4px;
+  background: #e11d2e;
   color: #ffffff;
-  font-family: Georgia, "Times New Roman", Times, serif;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.18);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   font-size: 10px;
-  font-style: italic;
+  font-style: normal;
   font-weight: 700;
   letter-spacing: 0.06em;
+  line-height: 1.2;
   text-transform: uppercase;
+  pointer-events: none;
+}
+
+.lookbook-card__sold-out {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  line-height: 1.2;
+  text-transform: uppercase;
+  color: #e11d2e;
 }
 
 /* Pagination bulls under product photos (home + category grids). */
@@ -2703,9 +2737,14 @@ html.product-light .search-overlay__empty {
 
 /* Related products on PDP — same lookbook tiles as home (dots + hover sizes). */
 .product-related .lookbook-card__title,
-.product-related .lookbook-card__price,
-.product-related .lookbook-card__badge {
+.product-related .lookbook-card__price {
   color: #111111;
+}
+
+.product-related .lookbook-card__badge {
+  color: #ffffff;
+  background: #e11d2e;
+  border: 0;
 }
 
 .product-related .lookbook-card__img {
