@@ -191,7 +191,10 @@ export function LookbookCard({
             }
           }}
         >
-          {images.map((src, index) => (
+          {images.map((src, index) => {
+            /* Only mount active ±1 so swipe still feels instant without downloading every frame. */
+            if (Math.abs(index - active) > 1 && !(priority && index === 0)) return null;
+            return (
             <Image
               key={`${src}-${index}`}
               src={src}
@@ -199,13 +202,15 @@ export function LookbookCard({
               aria-hidden={index !== active}
               fill
               sizes={sizesAttr}
+              quality={100}
               priority={priority && index === 0}
               loading={priority && index === 0 ? "eager" : "lazy"}
               fetchPriority={priority && index === 0 ? "high" : "auto"}
               className={`lookbook-card__img${index === active ? " lookbook-card__img--active" : ""}`}
               draggable={false}
             />
-          ))}
+            );
+          })}
         </div>
 
         {soldOut ? <span className="lookbook-card__badge">Sold out</span> : null}

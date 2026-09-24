@@ -3,8 +3,8 @@ import type { CSSProperties } from "react";
 import { SITE } from "@/lib/site";
 
 const BRAND_MARK_SRC = "/images/loogo.png";
-/** Footer uses the same lockup as the rest of the storefront. */
-export const BRAND_MARK_FOOTER_SRC = BRAND_MARK_SRC;
+/** Footer lockup — graffiti mark. */
+export const BRAND_MARK_FOOTER_SRC = "/brand/classy-v-4.png";
 /** Shared logo for header, sidebar, entry gate and splash. */
 export const BRAND_LOGO_SRC = BRAND_MARK_SRC;
 

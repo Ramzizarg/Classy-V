@@ -9,6 +9,12 @@ const SPLASH_MS = 1500;
 const REPLAY_EVENT = "classyv:replay-splash";
 const ENTRY_KEY = "classyv-entry-gate";
 
+function clearBootSplash() {
+  document.documentElement.removeAttribute("data-boot-splash");
+  const boot = document.getElementById("boot-splash");
+  if (boot?.getAttribute("data-source") === "boot") boot.remove();
+}
+
 function shouldShowSplash(pathname: string) {
   if (pathname.startsWith("/dashboard")) return false;
   if (pathname.startsWith("/admin")) return false;
@@ -54,6 +60,7 @@ function SiteLoadSplashInner() {
     if (splashActive.current && now < splashUntil.current - 80) {
       return;
     }
+    clearBootSplash();
     splashActive.current = true;
     splashUntil.current = now + SPLASH_MS;
     setPlayId((id) => id + 1);
@@ -161,6 +168,7 @@ function SiteLoadSplashInner() {
       splashActive.current = false;
       setVisible(false);
       lastLocation.current = locationKey;
+      clearBootSplash();
       return;
     }
 
@@ -172,8 +180,23 @@ function SiteLoadSplashInner() {
       bootPlayed.current = true;
       if (firstBoot && skipBootAfterGate.current) {
         skipBootAfterGate.current = false;
+        clearBootSplash();
         return;
       }
+
+      /* Refresh / return visit: native #boot-splash already animating — don't restart. */
+      if (firstBoot && document.documentElement.getAttribute("data-boot-splash") === "1") {
+        splashActive.current = true;
+        splashUntil.current = Date.now() + SPLASH_MS;
+        clearHideTimer();
+        hideTimer.current = window.setTimeout(() => {
+          splashActive.current = false;
+          clearBootSplash();
+          hideTimer.current = null;
+        }, SPLASH_MS);
+        return;
+      }
+
       beginSplash();
     }
   }, [ready, entryOk, allowed, locationKey]);

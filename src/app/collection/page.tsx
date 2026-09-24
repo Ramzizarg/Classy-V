@@ -3,7 +3,7 @@ import { ShopIndex } from "@/components/ShopIndex";
 import { COLLECTIONS, filterProducts, getCategory, type SortKey } from "@/lib/products";
 import { getCatalog } from "@/lib/storefrontCatalog";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 export const metadata: Metadata = {
   title: "Shop all",

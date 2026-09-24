@@ -18,7 +18,9 @@ type GatePhase = "idle" | "question" | "welcome" | "opening" | "rejected";
 
 function isExemptPath(path: string | null): boolean {
   if (!path) return true;
-  return /^\/(dashboard|admin|api|backoffice|login)(\/|$)/i.test(path);
+  // Back office / auth, and direct product PDP links (skip gate for shared product URLs).
+  if (/^\/(dashboard|admin|api|backoffice|login)(\/|$)/i.test(path)) return true;
+  return /^\/collection\/[^/]+\/?$/i.test(path);
 }
 
 function readChoice(): GateChoice | null {

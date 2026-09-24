@@ -2,7 +2,8 @@ import { HomeLookbook } from "@/components/HomeLookbook";
 import { filterProducts } from "@/lib/products";
 import { getCatalog } from "@/lib/storefrontCatalog";
 
-export const dynamic = "force-dynamic";
+/** Cache the home catalog briefly — still fresh, much better TTFB than force-dynamic. */
+export const revalidate = 60;
 
 export default async function HomePage() {
   const catalog = await getCatalog();

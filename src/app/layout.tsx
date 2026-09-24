@@ -2,13 +2,10 @@ import type { Metadata, Viewport } from "next";
 import { Gelasio, Instrument_Serif } from "next/font/google";
 import { StoreProvider } from "@/components/StoreProvider";
 import { StoreShell } from "@/components/StoreShell";
-import { Toaster } from "@/components/Toaster";
-import { PresenceBeacon } from "@/components/PresenceBeacon";
-import { ComingSoonGate } from "@/components/ComingSoonGate";
+import { DeferredChrome } from "@/components/DeferredChrome";
 import { SiteBackground } from "@/components/SiteBackground";
 import { SiteEntryGate } from "@/components/SiteEntryGate";
 import { SiteLoadSplash } from "@/components/SiteLoadSplash";
-import { BackToTop } from "@/components/BackToTop";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import { ProductPageThemeSync } from "@/components/ProductPageThemeSync";
 import { getShippingRate } from "@/lib/shipping.server";
@@ -21,6 +18,7 @@ const gelasio = Gelasio({
   style: ["normal", "italic"],
   variable: "--font-gelasio",
   display: "swap",
+  preload: true,
 });
 
 /** Editorial italic serif — matches illicitbloc product titles. */
@@ -30,6 +28,7 @@ const instrumentSerif = Instrument_Serif({
   style: ["normal", "italic"],
   variable: "--font-instrument",
   display: "swap",
+  preload: true,
 });
 
 export const viewport: Viewport = {
@@ -88,13 +87,19 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   return (
     <html
       lang="en"
+      data-scroll-behavior="smooth"
       className={`min-h-dvh antialiased ${gelasio.variable} ${instrumentSerif.variable}`}
       suppressHydrationWarning
     >
       <head>
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{if("scrollRestoration"in history)history.scrollRestoration="manual";}catch(e){}window.scrollTo(0,0);var p=location.pathname;if(/^\\/(dashboard|admin|api|backoffice|login)(\\/|$)/i.test(p)){document.documentElement.setAttribute("data-entry-ok","1");return;}try{if(sessionStorage.getItem("classyv-entry-gate")==="yes")document.documentElement.setAttribute("data-entry-ok","1");}catch(e){}})();`,
+            __html: `(function(){try{if("scrollRestoration"in history)history.scrollRestoration="manual";}catch(e){}window.scrollTo(0,0);var p=location.pathname;var skip=/^\\/(dashboard|admin|api|backoffice|login)(\\/|$)/i.test(p);var product=/^\\/collection\\/[^/]+\\/?$/i.test(p);if(skip){document.documentElement.setAttribute("data-entry-ok","1");return;}var entry=false;if(product)entry=true;try{if(sessionStorage.getItem("classyv-entry-gate")==="yes")entry=true;}catch(e){}if(entry){document.documentElement.setAttribute("data-entry-ok","1");document.documentElement.setAttribute("data-boot-splash","1");}})();`,
+          }}
+        />
+        <style
+          dangerouslySetInnerHTML={{
+            __html: `html[data-boot-splash="1"]::before{content:"";position:fixed;inset:0;z-index:10000;background:#000;pointer-events:none;animation:boot-splash-cover 1500ms ease-in-out both}html[data-boot-splash="1"]::after{content:"";position:fixed;top:50%;left:50%;z-index:10001;width:min(36vw,200px);aspect-ratio:1;margin:0;pointer-events:none;background:url("/images/loogo.png") center/contain no-repeat;filter:brightness(0) invert(1);transform-origin:center center;animation:boot-splash-mark 1500ms cubic-bezier(0.22,1,0.36,1) both}@keyframes boot-splash-mark{0%{transform:translate(-50%,-50%) scale(0.55);opacity:0}34%{transform:translate(-50%,-50%) scale(1);opacity:1}64%{transform:translate(-50%,-50%) scale(1);opacity:1}100%{transform:translate(-50%,-50%) scale(1.6);opacity:0}}@keyframes boot-splash-cover{0%,68%{opacity:1}100%{opacity:0;visibility:hidden}}`,
           }}
         />
       </head>
@@ -103,12 +108,9 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         <SiteBackground />
         <StoreProvider shippingRate={shippingRate}>
           <ScrollToTop />
-          <BackToTop />
           <ProductPageThemeSync />
           <StoreShell>{children}</StoreShell>
-          <Toaster />
-          <PresenceBeacon />
-          <ComingSoonGate />
+          <DeferredChrome />
           <SiteLoadSplash />
           <SiteEntryGate />
         </StoreProvider>

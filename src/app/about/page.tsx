@@ -16,10 +16,10 @@ const TIMELINE = [
 
 export default function AboutPage() {
   return (
-    <section className="px-3 pb-10 sm:px-4">
+    <section className="about-page px-3 pb-10 sm:px-4">
       <h1 className="page-title">Archive</h1>
 
-      <div className="prose-raw mt-3 max-w-2xl">
+      <div className="prose-raw mt-3 max-w-2xl lg:mt-4">
         <p>
           Classy V is a clothing label built on craft, not on hype cycles. We started in {SITE.city}{" "}
           with a single heavyweight tee and a rule that has not changed: nothing leaves the studio

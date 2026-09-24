@@ -63,7 +63,9 @@ export function SiteHeader() {
         Desktop: shop links live in the header (no left rail).
       */}
       <header
-        className={`site-header z-[100] px-3 pt-3 pb-2 sm:px-5 lg:pt-7 lg:pb-2 ${
+        className={`site-header z-[100] px-3 pt-3 pb-2 sm:px-5 ${
+          isHome ? "lg:pt-7 lg:pb-2" : "lg:pt-3 lg:pb-2"
+        } ${
           isLookbookShop
             ? "site-header--home"
             : isProductPage
