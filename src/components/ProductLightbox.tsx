@@ -6,11 +6,12 @@ import { createPortal } from "react-dom";
 import { ChevronGlyph, CloseGlyph } from "@/components/SocialGlyphs";
 
 const MAX_SCALE = 4;
-/** Where a double tap lands, and the step the desktop buttons move in. */
+/** Where a double tap lands, and the step the zoom buttons move in. */
 const TAP_SCALE = 2.5;
+const ZOOM_STEP = 1.35;
 const SWIPE_DISTANCE = 56;
 const DISMISS_DISTANCE = 120;
-const DOUBLE_TAP_MS = 300;
+const DOUBLE_TAP_MS = 280;
 
 type View = { scale: number; x: number; y: number };
 const RESET: View = { scale: 1, x: 0, y: 0 };
@@ -31,6 +32,7 @@ export function ProductLightbox({ images, name, index, onIndexChange, onClose }:
   const [dragX, setDragX] = useState(0);
   const [dragY, setDragY] = useState(0);
   const [dragging, setDragging] = useState(false);
+  const [hintVisible, setHintVisible] = useState(true);
 
   const pointers = useRef(new Map<number, { x: number; y: number }>());
   const gesture = useRef({
@@ -44,6 +46,8 @@ export function ProductLightbox({ images, name, index, onIndexChange, onClose }:
     moved: false,
     lastTapAt: 0,
   });
+  const viewRef = useRef(view);
+  viewRef.current = view;
 
   const zoomed = view.scale > 1.01;
 
@@ -117,11 +121,29 @@ export function ProductLightbox({ images, name, index, onIndexChange, onClose }:
     [images.length, onIndexChange, reset]
   );
 
+  const bumpZoom = (direction: 1 | -1) => {
+    setHintVisible(false);
+    const stage = stageRef.current;
+    const from = viewRef.current;
+    const next =
+      direction > 0
+        ? Math.min(MAX_SCALE, from.scale * ZOOM_STEP)
+        : Math.max(1, from.scale / ZOOM_STEP);
+    if (next <= 1.01) {
+      reset();
+      return;
+    }
+    zoomAround(next, 0, 0, from);
+    void stage;
+  };
+
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") onClose();
       if (event.key === "ArrowRight") goTo(index + 1);
       if (event.key === "ArrowLeft") goTo(index - 1);
+      if (event.key === "+" || event.key === "=") bumpZoom(1);
+      if (event.key === "-" || event.key === "_") bumpZoom(-1);
     };
     window.addEventListener("keydown", onKey);
     const previousOverflow = document.body.style.overflow;
@@ -131,7 +153,15 @@ export function ProductLightbox({ images, name, index, onIndexChange, onClose }:
       window.removeEventListener("keydown", onKey);
       document.body.style.overflow = previousOverflow;
     };
+    // bumpZoom closes over latest view via viewRef
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [goTo, index, onClose]);
+
+  useEffect(() => {
+    if (!hintVisible) return;
+    const id = window.setTimeout(() => setHintVisible(false), 3200);
+    return () => window.clearTimeout(id);
+  }, [hintVisible]);
 
   /** Registered by hand: React's wheel listener is passive, so it cannot block the page zoom. */
   useEffect(() => {
@@ -140,6 +170,7 @@ export function ProductLightbox({ images, name, index, onIndexChange, onClose }:
 
     const onWheel = (event: WheelEvent) => {
       event.preventDefault();
+      setHintVisible(false);
       const rect = stage.getBoundingClientRect();
       const focalX = event.clientX - rect.left - rect.width / 2;
       const focalY = event.clientY - rect.top - rect.height / 2;
@@ -172,10 +203,10 @@ export function ProductLightbox({ images, name, index, onIndexChange, onClose }:
 
   const beginSingle = (clientX: number, clientY: number) => {
     const state = gesture.current;
-    state.mode = view.scale > 1.01 ? "pan" : "idle";
+    state.mode = viewRef.current.scale > 1.01 ? "pan" : "idle";
     state.startX = clientX;
     state.startY = clientY;
-    state.startView = view;
+    state.startView = viewRef.current;
     state.moved = false;
   };
 
@@ -189,12 +220,13 @@ export function ProductLightbox({ images, name, index, onIndexChange, onClose }:
       const state = gesture.current;
       state.mode = "pinch";
       state.startDistance = Math.hypot(a.x - b.x, a.y - b.y) || 1;
-      state.startView = view;
+      state.startView = viewRef.current;
       const focal = stagePoint((a.x + b.x) / 2, (a.y + b.y) / 2);
       state.focalX = focal.x;
       state.focalY = focal.y;
       setDragX(0);
       setDragY(0);
+      setHintVisible(false);
     } else if (pointers.current.size === 1) {
       beginSingle(event.clientX, event.clientY);
     }
@@ -230,7 +262,13 @@ export function ProductLightbox({ images, name, index, onIndexChange, onClose }:
     }
 
     if (state.mode === "pan") {
-      setView(clamp({ scale: state.startView.scale, x: state.startView.x + dx, y: state.startView.y + dy }));
+      setView(
+        clamp({
+          scale: state.startView.scale,
+          x: state.startView.x + dx,
+          y: state.startView.y + dy,
+        })
+      );
     } else if (state.mode === "swipe") {
       setDragX(dx);
     } else if (state.mode === "dismiss") {
@@ -248,10 +286,12 @@ export function ProductLightbox({ images, name, index, onIndexChange, onClose }:
       if (remaining) {
         beginSingle(remaining.x, remaining.y);
         gesture.current.mode = "pan";
-        gesture.current.startView = view;
+        gesture.current.startView = viewRef.current;
         return;
       }
-      if (view.scale <= 1.01) reset();
+      /** Snap near-1x pinches back to fit. */
+      if (viewRef.current.scale <= 1.08) reset();
+      else setView((current) => clamp(current));
       state.mode = "idle";
       setDragging(false);
       return;
@@ -269,9 +309,10 @@ export function ProductLightbox({ images, name, index, onIndexChange, onClose }:
     } else if (!state.moved) {
       const now = Date.now();
       if (now - state.lastTapAt < DOUBLE_TAP_MS) {
+        setHintVisible(false);
         const focal = stagePoint(event.clientX, event.clientY);
-        if (view.scale > 1.01) reset();
-        else zoomAround(TAP_SCALE, focal.x, focal.y, view);
+        if (viewRef.current.scale > 1.01) reset();
+        else zoomAround(TAP_SCALE, focal.x, focal.y, viewRef.current);
         state.lastTapAt = 0;
       } else {
         state.lastTapAt = now;
@@ -287,27 +328,40 @@ export function ProductLightbox({ images, name, index, onIndexChange, onClose }:
   if (typeof document === "undefined") return null;
 
   const progress = Math.min(1, dragY / (DISMISS_DISTANCE * 2));
+  const zoomLabel = `${Math.round(view.scale * 100)}%`;
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[240] flex flex-col"
+      className="lb-shell fixed inset-0 z-[240] flex flex-col"
       role="dialog"
       aria-modal
       aria-label={`${name} images`}
-      style={{ background: `rgb(0 0 0 / ${0.94 - progress * 0.5})` }}
+      style={{ background: `rgb(0 0 0 / ${0.96 - progress * 0.45})` }}
     >
-      <div className="relative z-10 flex items-center justify-between gap-3 px-4 py-3 text-white">
-        <span className="ui tabular-nums">
+      <div className="lb-topbar relative z-10 flex items-center justify-between gap-3 px-3 py-3 text-white sm:px-4">
+        <span className="ui tabular-nums tracking-wide">
           {index + 1} / {images.length}
         </span>
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="Close gallery"
-          className="-m-2 p-2 hover:opacity-70"
-        >
-          <CloseGlyph className="h-5 w-5" />
-        </button>
+        <div className="flex items-center gap-1">
+          {zoomed ? (
+            <button
+              type="button"
+              onClick={reset}
+              className="lb-chip ui-sm mr-1"
+              aria-label="Reset zoom"
+            >
+              {zoomLabel} · Reset
+            </button>
+          ) : null}
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close gallery"
+            className="lb-icon-btn"
+          >
+            <CloseGlyph className="h-5 w-5" />
+          </button>
+        </div>
       </div>
 
       <div
@@ -317,7 +371,10 @@ export function ProductLightbox({ images, name, index, onIndexChange, onClose }:
         onPointerUp={endGesture}
         onPointerCancel={endGesture}
         className="relative flex-1 touch-none overflow-hidden"
-        style={{ transform: `translate3d(0, ${dragY}px, 0)`, cursor: zoomed ? "grab" : "zoom-in" }}
+        style={{
+          transform: `translate3d(0, ${dragY}px, 0)`,
+          cursor: zoomed ? "grab" : "zoom-in",
+        }}
       >
         <div
           className="lb-track flex h-full w-full"
@@ -331,7 +388,9 @@ export function ProductLightbox({ images, name, index, onIndexChange, onClose }:
                 data-dragging={dragging}
                 style={
                   slide === index
-                    ? { transform: `translate3d(${view.x}px, ${view.y}px, 0) scale(${view.scale})` }
+                    ? {
+                        transform: `translate3d(${view.x}px, ${view.y}px, 0) scale(${view.scale})`,
+                      }
                     : undefined
                 }
               >
@@ -339,6 +398,7 @@ export function ProductLightbox({ images, name, index, onIndexChange, onClose }:
                   src={image}
                   alt={`${name} — view ${slide + 1}`}
                   fill
+                  quality={100}
                   /** Asks for a source large enough to hold up when pinched in. */
                   sizes="(min-width: 1024px) 90vw, 180vw"
                   priority={slide === index}
@@ -348,7 +408,7 @@ export function ProductLightbox({ images, name, index, onIndexChange, onClose }:
                     const img = event.currentTarget;
                     setNatural({ w: img.naturalWidth, h: img.naturalHeight });
                   }}
-                  className="h-full w-full object-contain p-4 select-none sm:p-10"
+                  className="h-full w-full object-contain p-2 select-none sm:p-10"
                 />
               </div>
             </div>
@@ -361,44 +421,68 @@ export function ProductLightbox({ images, name, index, onIndexChange, onClose }:
               type="button"
               onClick={() => goTo(index - 1)}
               aria-label="Previous view"
-              className="absolute top-1/2 left-1 hidden -translate-y-1/2 p-3 text-white/70 hover:text-white sm:block"
+              className="lb-nav lb-nav--prev"
             >
-              <ChevronGlyph className="h-6 w-6 rotate-180" />
+              <ChevronGlyph className="h-5 w-5 rotate-180" />
             </button>
             <button
               type="button"
               onClick={() => goTo(index + 1)}
               aria-label="Next view"
-              className="absolute top-1/2 right-1 hidden -translate-y-1/2 p-3 text-white/70 hover:text-white sm:block"
+              className="lb-nav lb-nav--next"
             >
-              <ChevronGlyph className="h-6 w-6" />
+              <ChevronGlyph className="h-5 w-5" />
             </button>
           </>
         ) : null}
 
-        {!zoomed ? (
-          <p className="lb-hint ui-sm pointer-events-none absolute inset-x-0 bottom-3 text-center text-white/70">
-            Double tap or pinch to zoom
+        {hintVisible && !zoomed ? (
+          <p className="lb-hint" aria-hidden>
+            Pinch or double-tap to zoom · Swipe for next
           </p>
         ) : null}
       </div>
 
-      {images.length > 1 ? (
-        <div className="relative z-10 flex justify-center gap-2 px-4 py-4">
-          {images.map((image, slide) => (
-            <button
-              key={image}
-              type="button"
-              onClick={() => goTo(slide)}
-              aria-label={`Show view ${slide + 1}`}
-              aria-current={slide === index}
-              className={`h-1.5 rounded-full transition-all ${
-                slide === index ? "w-6 bg-white" : "w-1.5 bg-white/40"
-              }`}
-            />
-          ))}
+      <div className="lb-toolbar relative z-10 flex flex-col items-center justify-center gap-2 px-4 pb-[max(16px,env(safe-area-inset-bottom))] pt-2">
+        <div className="lb-zoom-stack flex flex-row items-center gap-3">
+          <button
+            type="button"
+            onClick={() => bumpZoom(-1)}
+            disabled={view.scale <= 1.01}
+            aria-label="Zoom out"
+            className="lb-zoom-btn"
+          >
+            −
+          </button>
+          <span className="lb-zoom-label tabular-nums">{zoomLabel}</span>
+          <button
+            type="button"
+            onClick={() => bumpZoom(1)}
+            disabled={view.scale >= MAX_SCALE - 0.01}
+            aria-label="Zoom in"
+            className="lb-zoom-btn"
+          >
+            +
+          </button>
         </div>
-      ) : null}
+
+        {images.length > 1 ? (
+          <div className="mt-1 flex justify-center gap-1.5">
+            {images.map((image, slide) => (
+              <button
+                key={image}
+                type="button"
+                onClick={() => goTo(slide)}
+                aria-label={`Show view ${slide + 1}`}
+                aria-current={slide === index}
+                className={`h-1.5 rounded-full transition-all ${
+                  slide === index ? "w-5 bg-white" : "w-1.5 bg-white/35"
+                }`}
+              />
+            ))}
+          </div>
+        ) : null}
+      </div>
     </div>,
     document.body
   );
