@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   countOnlineByPath,
   countOnlineVisitors,
+  describeDbError,
   ensurePresenceTable,
   isStorefrontPath,
   PRESENCE_ONLINE_WINDOW_MS,
@@ -69,7 +70,7 @@ export async function POST(req: NextRequest) {
     const online = await countOnlineVisitors();
     return noStoreJson({ ok: true, online });
   } catch (err) {
-    console.error("[presence] POST error:", err);
+    console.warn("[presence] POST failed:", describeDbError(err));
     return noStoreJson({ error: "presence failed", online: 0 }, 500);
   }
 }
@@ -89,7 +90,7 @@ export async function GET() {
       pages,
     });
   } catch (err) {
-    console.error("[presence] GET error:", err);
+    console.warn("[presence] GET failed:", describeDbError(err));
     return noStoreJson({ online: 0, pages: [] }, 500);
   }
 }

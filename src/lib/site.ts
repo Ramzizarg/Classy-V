@@ -4,7 +4,7 @@ export const SITE = {
   tagline: "N4E",
   url: "https://classy-v.com",
   description: "NOT FOR EVERYONE.",
-  email: "hello@classyv.store",
+  email: "hello@classy-v.com",
   phone: "+216 00 000 000",
   city: "Tunis, Tunisia",
   instagram: "https://www.instagram.com/classyv.tn?igsh=YXR2OTJoNnA4d2s5",

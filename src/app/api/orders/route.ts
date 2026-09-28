@@ -1,5 +1,6 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { isCartLine, shippingCost } from "@/lib/cart";
+import { sendOrderEmails } from "@/lib/sendOrderEmails";
 import { applyCoupon } from "@/lib/coupons.server";
 import { priceCart } from "@/lib/pricing.server";
 import { buildOrderReference, saveOrder } from "@/lib/store.server";
@@ -94,6 +95,32 @@ export async function POST(request: Request) {
     paymentMethod: "cash-on-delivery",
     status: "pending",
   });
+
+  after(() =>
+    sendOrderEmails({
+      orderId: order.id,
+      reference: order.reference,
+      createdAt: order.createdAt,
+      to: order.customer.email,
+      fullName: order.customer.fullName,
+      phone: order.customer.phone,
+      address: order.customer.address,
+      city: order.customer.city ?? "",
+      governorate: order.customer.governorate,
+      items: order.lines.map((line) => ({
+        product_name: line.name,
+        quantity: line.quantity,
+        price: line.unitPrice,
+        size: line.size || null,
+        color: line.colorway || null,
+        image_url: line.image || null,
+      })),
+      subtotal: order.subtotal,
+      shipping: order.shipping,
+      discount: order.discount,
+      total: order.total,
+    }),
+  );
 
   return NextResponse.json({ reference: order.reference, total: order.total }, { status: 201 });
 }

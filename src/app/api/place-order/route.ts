@@ -154,6 +154,7 @@ export async function POST(req: NextRequest) {
     const shipping = Number(body.shipping ?? 0);
     const discountAmount = Number(body.discountAmount ?? 0);
 
+    const reference = buildOrderReference();
     const orderRes = await neonQuery<{ id: number }>(
       `INSERT INTO shop_orders (
         reference, full_name, email, phone_number, phone_number_2, address, city,
@@ -162,7 +163,7 @@ export async function POST(req: NextRequest) {
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
       RETURNING id`,
       [
-        buildOrderReference(),
+        reference,
         fullName,
         email || null,
         phone,
@@ -214,10 +215,11 @@ export async function POST(req: NextRequest) {
     }
 
     const emailPayload: OrderEmailPayload = {
+      orderId,
+      reference,
       to: email,
       fullName,
       phone,
-      orderId,
       items: items.map((it) => ({
         product_name: it.product_name,
         quantity: it.quantity,
@@ -232,7 +234,7 @@ export async function POST(req: NextRequest) {
       total,
       address,
       city,
-      country,
+      governorate: "",
     };
 
     const emailResult = await sendOrderEmails(emailPayload);

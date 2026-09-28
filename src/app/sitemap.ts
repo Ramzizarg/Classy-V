@@ -1,9 +1,10 @@
 import type { MetadataRoute } from "next";
 import { LEGAL_PAGES } from "@/lib/legalContent";
 import { CATEGORIES } from "@/lib/products";
+import { SITE } from "@/lib/site";
 import { getCatalog } from "@/lib/storefrontCatalog";
 
-const BASE_URL = "https://classyv.store";
+const BASE_URL = SITE.url;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const products = await getCatalog();

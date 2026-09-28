@@ -8,6 +8,13 @@ export const PRESENCE_RETENTION_MS = 30 * 60 * 1000;
 
 let presenceTableReady = false;
 
+/** One-line summary; the full Neon error dumps ~40 lines per heartbeat. */
+export function describeDbError(err: unknown): string {
+  const e = err as { message?: string; sourceError?: { cause?: { code?: string } } } | null;
+  const code = e?.sourceError?.cause?.code;
+  return [e?.message ?? String(err), code].filter(Boolean).join(" — ");
+}
+
 export async function ensurePresenceTable(): Promise<boolean> {
   if (!resolveDatabaseUrl()) return false;
   if (presenceTableReady) return true;
@@ -28,7 +35,7 @@ export async function ensurePresenceTable(): Promise<boolean> {
     presenceTableReady = true;
     return true;
   } catch (err) {
-    console.error("[presence] ensure table failed:", err);
+    console.warn("[presence] database unreachable, heartbeat skipped:", describeDbError(err));
     return false;
   }
 }

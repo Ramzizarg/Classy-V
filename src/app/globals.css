@@ -172,6 +172,14 @@ body {
   overscroll-behavior-x: none;
 }
 
+/* Native browser pull-to-refresh is replaced by the branded one in PullToRefresh. */
+@media (max-width: 1023px) {
+  html,
+  body {
+    overscroll-behavior-y: none;
+  }
+}
+
 /* White top hairline — sits on the header so it moves with fixed/sticky chrome. */
 .site-top-line {
   position: absolute;
