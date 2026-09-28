@@ -333,6 +333,7 @@ export function ProductLightbox({ images, name, index, onIndexChange, onClose }:
   return createPortal(
     <div
       className="lb-shell fixed inset-0 z-[240] flex flex-col"
+      data-no-pull-refresh
       role="dialog"
       aria-modal
       aria-label={`${name} images`}

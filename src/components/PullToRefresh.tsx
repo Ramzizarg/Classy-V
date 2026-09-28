@@ -57,6 +57,18 @@ export function PullToRefresh() {
     const onTouchStart = (event: TouchEvent) => {
       if (!isMobile() || refreshingRef.current) return;
       if (event.touches.length !== 1) return;
+      const target = event.target;
+      if (
+        target instanceof Element &&
+        target.closest('[aria-modal="true"], [role="dialog"], [data-no-pull-refresh]')
+      ) {
+        armed.current = false;
+        return;
+      }
+      if (document.body.style.overflow === "hidden") {
+        armed.current = false;
+        return;
+      }
       if (scrollTop() > 4) {
         armed.current = false;
         return;
