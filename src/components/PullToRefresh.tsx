@@ -7,6 +7,7 @@ import { BRAND_LOGO_SRC } from "@/components/BrandMark";
 const PULL_THRESHOLD = 96;
 const MAX_PULL = 160;
 const MIN_REVEAL = 96;
+const AXIS_LOCK_PX = 12;
 const MOBILE_MQ = "(max-width: 1023px)";
 
 function scrollTop() {
@@ -34,7 +35,9 @@ export function PullToRefresh() {
   const pathname = usePathname();
   const [pull, setPull] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
+  const startX = useRef(0);
   const startY = useRef(0);
+  const axis = useRef<"none" | "x" | "y">("none");
   const pullRef = useRef(0);
   const pulling = useRef(false);
   const armed = useRef(false);
@@ -75,7 +78,9 @@ export function PullToRefresh() {
       }
       const t = event.touches[0];
       if (!t) return;
+      startX.current = t.clientX;
       startY.current = t.clientY;
+      axis.current = "none";
       armed.current = true;
       pulling.current = false;
     };
@@ -90,7 +95,19 @@ export function PullToRefresh() {
       }
       const t = event.touches[0];
       if (!t) return;
+      const dx = t.clientX - startX.current;
       const dy = t.clientY - startY.current;
+      if (axis.current === "none") {
+        if (Math.abs(dx) < AXIS_LOCK_PX && Math.abs(dy) < AXIS_LOCK_PX) return;
+        if (dy <= 0 || Math.abs(dy) < Math.abs(dx) * 1.5) {
+          axis.current = "x";
+          armed.current = false;
+          return;
+        }
+        axis.current = "y";
+        startY.current = t.clientY;
+        return;
+      }
       if (dy <= 6) {
         if (dy <= 0) {
           pulling.current = false;
