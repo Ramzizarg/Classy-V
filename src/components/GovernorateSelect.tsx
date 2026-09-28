@@ -31,6 +31,8 @@ export function GovernorateSelect({
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
+  /** Touch screens pick from the list only, so tapping never pops the keyboard over it. */
+  const [pickOnly, setPickOnly] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
   const listId = useId();
@@ -40,6 +42,14 @@ export function GovernorateSelect({
     if (!needle) return [...options];
     return options.filter((option) => fold(option).includes(needle));
   }, [options, query]);
+
+  useEffect(() => {
+    const coarse = window.matchMedia("(pointer: coarse)");
+    const sync = () => setPickOnly(coarse.matches);
+    sync();
+    coarse.addEventListener("change", sync);
+    return () => coarse.removeEventListener("change", sync);
+  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -117,8 +127,10 @@ export function GovernorateSelect({
           open && matches[activeIndex] ? `${listId}-${activeIndex}` : undefined
         }
         autoComplete="off"
+        readOnly={pickOnly}
+        inputMode={pickOnly ? "none" : undefined}
         placeholder={value || "Governorate"}
-        value={open ? query : value}
+        value={open && !pickOnly ? query : value}
         onChange={(event) => {
           setQuery(event.target.value);
           setOpen(true);
@@ -126,11 +138,12 @@ export function GovernorateSelect({
         }}
         onMouseDown={() => {
           if (!open) openList();
+          else if (pickOnly) setOpen(false);
         }}
         onKeyDown={handleKeyDown}
         className={`checkout-field checkout-field--menu ${
-          invalid ? "checkout-field--invalid" : ""
-        }`}
+          pickOnly ? "checkout-field--pick" : ""
+        } ${invalid ? "checkout-field--invalid" : ""}`}
       />
 
       {open ? (

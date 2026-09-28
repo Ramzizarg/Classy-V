@@ -934,6 +934,13 @@ select.checkout-field,
   cursor: pointer;
 }
 
+.checkout-field--pick {
+  caret-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
 .checkout-field--invalid,
 .checkout-field--invalid:focus {
   border-color: #c62828;

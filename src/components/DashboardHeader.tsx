@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LayoutDashboard, BarChart3, Package, Home, Globe, LogOut } from "lucide-react";
+import { BRAND_LOGO_SRC } from "@/components/BrandMark";
 import { DashboardOnlineVisitors } from "@/components/DashboardOnlineVisitors";
 
 export function DashboardHeader() {
@@ -29,7 +30,7 @@ export function DashboardHeader() {
             <Link href="/dashboard" className="block rounded">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src="/brand/classy%20v%203.png"
+                src={BRAND_LOGO_SRC}
                 alt="Classy V"
                 className="h-11 w-auto brightness-0 invert"
               />
