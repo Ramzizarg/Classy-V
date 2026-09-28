@@ -32,7 +32,7 @@ export function DashboardHeader() {
               <img
                 src={BRAND_LOGO_SRC}
                 alt="Classy V"
-                className="h-11 w-auto brightness-0 invert"
+                className="h-14 w-auto brightness-0 invert sm:h-16"
               />
             </Link>
           </div>
