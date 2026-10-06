@@ -2,6 +2,7 @@ import { cache } from "react";
 import { neonQuery, resolveDatabaseUrl } from "@/lib/neon-db";
 import { parseSizeStocks } from "@/lib/productSizeStock";
 import { slugifyProductName } from "@/lib/productUrl";
+import { parseProductSizeGuide } from "@/lib/sizeCharts";
 import { CATEGORIES } from "@/lib/products";
 import type { CategorySlug, Product, SizeStock } from "@/lib/types";
 
@@ -22,6 +23,7 @@ type ProductRow = {
   sizes: unknown;
   created_at: string | Date;
   variant_group: string | null;
+  measurement_table: unknown;
   category_slug: string | null;
   category_name: string | null;
 };
@@ -89,12 +91,17 @@ function rowToProduct(row: ProductRow): Product {
   const salePrice = discount != null && discount > 0 && discount < price ? discount : null;
   const stock = Math.max(0, Math.trunc(toNumber(row.stock)));
   const description = toText(row.description);
+  const categorySlug = toCategorySlug(row.category_slug, row.category_name);
+  const sizeChartKey =
+    slugifyProductName(row.category_slug) || slugifyProductName(row.category_name) || categorySlug;
 
   return {
     id: row.id,
     slug: row.slug?.trim() || slugifyProductName(row.name) || `id-${row.id}`,
     name: row.name,
-    categorySlug: toCategorySlug(row.category_slug, row.category_name),
+    categorySlug,
+    sizeChartKey,
+    sizeGuide: parseProductSizeGuide(row.measurement_table, sizeChartKey, row.category_name?.trim() || ""),
     price,
     salePrice,
     colorway: "",
@@ -129,6 +136,7 @@ const getDatabaseProducts = cache(async (): Promise<Product[]> => {
               p.sizes,
               p.created_at,
               p.variant_group,
+              p.measurement_table,
               c.slug AS category_slug,
               c.name AS category_name
          FROM products p

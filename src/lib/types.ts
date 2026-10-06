@@ -1,3 +1,5 @@
+import type { ProductSizeGuide } from "@/lib/sizeCharts";
+
 export type CategorySlug =
   | "t-shirts"
   | "tops-jerseys"
@@ -47,6 +49,10 @@ export type Product = {
   featured?: boolean;
   /** Products sharing this key are the same piece in different colours. */
   variantGroup?: string | null;
+  /** Back-office category slug, used to look up the type's size chart. */
+  sizeChartKey?: string;
+  /** Size guide override for this product (standard / custom / off). */
+  sizeGuide?: ProductSizeGuide;
   releasedAt: string;
 };
 

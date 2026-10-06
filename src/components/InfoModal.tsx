@@ -14,10 +14,12 @@ export function InfoModal({
   title,
   onClose,
   children,
+  wide = false,
 }: {
   title: string;
   onClose: () => void;
   children: ReactNode;
+  wide?: boolean;
 }) {
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -52,7 +54,11 @@ export function InfoModal({
         className="absolute inset-0 bg-black/80"
       />
 
-      <div className="fade-in camo-surface relative flex max-h-[86svh] w-full max-w-2xl flex-col border border-line">
+      <div
+        className={`fade-in camo-surface relative flex max-h-[90svh] w-full flex-col border border-line ${
+          wide ? "max-w-4xl" : "max-w-2xl"
+        }`}
+      >
         <div className="flex items-center justify-between gap-3 border-b border-line px-3 py-2.5">
           <span className="ui font-bold">{title}</span>
           <button

@@ -10,6 +10,8 @@ import { deflateSync, inflateSync } from "node:zlib";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const ICON_SOURCE = { file: join(root, "public", "brand", "classy V.png") };
+/** Browser tab and home-screen icons use the oval stamp logo. */
+const TAB_SOURCE = { file: join(root, "public", "images", "loogo.png") };
 /** The sparkle lockup is painted the other way round: white mark on black paper. */
 const RAIL_SOURCE = { file: join(root, "public", "brand", "Classy V 2.png"), lightInk: true };
 const SPLASH_SOURCE = { file: join(root, "public", "brand", "classy v 4.png"), lightInk: true };
@@ -20,10 +22,11 @@ const ICON_INK = [255, 255, 255];
 const RAIL_INK = [255, 255, 255];
 
 const TARGETS = [
-  { file: join(root, "src", "app", "icon.png"), size: 256, shape: "circle", fill: 0.8 },
-  { file: join(root, "public", "brand", "classy-v-circle.png"), size: 512, shape: "circle", fill: 0.8 },
-  // iOS renders transparency as black and applies its own mask, so ship a full bleed square.
-  { file: join(root, "src", "app", "apple-icon.png"), size: 180, shape: "square", fill: 0.76 },
+  // Large source so browsers / OPSes can downscale cleanly; oval fills most of the disc.
+  { source: TAB_SOURCE, file: join(root, "src", "app", "icon.png"), size: 512, shape: "circle", fill: 0.92, supersample: 2 },
+  { source: ICON_SOURCE, file: join(root, "public", "brand", "classy-v-circle.png"), size: 512, shape: "circle", fill: 0.8 },
+  // iOS wants 180, but we supersample while drawing so the stamp stays sharp.
+  { source: TAB_SOURCE, file: join(root, "src", "app", "apple-icon.png"), size: 180, shape: "square", fill: 0.88, supersample: 3 },
 ];
 
 /** Trimmed, transparent, light-ink marks: the storefront rail and the boot splash. */
@@ -130,7 +133,7 @@ function inkAt(image, x, y) {
   return (alpha / 255) * coverage;
 }
 
-function inkBounds(image, threshold = 0.35) {
+function inkBounds(image, threshold = 0.22) {
   let minX = image.width;
   let minY = image.height;
   let maxX = -1;
@@ -186,15 +189,21 @@ function discCoverage(x, y, size) {
   return hits / 16;
 }
 
-function renderIcon(image, bounds, { size, shape, fill }) {
+/**
+ * Draw at `size × supersample`, then box-average down. Keeps the distressed oval
+ * crisp when the browser shrinks the favicon to 16–32px.
+ */
+function renderIcon(image, bounds, { size, shape, fill, supersample = 1 }) {
+  const samples = Math.max(1, Math.round(supersample));
+  const hi = size * samples;
   const side = Math.max(bounds.width, bounds.height) / fill;
   const originX = bounds.x + bounds.width / 2 - side / 2;
   const originY = bounds.y + bounds.height / 2 - side / 2;
-  const scale = side / size;
-  const rgba = new Uint8Array(size * size * 4);
+  const scale = side / hi;
+  const hiRgba = new Uint8Array(hi * hi * 4);
 
-  for (let y = 0; y < size; y += 1) {
-    for (let x = 0; x < size; x += 1) {
+  for (let y = 0; y < hi; y += 1) {
+    for (let x = 0; x < hi; x += 1) {
       const ink = sampleInk(
         image,
         originX + x * scale,
@@ -202,18 +211,46 @@ function renderIcon(image, bounds, { size, shape, fill }) {
         originX + (x + 1) * scale,
         originY + (y + 1) * scale
       );
-      const mask = shape === "circle" ? discCoverage(x, y, size) : 1;
-      const index = (y * size + x) * 4;
+      // Slight contrast lift so thin distress marks stay visible after downscale.
+      const punch = Math.min(1, ink * 1.18);
+      const mask = shape === "circle" ? discCoverage(x, y, hi) : 1;
+      const index = (y * hi + x) * 4;
 
       for (let channel = 0; channel < 3; channel += 1) {
-        rgba[index + channel] = Math.round(
-          DISC[channel] + (ICON_INK[channel] - DISC[channel]) * ink
+        hiRgba[index + channel] = Math.round(
+          DISC[channel] + (ICON_INK[channel] - DISC[channel]) * punch
         );
       }
-      rgba[index + 3] = Math.round(mask * 255);
+      hiRgba[index + 3] = Math.round(mask * 255);
     }
   }
 
+  if (samples === 1) return hiRgba;
+
+  const rgba = new Uint8Array(size * size * 4);
+  const area = samples * samples;
+  for (let y = 0; y < size; y += 1) {
+    for (let x = 0; x < size; x += 1) {
+      let r = 0;
+      let g = 0;
+      let b = 0;
+      let a = 0;
+      for (let sy = 0; sy < samples; sy += 1) {
+        for (let sx = 0; sx < samples; sx += 1) {
+          const index = ((y * samples + sy) * hi + (x * samples + sx)) * 4;
+          r += hiRgba[index];
+          g += hiRgba[index + 1];
+          b += hiRgba[index + 2];
+          a += hiRgba[index + 3];
+        }
+      }
+      const out = (y * size + x) * 4;
+      rgba[out] = Math.round(r / area);
+      rgba[out + 1] = Math.round(g / area);
+      rgba[out + 2] = Math.round(b / area);
+      rgba[out + 3] = Math.round(a / area);
+    }
+  }
   return rgba;
 }
 
@@ -298,14 +335,18 @@ async function loadMark({ file, lightInk = false }) {
 }
 
 async function main() {
-  const iconMark = await loadMark(ICON_SOURCE);
-  const iconBounds = inkBounds(iconMark);
+  const marks = new Map();
 
   for (const target of TARGETS) {
+    if (!marks.has(target.source)) {
+      const mark = await loadMark(target.source);
+      marks.set(target.source, { mark, bounds: inkBounds(mark) });
+    }
+    const { mark, bounds } = marks.get(target.source);
     await mkdir(dirname(target.file), { recursive: true });
     await writeFile(
       target.file,
-      encodePng(target.size, target.size, renderIcon(iconMark, iconBounds, target))
+      encodePng(target.size, target.size, renderIcon(mark, bounds, target))
     );
     console.log(`${target.shape} ${target.size}px -> ${target.file}`);
   }

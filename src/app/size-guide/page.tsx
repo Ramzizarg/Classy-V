@@ -1,38 +1,41 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { SizeChart } from "@/components/SizeChart";
-import { MEASURE_NOTES, SIZE_GUIDE_INTRO, SIZE_TABLES } from "@/lib/size-guide";
+import { SizeGuideExplorer } from "@/components/SizeGuideExplorer";
+import { standardSizeChart, STANDARD_TEMPLATES } from "@/lib/sizeCharts";
+import { getAllSizeCharts } from "@/lib/sizeCharts.server";
 
 export const metadata: Metadata = {
   title: "Size guide",
-  description: "Measurements for Classy V tees, sweats, outerwear, bottoms and headwear.",
+  description: "Find your Classy V size from your height and weight, plus full garment measurements.",
 };
 
-export default function SizeGuidePage() {
+export const dynamic = "force-dynamic";
+
+export default async function SizeGuidePage() {
+  const saved = await getAllSizeCharts()
+    .then((list) => list.filter((chart) => chart.enabled && chart.rows.length > 0))
+    .catch(() => []);
+  const charts = saved.length
+    ? saved
+    : STANDARD_TEMPLATES.map((template) => standardSizeChart(template.key, template.label, template.key));
+
   return (
     <section className="px-3 pb-10 sm:px-4">
       <h1 className="page-title">Size guide</h1>
-      <p className="prose-raw mt-3 max-w-xl">{SIZE_GUIDE_INTRO}</p>
+      <p className="prose-raw mt-3 max-w-xl">
+        Pick a product type, enter your height and weight and we&apos;ll suggest your size. Every chart lists
+        garment measurements taken flat.
+      </p>
 
-      {SIZE_TABLES.map((table) => (
-        <SizeChart key={table.title} table={table} />
-      ))}
+      <SizeGuideExplorer charts={charts} />
 
-      <div className="mt-8 max-w-2xl border-t border-line pt-4">
-        <p className="section-title">How to measure</p>
-        <ul className="prose-raw mt-2 list-disc pl-4">
-          {MEASURE_NOTES.map((note) => (
-            <li key={note}>{note}</li>
-          ))}
-        </ul>
-        <p className="prose-raw mt-3">
-          Unsure? Send your usual size and height on the{" "}
-          <Link href="/contact" className="u">
-            contact page
-          </Link>
-          .
-        </p>
-      </div>
+      <p className="prose-raw mt-8 max-w-xl">
+        Still unsure? Send your usual size and height on the{" "}
+        <Link href="/contact" className="u">
+          contact page
+        </Link>
+        .
+      </p>
     </section>
   );
 }

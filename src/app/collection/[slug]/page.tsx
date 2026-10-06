@@ -15,6 +15,8 @@ import {
 } from "@/lib/products";
 import { colourVariants, getCatalog } from "@/lib/storefrontCatalog";
 import { getShippingRate } from "@/lib/shipping.server";
+import { resolveProductSizeChart } from "@/lib/sizeCharts";
+import { getTypeSizeChart } from "@/lib/sizeCharts.server";
 import { SITE } from "@/lib/site";
 
 type Params = Promise<{ slug: string }>;
@@ -46,7 +48,11 @@ export default async function ProductPage({ params }: { params: Params }) {
 
   const category = getCategory(product.categorySlug);
   const price = effectivePrice(product);
-  const shippingRate = await getShippingRate();
+  const [shippingRate, typeChart] = await Promise.all([
+    getShippingRate(),
+    getTypeSizeChart(product.sizeChartKey || product.categorySlug, category?.name),
+  ]);
+  const sizeChart = resolveProductSizeChart(product.sizeGuide, typeChart);
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -95,7 +101,11 @@ export default async function ProductPage({ params }: { params: Params }) {
         <ProductGallery images={product.images} name={product.name} />
 
         <div className="product-layout__buy w-full">
-          <ProductPurchasePanel product={product} variants={colourVariants(product, catalog)} />
+          <ProductPurchasePanel
+            product={product}
+            variants={colourVariants(product, catalog)}
+            sizeChart={sizeChart}
+          />
 
           <ProductInfoAccordion
             items={[

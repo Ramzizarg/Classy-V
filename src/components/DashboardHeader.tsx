@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, BarChart3, Package, Home, Globe, LogOut } from "lucide-react";
+import { LayoutDashboard, BarChart3, Package, Home, Globe, LogOut, Ruler, Megaphone } from "lucide-react";
 import { BRAND_LOGO_SRC } from "@/components/BrandMark";
 import { DashboardOnlineVisitors } from "@/components/DashboardOnlineVisitors";
 
@@ -25,6 +25,9 @@ export function DashboardHeader() {
             <Link href="/dashboard/produits" className={linkClass(pathname === "/dashboard/produits")}>
               <Package className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Products</span>
             </Link>
+            <Link href="/dashboard/ads" className={linkClass(pathname === "/dashboard/ads")}>
+              <Megaphone className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Ads</span>
+            </Link>
           </nav>
           <div className="flex justify-center">
             <Link href="/dashboard" className="block rounded">
@@ -39,6 +42,9 @@ export function DashboardHeader() {
           <nav className="flex items-center gap-1 text-xs tracking-[0.12em] uppercase justify-start">
             <Link href="/dashboard/home" className={linkClass(pathname === "/dashboard/home")}>
               <Home className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Home</span>
+            </Link>
+            <Link href="/dashboard/tailles" className={linkClass(pathname === "/dashboard/tailles")}>
+              <Ruler className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Sizes</span>
             </Link>
             <Link href="/" className={linkClass(false)}>
               <Globe className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Site</span>

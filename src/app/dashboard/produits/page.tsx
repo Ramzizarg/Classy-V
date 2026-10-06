@@ -2,7 +2,16 @@
 
 import { useEffect, useState, useRef } from "react";
 import { supabaseBrowserClient } from "@/lib/supabaseClient";
-import { productPathSlug } from "@/lib/productUrl";
+import { productPathSlug, slugifyProductName } from "@/lib/productUrl";
+import { SizeChartEditor, SizeSwitch } from "@/components/SizeChartEditor";
+import {
+  parseProductSizeGuide,
+  serializeProductSizeGuide,
+  sizeChartProblems,
+  standardSizeChart,
+  type ProductSizeGuide,
+  type SizeChart,
+} from "@/lib/sizeCharts";
 import type { Product, Category, Coupon, SizeStock } from "@/lib/shop-db-types";
 import { isProductOutOfStock } from "@/lib/productSizesDisplay";
 import { parseSizeStocks, totalSizeStock } from "@/lib/productSizeStock";
@@ -68,35 +77,49 @@ function CouponCountdown({ expiresAt, startsAt }: { expiresAt: string | null; st
   return <span className="block text-zinc-500 mt-0.5 font-medium tabular-nums">⏱ {str} left</span>;
 }
 
-const DEFAULT_MEASUREMENT: string[][] = [
-  ["Size", "Measure 1", "Measure 2"],
-  ["XS", "", ""],
-  ["S", "", ""],
-  ["M", "", ""],
+type SizeGuideMode = ProductSizeGuide["mode"];
+
+const SIZE_GUIDE_MODES: { id: SizeGuideMode; label: string; short: string }[] = [
+  { id: "standard", label: "Standard", short: "Standard" },
+  { id: "custom", label: "Custom for this product", short: "Custom" },
+  { id: "off", label: "None", short: "None" },
 ];
 
-function parseMeasurementTable(raw: string | null | undefined | unknown): string[][] {
-  const fallback = () => DEFAULT_MEASUREMENT.map((r) => [...r]);
-  if (raw == null) return fallback();
-  if (Array.isArray(raw)) {
-    const rows = raw as unknown[][];
-    if (!rows.length) return fallback();
-    return rows.map((line) => (Array.isArray(line) ? line.map((c) => String(c ?? "")) : [String(line ?? "")]));
-  }
-  if (typeof raw !== "string") return fallback();
-  if (!raw.trim()) return fallback();
-  const trimmed = raw.trim();
-  if (trimmed.startsWith("[")) {
-    try {
-      const parsed = JSON.parse(trimmed) as string[][];
-      if (!Array.isArray(parsed) || parsed.length === 0) return fallback();
-      return parsed.map((line) => (Array.isArray(line) ? line.map((c) => String(c ?? "")) : [String(line ?? "")]));
-    } catch {
-      // fallback to CSV
-    }
-  }
-  const rows = trimmed.split(/\r?\n/).map((line) => line.split(",").map((c) => c.trim()));
-  return rows.length > 0 ? rows : fallback();
+function categorySizeKey(category: Category | undefined): string {
+  if (!category) return "";
+  return slugifyProductName(category.slug) || slugifyProductName(category.name) || "";
+}
+
+/** Read-only view of the type's table shown while a product follows the standard. */
+function SizeChartReadOnly({ chart }: { chart: SizeChart }) {
+  return (
+    <div className="overflow-x-auto rounded-lg border border-zinc-200">
+      <table className="w-full border-collapse text-xs">
+        <thead>
+          <tr className="bg-zinc-50 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
+            <th className="px-3 py-2 text-left">Size</th>
+            {chart.columns.map((column, i) => (
+              <th key={i} className="px-3 py-2 text-left">
+                {column}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {chart.rows.map((row, i) => (
+            <tr key={i} className="border-t border-zinc-100">
+              <td className="px-3 py-1.5 font-bold">{row.size}</td>
+              {chart.columns.map((_, j) => (
+                <td key={j} className="px-3 py-1.5 tabular-nums text-zinc-700">
+                  {row.values[j] || "—"}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
 }
 
 function normalizeProductImages(raw: unknown): string[] {
@@ -150,12 +173,10 @@ export default function DashboardProduitsPage() {
   const [variantOf, setVariantOf] = useState<string>("");
   const [imagesStr, setImagesStr] = useState("");
   const [sizeGuideUrl, setSizeGuideUrl] = useState("");
-  const [measurementRows, setMeasurementRows] = useState<string[][]>([
-    ["Size", "Measure 1", "Measure 2"],
-    ["XS", "", ""],
-    ["S", "", ""],
-    ["M", "", ""],
-  ]);
+  const [typeCharts, setTypeCharts] = useState<SizeChart[]>([]);
+  const [guideMode, setGuideMode] = useState<SizeGuideMode>("standard");
+  /** Kept while switching modes so custom edits survive a detour through "Standard". */
+  const [customChart, setCustomChart] = useState<SizeChart | null>(null);
   /** Selected sizes → qty text. Missing key = size not selected. */
   const [sizeStocks, setSizeStocks] = useState<Record<string, string>>({});
   const [productImageUrls, setProductImageUrls] = useState<string[]>([]);
@@ -217,7 +238,34 @@ export default function DashboardProduitsPage() {
 
   useEffect(() => {
     load();
+    fetch("/api/backoffice/size-charts", { cache: "no-store" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: { charts?: SizeChart[] } | null) => setTypeCharts(data?.charts ?? []))
+      .catch(() => {});
   }, []);
+
+  const formCategory = categories.find((c) => String(c.id) === categoryId);
+  const formSizeKey = categorySizeKey(formCategory);
+  const typeChart: SizeChart | null = formCategory
+    ? typeCharts.find((chart) => chart.slug === formSizeKey) ?? standardSizeChart(formSizeKey, formCategory.name)
+    : null;
+
+  const startCustomChart = () => {
+    const base = typeChart ?? standardSizeChart("custom", "Size guide", "t-shirts");
+    const productSizes = Object.keys(sizeStocks).map((s) => s.toUpperCase());
+    const matching = base.rows.filter((row) => productSizes.includes(row.size.trim().toUpperCase()));
+    setCustomChart({
+      ...base,
+      rows: matching.length > 0 ? matching : base.rows,
+      enabled: true,
+      isCustom: true,
+      updatedAt: null,
+    });
+    setGuideMode("custom");
+  };
+
+  const updateCustomChart = (fn: (current: SizeChart) => SizeChart) =>
+    setCustomChart((current) => (current ? fn(current) : current));
 
   const openCreate = () => {
     setEditing(null);
@@ -229,7 +277,8 @@ export default function DashboardProduitsPage() {
     setVariantOf("");
     setImagesStr("");
     setSizeGuideUrl("");
-    setMeasurementRows([["Size", "Measure 1", "Measure 2"], ["XS", "", ""], ["S", "", ""], ["M", "", ""]]);
+    setGuideMode("standard");
+    setCustomChart(null);
     setSizeStocks({});
     setProductImageUrls([]);
     setShowUrlImages(false);
@@ -262,7 +311,14 @@ export default function DashboardProduitsPage() {
     setVariantOf(sibling ? String(sibling.id) : "");
     setImagesStr("");
     setSizeGuideUrl(p.size_guide_image ?? "");
-    setMeasurementRows(parseMeasurementTable(p.measurement_table as unknown));
+    const productCategory = categories.find((c) => c.id === p.category_id);
+    const guide = parseProductSizeGuide(
+      p.measurement_table as unknown,
+      categorySizeKey(productCategory) || "custom",
+      productCategory?.name ?? "",
+    );
+    setGuideMode(guide.mode);
+    setCustomChart(guide.mode === "custom" ? guide.chart : null);
     setProductImageUrls(normalizeProductImages(p.images));
     setShowUrlImages(false);
     setFormOpen(true);
@@ -354,6 +410,14 @@ export default function DashboardProduitsPage() {
       }
       const salePrice = saleRaw != null && !Number.isNaN(saleRaw) && saleRaw > 0 ? saleRaw : null;
 
+      let sizeGuide: ProductSizeGuide = { mode: "standard" };
+      if (guideMode === "off") sizeGuide = { mode: "off" };
+      if (guideMode === "custom" && customChart) {
+        const problems = sizeChartProblems(customChart);
+        if (problems.length > 0) throw new Error(`Size guide: ${problems[0]}`);
+        sizeGuide = { mode: "custom", chart: customChart };
+      }
+
       const payload: Record<string, unknown> = {
         name: name.trim(),
         description: hasDescription ? description : null,
@@ -363,7 +427,7 @@ export default function DashboardProduitsPage() {
         images: allImages,
         discount_price: salePrice,
         size_guide_image: sizeGuideUrl || null,
-        measurement_table: measurementRows.length > 0 ? measurementRows.map((r) => [...r]) : null,
+        measurement_table: serializeProductSizeGuide(sizeGuide),
         sizes: sizePayload,
         active: true,
         variant_group: variantGroup,
@@ -1386,98 +1450,101 @@ export default function DashboardProduitsPage() {
               )}
             </div>
 
-            <div>
-              <label className="block text-xs font-medium text-black mb-1.5">Measurement table</label>
-              <div className="border border-zinc-300 rounded-lg overflow-hidden">
-                <table className="text-xs w-full table-fixed">
-                  <thead>
-                    {measurementRows.length > 0 && (
-                      <tr className="bg-zinc-100 border-b border-zinc-300">
-                        {measurementRows[0].map((_, colIndex) => (
-                          <th key={colIndex} className="text-left p-0 overflow-hidden align-top">
-                            <div className="flex flex-row items-center gap-0.5 w-full min-w-0">
-                              {measurementRows[0].length > 1 && (
-                                <button
-                                  type="button"
-                                  onClick={() => setMeasurementRows(measurementRows.map((row) => row.filter((_, i) => i !== colIndex)))}
-                                  className="shrink-0 p-0.5 text-zinc-400 hover:text-red-600"
-                                  aria-label={`Remove column ${colIndex + 1}`}
-                                >
-                                  <Trash2 className="h-3.5 w-3.5" />
-                                </button>
-                              )}
-                              <input
-                                type="text"
-                                value={measurementRows[0][colIndex] ?? ""}
-                                onChange={(e) => {
-                                  const next = measurementRows.map((row, r) => (r === 0 ? row.map((c, i) => (i === colIndex ? e.target.value : c)) : row));
-                                  setMeasurementRows(next);
-                                }}
-                                className="flex-1 min-w-0 bg-zinc-100 text-black px-1.5 py-1 border-r border-zinc-300 focus:outline-none focus:ring-1 focus:ring-zinc-400 text-[11px]"
-                                placeholder="Column"
-                              />
-                            </div>
-                          </th>
-                        ))}
-                        <th className="w-9 border-l border-zinc-300 bg-zinc-100" />
-                      </tr>
-                    )}
-                  </thead>
-                  <tbody>
-                    {measurementRows.slice(1).map((row, rowIndex) => (
-                      <tr key={rowIndex} className="border-b border-zinc-300">
-                        {row.map((cell, colIndex) => (
-                          <td key={colIndex} className="p-0 border-r border-zinc-300 last:border-r-0">
-                            <input
-                              type="text"
-                              value={cell}
-                              onChange={(e) => {
-                                const actualIndex = rowIndex + 1;
-                                const next = measurementRows.map((row, rowIdx) =>
-                                  rowIdx === actualIndex ? row.map((c, i) => (i === colIndex ? e.target.value : c)) : row
-                                );
-                                setMeasurementRows(next);
-                              }}
-                              className="w-full min-w-0 bg-white text-black px-1.5 py-1 focus:outline-none focus:ring-1 focus:ring-zinc-400 text-[11px]"
-                            />
-                          </td>
-                        ))}
-                        <td className="p-0 w-9 border-l border-zinc-300 align-middle">
-                          <button
-                            type="button"
-                            onClick={() => setMeasurementRows(measurementRows.filter((_, i) => i !== rowIndex + 1))}
-                            className="w-full py-1.5 text-zinc-400 hover:text-red-600"
-                            aria-label="Remove row"
-                          >
-                            <Trash2 className="h-3.5 w-3.5 mx-auto" />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+            <div className="-mx-1 rounded-lg border border-zinc-200 bg-zinc-50/60 p-2.5 sm:mx-0 sm:p-4 space-y-3">
+              <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-black">Size guide</p>
+                  <p className="mt-0.5 text-[11px] text-zinc-500">
+                    {formCategory
+                      ? `Standard = the ${typeChart?.title ?? formCategory.name} table from Sizes.`
+                      : "Pick a category to load its standard size table."}
+                  </p>
+                </div>
+                <div className="grid grid-cols-3 rounded border border-zinc-300 bg-white p-0.5 sm:inline-flex">
+                  {SIZE_GUIDE_MODES.map((mode) => (
+                    <button
+                      key={mode.id}
+                      type="button"
+                      onClick={() => {
+                        if (mode.id === "custom" && !customChart) startCustomChart();
+                        else setGuideMode(mode.id);
+                      }}
+                      className={`rounded-sm px-3 py-2 text-[11px] font-semibold uppercase tracking-wider transition-colors sm:py-1.5 ${
+                        guideMode === mode.id ? "bg-black text-white" : "text-zinc-500 hover:text-black"
+                      }`}
+                    >
+                      <span className="sm:hidden">{mode.short}</span>
+                      <span className="hidden sm:inline">{mode.label}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
-              <div className="flex flex-wrap gap-2 mt-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    const cols = measurementRows[0]?.length ?? 3;
-                    setMeasurementRows([...measurementRows, Array(cols).fill("")]);
-                  }}
-                  className="inline-flex items-center gap-1 px-2 py-1.5 text-xs font-medium text-zinc-600 bg-zinc-100 hover:bg-zinc-200 rounded border border-zinc-300"
-                >
-                  <Plus className="h-3.5 w-3.5" />
-                  Add row
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setMeasurementRows(measurementRows.map((row) => [...row, ""]))}
-                  className="inline-flex items-center gap-1 px-2 py-1.5 text-xs font-medium text-zinc-600 bg-zinc-100 hover:bg-zinc-200 rounded border border-zinc-300"
-                >
-                  <Plus className="h-3.5 w-3.5" />
-                  Add column
-                </button>
-              </div>
+
+              {guideMode === "standard" ? (
+                typeChart ? (
+                  <div className="space-y-2">
+                    {!typeChart.enabled ? (
+                      <p className="rounded border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-800">
+                        The size guide is off for {typeChart.title}, so this product shows none. Choose
+                        &quot;Custom for this product&quot; to give it one anyway.
+                      </p>
+                    ) : null}
+                    <SizeChartReadOnly chart={typeChart} />
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={startCustomChart}
+                        className="inline-flex items-center gap-1.5 rounded bg-black px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-white hover:bg-zinc-800"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                        Customize for this product
+                      </button>
+                      <Link
+                        href="/dashboard/tailles"
+                        target="_blank"
+                        className="text-[11px] font-medium text-zinc-500 underline-offset-2 hover:text-black hover:underline"
+                      >
+                        Edit the {typeChart.title} table for all products
+                      </Link>
+                    </div>
+                  </div>
+                ) : null
+              ) : null}
+
+              {guideMode === "custom" && customChart ? (
+                <div className="space-y-3 sm:rounded-lg sm:border sm:border-zinc-200 sm:bg-white sm:p-3">
+                  <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
+                    <label className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-black">
+                      <SizeSwitch
+                        label="Size finder"
+                        checked={customChart.finderEnabled}
+                        onChange={(finderEnabled) => updateCustomChart((c) => ({ ...c, finderEnabled }))}
+                      />
+                      Size finder (height &amp; weight)
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (window.confirm("Replace this product's table with the standard one?")) startCustomChart();
+                      }}
+                      className="text-[11px] font-medium text-zinc-500 underline-offset-2 hover:text-black hover:underline"
+                    >
+                      Copy the standard table again
+                    </button>
+                  </div>
+                  <SizeChartEditor
+                    chart={customChart}
+                    onChange={updateCustomChart}
+                    previewNote="How customers will see this product's size guide."
+                  />
+                </div>
+              ) : null}
+
+              {guideMode === "off" ? (
+                <p className="rounded border border-dashed border-zinc-300 bg-white px-3 py-4 text-center text-[11px] text-zinc-500">
+                  No size guide on this product (the &quot;Find my size&quot; link is hidden).
+                </p>
+              ) : null}
             </div>
 
             <div>
