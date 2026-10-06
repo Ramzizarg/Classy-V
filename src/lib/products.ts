@@ -1,7 +1,7 @@
 import type { Category, CategorySlug, Product } from "@/lib/types";
 
 export const CATEGORIES: Category[] = [
-  { slug: "bottoms", name: "Bottoms", tagline: "Tailored cargos and wide trousers" },
+  { slug: "sweatpants", name: "Sweatpants", tagline: "Heavyweight fleece, relaxed fits" },
   { slug: "sweatshirts", name: "Sweatshirts", tagline: "Loopback fleece, washed finishes" },
   { slug: "hoodies", name: "Hoodies", tagline: "Heavyweight hoods, everyday layers" },
   { slug: "jackets", name: "Jackets", tagline: "Wool varsities and coach jackets" },

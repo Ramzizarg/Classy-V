@@ -11,7 +11,7 @@ const TIMELINE = [
   { year: "2023", copy: "One heavyweight tee, sold out of a backpack in Tunis." },
   { year: "2024", copy: "First fleece programme. The Legacy hoodie becomes the house piece." },
   { year: "2025", copy: "Headwear line launches. First 500-order month." },
-  { year: "2026", copy: "Season 01 — tees, fleece, outerwear, bottoms, headwear." },
+  { year: "2026", copy: "Season 01 — tees, fleece, outerwear, sweatpants, headwear." },
 ];
 
 export default function AboutPage() {

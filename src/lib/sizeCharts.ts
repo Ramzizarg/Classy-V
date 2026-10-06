@@ -174,24 +174,22 @@ const TEMPLATES: Record<string, Template> = {
     fitNote: "Regular fit. Knit relaxes slightly with wear.",
     howToMeasure: TOP_MEASURE,
   },
-  bottoms: {
+  sweatpants: {
     enabled: true,
     finderEnabled: true,
-    columns: ["Waist", "Hip", "Inseam", "Leg opening"],
+    columns: ["Waist", "Length"],
     rows: letterRows([
-      ["70", "96", "74", "19"],
-      ["74", "100", "75", "20"],
-      ["78", "104", "76", "21"],
-      ["84", "110", "77", "22"],
-      ["90", "116", "78", "23"],
-      ["96", "122", "79", "24"],
+      ["66–72", "98"],
+      ["72–78", "100"],
+      ["78–84", "102"],
+      ["84–92", "104"],
+      ["92–100", "106"],
+      ["100–108", "108"],
     ]),
-    fitNote: "Relaxed straight leg.",
+    fitNote: "Relaxed straight leg. Elastic waistband.",
     howToMeasure: [
-      "Waist: measure the waistband flat, edge to edge, and double it.",
-      "Hip: lay flat and measure at the widest point, then double it.",
-      "Inseam: from the crotch seam down to the hem.",
-      "Leg opening: across the hem, laid flat.",
+      "Waist: wrap a tape around your natural waist, snug but not tight. The elastic waistband fits the range shown.",
+      "Length: outside leg, from the top of the waistband straight down to the hem.",
     ],
   },
   hats: {
@@ -212,8 +210,9 @@ const TEMPLATES: Record<string, Template> = {
 const TEMPLATE_ALIASES: Record<string, string> = {
   "tops-jerseys": "t-shirts",
   womens: "t-shirts",
-  shorts: "bottoms",
-  denim: "bottoms",
+  bottoms: "sweatpants",
+  shorts: "sweatpants",
+  denim: "sweatpants",
 };
 
 export const STANDARD_TEMPLATES = [
@@ -222,7 +221,7 @@ export const STANDARD_TEMPLATES = [
   { key: "hoodies", label: "Hoodie" },
   { key: "jackets", label: "Jacket" },
   { key: "knitwear", label: "Knitwear" },
-  { key: "bottoms", label: "Bottoms" },
+  { key: "sweatpants", label: "Sweatpants" },
   { key: "hats", label: "Headwear" },
 ] as const;
 

@@ -20,7 +20,7 @@ export default async function SizeGuidePage() {
     : STANDARD_TEMPLATES.map((template) => standardSizeChart(template.key, template.label, template.key));
 
   return (
-    <section className="px-3 pb-10 sm:px-4">
+    <section className="min-w-0 overflow-x-hidden px-3 pb-10 sm:px-4">
       <h1 className="page-title">Size guide</h1>
       <p className="prose-raw mt-3 max-w-xl">
         Pick a product type, enter your height and weight and we&apos;ll suggest your size. Every chart lists

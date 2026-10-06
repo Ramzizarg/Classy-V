@@ -20,6 +20,16 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "**.public.blob.vercel-storage.com" },
     ],
   },
+  async redirects() {
+    return [
+      {
+        source: "/collection",
+        has: [{ type: "query", key: "category", value: "bottoms" }],
+        destination: "/collection?category=sweatpants",
+        permanent: true,
+      },
+    ];
+  },
   serverExternalPackages: ["undici", "sharp"],
   experimental: {
     optimizePackageImports: ["lucide-react"],

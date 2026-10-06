@@ -67,14 +67,16 @@ function Segmented<T extends string>({
   value,
   options,
   onChange,
+  fit,
 }: {
   label: string;
   value: T;
   options: { value: T; label: string }[];
   onChange: (value: T) => void;
+  fit?: boolean;
 }) {
   return (
-    <div role="radiogroup" aria-label={label} className="size-seg">
+    <div role="radiogroup" aria-label={label} className={`size-seg${fit ? " size-seg--fit" : ""}`}>
       {options.map((option) => (
         <button
           key={option.value}
@@ -176,7 +178,7 @@ function SizeFinder({
   const selectable = availability?.kind === "ok" ? availability.size : availability && "nearest" in availability ? availability.nearest : null;
 
   return (
-    <div className="mt-3 grid gap-3.5 sm:mt-4 @lg:grid-cols-[1fr_minmax(0,0.9fr)] @lg:gap-6 @3xl:gap-10">
+    <div className="mt-3 grid gap-3.5 sm:mt-4 sm:grid-cols-[1fr_minmax(0,0.9fr)] sm:gap-6">
       <div className="space-y-3 sm:space-y-5">
         <Segmented<Gender>
           label="Gender"
@@ -281,6 +283,7 @@ function SizeChartTable({ chart, highlight }: { chart: SizeChart; highlight?: st
         <Segmented<"cm" | "in">
           label="Unit"
           value={unit}
+          fit
           options={[
             { value: "cm", label: "cm" },
             { value: "in", label: "in" },
@@ -356,7 +359,7 @@ export function SizeGuideContent({
   const recommended = finder && profile ? recommendSize(chart, profile)?.size ?? null : null;
 
   return (
-    <div className="@container pt-3">
+    <div className="pt-3">
       {finder ? (
         <Segmented<"finder" | "chart">
           label="Size guide view"

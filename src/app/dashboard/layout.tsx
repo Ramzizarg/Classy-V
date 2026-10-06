@@ -16,18 +16,18 @@ export default async function DashboardLayout({ children }: { children: React.Re
     <div className="dashboard-shell min-h-screen bg-white text-black" style={{ colorScheme: "light" }}>
       <DashboardThemeSync />
       <div
-        // Opts the back office out of the storefront's 11px monospace type scale,
-        // and renders it at 80% like a browser zoom-out.
+        // Back office uses a readable UI font. `dashboard-zoom` scales the
+        // desktop layout down; phones stay at 100% so content is not clipped.
+        className="dashboard-zoom"
         style={{
           fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
           fontSize: "14px",
           lineHeight: 1.5,
           letterSpacing: "normal",
-          zoom: 0.8,
         }}
       >
         <DashboardHeader />
-        <div className="px-4 sm:px-6 py-6">{children}</div>
+        <div className="dashboard-main w-full max-w-full min-w-0 px-3 py-4 sm:px-6 sm:py-6">{children}</div>
       </div>
     </div>
   );

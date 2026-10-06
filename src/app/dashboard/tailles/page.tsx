@@ -145,7 +145,7 @@ export default function DashboardSizesPage() {
       type="button"
       onClick={save}
       disabled={!chart || busy || problems.length > 0 || !dirty}
-      className={`inline-flex items-center justify-center gap-1.5 rounded px-5 py-2 text-xs font-bold uppercase tracking-wider transition-all duration-200 disabled:cursor-not-allowed ${
+      className={`inline-flex items-center justify-center gap-1.5 rounded-lg px-5 py-2.5 text-xs font-bold uppercase tracking-wider transition-all duration-200 disabled:cursor-not-allowed sm:rounded sm:py-2 ${
         savedSlug === slug ? "bg-emerald-600 text-white" : "bg-black text-white hover:bg-zinc-800 disabled:bg-zinc-300"
       } ${extra}`}
     >
@@ -163,71 +163,84 @@ export default function DashboardSizesPage() {
     </button>
   );
 
-  const showMobileBar = dirty || savedSlug === slug;
+  const showMobileBar = dirty || savedSlug === slug || problems.length > 0;
 
   return (
-    <div className={`mx-auto max-w-6xl ${showMobileBar ? "pb-24 lg:pb-0" : ""}`}>
-      <div className="mb-4 flex items-start justify-between gap-3 sm:mb-8 sm:items-end">
-        <div className="min-w-0">
-          <h1 className="flex items-center gap-2 text-xl font-bold text-black sm:text-3xl">
-            <Ruler className="h-5 w-5 shrink-0 sm:h-7 sm:w-7" />
-            Size guides
-          </h1>
-          <p className="mt-1 text-xs text-zinc-500 sm:text-sm">
-            One size table per product type, with a height &amp; weight size finder.
-            <span className="hidden sm:inline"> A product can override it from Products → Edit.</span>
-          </p>
-        </div>
-        <div className="flex shrink-0 items-center gap-2">
-          <Link
-            href="/size-guide"
-            target="_blank"
-            aria-label="View size guide on site"
-            className="inline-flex items-center gap-1.5 rounded border border-zinc-300 px-2.5 py-2 text-xs font-medium uppercase tracking-wider text-zinc-600 transition-colors hover:border-black hover:text-black sm:px-4"
-          >
-            <Eye className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">View on site</span>
-          </Link>
-          <div className="hidden items-center gap-2 lg:flex">
-            {dirty ? (
-              <button type="button" onClick={discard} className={`${sizeGhostButton} py-2`}>
-                <Undo2 className="h-3.5 w-3.5" />
-                Discard
-              </button>
-            ) : null}
-            {saveButton()}
+    <div className={`mx-auto w-full max-w-6xl min-w-0 ${showMobileBar ? "pb-[5.5rem] lg:pb-0" : ""}`}>
+      <header className="mb-4 sm:mb-8">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <h1 className="flex items-center gap-2 text-xl font-bold tracking-tight text-black sm:text-3xl">
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-100 sm:h-10 sm:w-10 sm:bg-transparent">
+                <Ruler className="h-4 w-4 sm:h-7 sm:w-7" />
+              </span>
+              Size guides
+            </h1>
+            <p className="mt-1.5 hidden text-sm text-zinc-500 sm:block">
+              One size table per product type, with a height &amp; weight size finder. A product can override it from
+              Products → Edit.
+            </p>
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <Link
+              href="/size-guide"
+              target="_blank"
+              aria-label="View size guide on site"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-zinc-300 text-zinc-600 transition-colors hover:border-black hover:text-black sm:h-auto sm:w-auto sm:gap-1.5 sm:rounded sm:px-4 sm:py-2 sm:text-xs sm:font-medium sm:uppercase sm:tracking-wider"
+            >
+              <Eye className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
+              <span className="hidden sm:inline">View on site</span>
+            </Link>
+            <div className="hidden items-center gap-2 lg:flex">
+              {dirty ? (
+                <button type="button" onClick={discard} className={`${sizeGhostButton} py-2`}>
+                  <Undo2 className="h-3.5 w-3.5" />
+                  Discard
+                </button>
+              ) : null}
+              {saveButton()}
+            </div>
           </div>
         </div>
-      </div>
+      </header>
 
       {showMobileBar ? (
-        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-zinc-200 bg-white/95 px-4 py-3 shadow-[0_-4px_16px_rgba(0,0,0,0.06)] backdrop-blur lg:hidden">
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-zinc-200 bg-white/95 px-3 pt-2.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-8px_24px_rgba(0,0,0,0.08)] backdrop-blur-md lg:hidden">
           <div className="mx-auto flex max-w-6xl items-center gap-2">
-            <p className="min-w-0 flex-1 truncate text-xs text-zinc-500">
+            <div className="min-w-0 flex-1">
               {savedSlug === slug ? (
-                "All changes saved"
+                <p className="flex items-center gap-1.5 text-xs font-medium text-emerald-700">
+                  <Check className="h-3.5 w-3.5 shrink-0" />
+                  Saved
+                </p>
               ) : problems.length > 0 ? (
-                <span className="text-amber-700">{problems[0]}</span>
-              ) : (
-                <>
+                <p className="truncate text-xs font-medium text-amber-700">{problems[0]}</p>
+              ) : dirty ? (
+                <p className="truncate text-xs text-zinc-500">
                   <span className="mr-1.5 inline-block h-1.5 w-1.5 rounded-full bg-amber-500 align-middle" />
-                  Unsaved changes · {chart?.title}
-                </>
+                  Unsaved · {chart?.title}
+                </p>
+              ) : (
+                <p className="truncate text-xs text-zinc-400">{chart?.title}</p>
               )}
-            </p>
+            </div>
             {dirty ? (
-              <button type="button" onClick={discard} className={`${sizeGhostButton} py-2`}>
-                <Undo2 className="h-3.5 w-3.5" />
-                <span className="sr-only sm:not-sr-only">Discard</span>
+              <button
+                type="button"
+                onClick={discard}
+                aria-label="Discard changes"
+                className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-zinc-300 text-zinc-600"
+              >
+                <Undo2 className="h-4 w-4" />
               </button>
             ) : null}
-            {saveButton("min-w-[110px]")}
+            {saveButton("h-11 min-w-[7.5rem] flex-1 sm:flex-none")}
           </div>
         </div>
       ) : null}
 
       {error ? (
-        <div className="mb-4 flex items-start justify-between gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div className="mb-4 flex items-start justify-between gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           <span>{error}</span>
           <button type="button" onClick={() => setError(null)} aria-label="Dismiss" className="text-red-400 hover:text-red-700">
             <X className="h-4 w-4" />
@@ -236,57 +249,47 @@ export default function DashboardSizesPage() {
       ) : null}
 
       {loading ? (
-        <div className="grid gap-6 lg:grid-cols-[240px_1fr]">
-          <div className="h-80 animate-pulse rounded-lg bg-zinc-100" />
-          <div className="h-[28rem] animate-pulse rounded-lg bg-zinc-100" />
+        <div className="space-y-4 lg:grid lg:grid-cols-[240px_1fr] lg:gap-6 lg:space-y-0">
+          <div className="h-12 animate-pulse rounded-xl bg-zinc-100 lg:h-80" />
+          <div className="h-[28rem] animate-pulse rounded-xl bg-zinc-100" />
         </div>
       ) : !chart ? (
-        <div className="rounded-lg border border-dashed border-zinc-300 p-10 text-center text-sm text-zinc-500">
+        <div className="rounded-xl border border-dashed border-zinc-300 p-10 text-center text-sm text-zinc-500">
           No product types yet. Add categories to your products first.
         </div>
       ) : (
-        <div className="grid items-start gap-4 lg:grid-cols-[240px_1fr] lg:gap-6">
-          {/* Phones/tablets: swipeable pills. Desktop: sticky sidebar. */}
-          <nav aria-label="Product types" className="-mx-4 sm:-mx-6 lg:hidden">
-            <ul className="flex snap-x gap-2 overflow-x-auto px-4 pb-1 sm:px-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="grid w-full min-w-0 items-start gap-4 lg:grid-cols-[240px_1fr] lg:gap-6">
+          <nav aria-label="Product types" className="w-full min-w-0 lg:hidden">
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400">Product type</p>
+              <StatusChip chart={original ?? chart} />
+            </div>
+            <ul className="flex w-full snap-x snap-mandatory gap-2 overflow-x-auto overscroll-x-contain pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {charts.map((entry) => {
                 const shown = drafts[entry.slug] ?? entry;
                 const active = entry.slug === slug;
+                const dirtyType = dirtySlugs.has(entry.slug);
                 return (
                   <li key={entry.slug} className="shrink-0 snap-start">
                     <button
                       type="button"
                       onClick={() => setSlug(entry.slug)}
                       aria-current={active ? "true" : undefined}
-                      className={`flex items-center gap-2 rounded-full border px-3.5 py-2 text-xs font-semibold transition-colors ${
-                        active ? "border-black bg-black text-white" : "border-zinc-300 bg-white text-zinc-700"
+                      className={`relative flex max-w-[10.5rem] items-center gap-2 rounded-full px-3.5 py-2.5 text-xs font-semibold transition-all ${
+                        active
+                          ? "bg-black text-white shadow-sm"
+                          : "bg-zinc-100 text-zinc-700 active:bg-zinc-200"
                       }`}
                     >
-                      <span
-                        className={`h-1.5 w-1.5 rounded-full ${
-                          dirtySlugs.has(entry.slug)
-                            ? "bg-amber-500"
-                            : !entry.enabled
-                              ? "bg-zinc-300"
-                              : entry.isCustom
-                                ? "bg-emerald-500"
-                                : active
-                                  ? "bg-white/70"
-                                  : "bg-zinc-400"
-                        }`}
-                      />
-                      {shown.title}
+                      <span className="truncate">{shown.title}</span>
+                      {dirtyType ? (
+                        <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${active ? "bg-amber-400" : "bg-amber-500"}`} />
+                      ) : null}
                     </button>
                   </li>
                 );
               })}
             </ul>
-            <p className="mt-2 flex flex-wrap gap-x-3 gap-y-1 px-4 text-[10px] uppercase tracking-wider text-zinc-400 sm:px-6">
-              <span><span className="mr-1 inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />Custom</span>
-              <span><span className="mr-1 inline-block h-1.5 w-1.5 rounded-full bg-zinc-400" />Standard</span>
-              <span><span className="mr-1 inline-block h-1.5 w-1.5 rounded-full bg-zinc-300" />Off</span>
-              <span><span className="mr-1 inline-block h-1.5 w-1.5 rounded-full bg-amber-500" />Unsaved</span>
-            </p>
           </nav>
 
           <aside className="hidden rounded-lg border border-zinc-200 bg-white p-2 shadow-sm lg:sticky lg:top-40 lg:block">
@@ -322,57 +325,59 @@ export default function DashboardSizesPage() {
             </ul>
           </aside>
 
-          <section className="min-w-0 space-y-4 rounded-lg border border-zinc-200 bg-white p-3 shadow-sm sm:space-y-5 sm:p-6">
-            <div className="flex items-center justify-between gap-2 lg:hidden">
-              <h2 className="truncate text-base font-bold text-black">{chart.title}</h2>
-              <StatusChip chart={original ?? chart} />
-            </div>
-            <div className="grid gap-3 sm:gap-4 md:grid-cols-[1fr_auto]">
+          <section className="w-full min-w-0 max-w-full space-y-4 rounded-2xl border border-zinc-200 bg-white p-3 shadow-sm sm:space-y-5 sm:rounded-lg sm:p-6">
+            <div className="space-y-3">
               <div className="space-y-1.5">
                 <label htmlFor="chart-title" className={sizeLabelClass}>
                   Name shown to customers
                 </label>
                 <input
                   id="chart-title"
-                  className={sizeInputClass}
+                  className={`${sizeInputClass} py-2.5 text-base sm:py-1.5 sm:text-sm`}
                   value={chart.title}
                   maxLength={60}
                   onChange={(event) => update((current) => ({ ...current, title: event.target.value }))}
                 />
               </div>
-              <div className="flex flex-col justify-end gap-2">
-                <div className="flex items-center gap-2">
-                  <LayoutTemplate className="hidden h-4 w-4 text-zinc-400 md:block" />
+
+              <div className="flex gap-2">
+                <div className="relative min-w-0 flex-1">
+                  <LayoutTemplate className="pointer-events-none absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2 text-zinc-400" />
                   <select
                     aria-label="Start from a standard table"
-                    className="min-w-0 flex-1 rounded border border-zinc-300 bg-white px-2 py-2 text-xs font-semibold uppercase tracking-wider text-zinc-700 md:flex-none md:py-1.5"
+                    className="w-full appearance-none rounded-lg border border-zinc-300 bg-white py-2.5 pr-3 pl-8 text-xs font-semibold uppercase tracking-wider text-zinc-700 sm:rounded sm:py-1.5"
                     value=""
                     onChange={(event) => {
                       if (event.target.value) applyTemplate(event.target.value);
                     }}
                   >
-                    <option value="">Start from template…</option>
+                    <option value="">Template…</option>
                     {STANDARD_TEMPLATES.map((template) => (
                       <option key={template.key} value={template.key}>
                         {template.label}
                       </option>
                     ))}
                   </select>
-                  {original?.isCustom ? (
-                    <button type="button" onClick={resetToStandard} disabled={busy} className={`${sizeGhostButton} shrink-0 py-2 md:py-1.5`}>
-                      <RotateCcw className="h-3.5 w-3.5" />
-                      Reset
-                    </button>
-                  ) : null}
                 </div>
+                {original?.isCustom ? (
+                  <button
+                    type="button"
+                    onClick={resetToStandard}
+                    disabled={busy}
+                    className={`${sizeGhostButton} h-auto shrink-0 rounded-lg px-3 py-2.5 sm:rounded sm:py-1.5`}
+                  >
+                    <RotateCcw className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline">Reset</span>
+                  </button>
+                ) : null}
               </div>
             </div>
 
-            <div className="grid gap-2 sm:grid-cols-2 sm:gap-3">
-              <label className="flex items-center justify-between gap-3 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2.5 sm:px-4 sm:py-3">
-                <span>
+            <div className="divide-y divide-zinc-100 overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50 sm:grid sm:grid-cols-2 sm:gap-3 sm:divide-y-0 sm:border-0 sm:bg-transparent">
+              <label className="flex items-center justify-between gap-3 px-3.5 py-3.5 sm:rounded-lg sm:border sm:border-zinc-200 sm:bg-zinc-50 sm:px-4 sm:py-3">
+                <span className="min-w-0">
                   <span className="block text-xs font-semibold uppercase tracking-wider text-black">Size guide</span>
-                  <span className="mt-0.5 block text-[11px] text-zinc-500">Show the link on product pages.</span>
+                  <span className="mt-0.5 block text-[11px] leading-snug text-zinc-500">Show link on product pages</span>
                 </span>
                 <SizeSwitch
                   label="Show size guide"
@@ -380,10 +385,10 @@ export default function DashboardSizesPage() {
                   onChange={(enabled) => update((current) => ({ ...current, enabled }))}
                 />
               </label>
-              <label className="flex items-center justify-between gap-3 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2.5 sm:px-4 sm:py-3">
-                <span>
+              <label className="flex items-center justify-between gap-3 px-3.5 py-3.5 sm:rounded-lg sm:border sm:border-zinc-200 sm:bg-zinc-50 sm:px-4 sm:py-3">
+                <span className="min-w-0">
                   <span className="block text-xs font-semibold uppercase tracking-wider text-black">Size finder</span>
-                  <span className="mt-0.5 block text-[11px] text-zinc-500">Suggest a size from height & weight.</span>
+                  <span className="mt-0.5 block text-[11px] leading-snug text-zinc-500">Suggest from height &amp; weight</span>
                 </span>
                 <SizeSwitch
                   label="Enable size finder"

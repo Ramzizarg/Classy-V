@@ -7,7 +7,7 @@ export type CategorySlug =
   | "hoodies"
   | "jackets"
   | "knitwear"
-  | "bottoms"
+  | "sweatpants"
   | "shorts"
   | "denim"
   | "hats"
