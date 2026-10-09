@@ -1,11 +1,10 @@
 "use client";
 
-import Image from "next/image";
-import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { LookbookCard } from "@/components/LookbookCard";
 import { CloseGlyph, SearchGlyph } from "@/components/SocialGlyphs";
-import { formatPrice } from "@/lib/format";
-import { effectivePrice, filterProducts } from "@/lib/products";
+import { useStore } from "@/components/StoreProvider";
+import { filterProducts } from "@/lib/products";
 import type { Product } from "@/lib/types";
 
 /** Full-screen illicitbloc-style search: bar on top, product grid below. */
@@ -14,10 +13,16 @@ export function SearchOverlay({ onClose }: { onClose: () => void }) {
   const [query, setQuery] = useState("");
   const [catalog, setCatalog] = useState<Product[]>([]);
   const [ready, setReady] = useState(false);
+  const { cartOpen } = useStore();
 
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
+
+  /* Quick-add from a tile opens the cart, which sits under this overlay. */
+  useEffect(() => {
+    if (cartOpen) onClose();
+  }, [cartOpen, onClose]);
 
   useEffect(() => {
     let cancelled = false;
@@ -77,27 +82,12 @@ export function SearchOverlay({ onClose }: { onClose: () => void }) {
           ) : matches.length === 0 ? (
             <p className="search-overlay__empty">No products match</p>
           ) : (
-            <div className="search-overlay__grid">
-              {matches.map((product) => (
-                <Link
-                  key={product.id}
-                  href={`/collection/${product.slug}`}
-                  onClick={onClose}
-                  className="search-overlay__card"
-                >
-                  <span className="search-overlay__media">
-                    <Image
-                      src={product.images[0]}
-                      alt={product.name}
-                      fill
-                      sizes="(min-width: 768px) 25vw, 50vw"
-                      className="search-overlay__img"
-                    />
-                  </span>
-                  <span className="search-overlay__title">{product.name}</span>
-                  <span className="search-overlay__price">{formatPrice(effectivePrice(product))}</span>
-                </Link>
-              ))}
+            <div className="lookbook-hero search-overlay__results">
+              <div className="lookbook__grid">
+                {matches.map((product, index) => (
+                  <LookbookCard key={product.id} product={product} priority={index < 4} />
+                ))}
+              </div>
             </div>
           )}
         </div>

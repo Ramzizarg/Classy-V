@@ -99,6 +99,31 @@ export function BagGlyph({ className = "h-4 w-4" }: GlyphProps) {
   );
 }
 
+export function SunGlyph({ className = "h-4 w-4" }: GlyphProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      aria-hidden
+      className={className}
+    >
+      <circle cx="12" cy="12" r="4.2" fill="currentColor" stroke="none" />
+      <path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6" />
+    </svg>
+  );
+}
+
+export function MoonGlyph({ className = "h-4 w-4" }: GlyphProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden className={className}>
+      <path d="M20.2 14.6A8.4 8.4 0 0 1 9.4 3.8a8.4 8.4 0 1 0 10.8 10.8Z" />
+    </svg>
+  );
+}
+
 export function HeartGlyph({ className = "h-4 w-4" }: GlyphProps) {
   return (
     <svg

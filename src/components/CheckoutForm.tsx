@@ -14,8 +14,7 @@ import { TUNISIA_GOVERNORATES } from "@/lib/site";
 
 const EMPTY = {
   email: "",
-  firstName: "",
-  lastName: "",
+  fullName: "",
   address: "",
   governorate: "",
   phone: "",
@@ -122,7 +121,7 @@ export function CheckoutForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           customer: {
-            fullName: `${form.firstName.trim()} ${form.lastName.trim()}`.trim(),
+            fullName: form.fullName.trim().replace(/\s+/g, " "),
             email: form.email,
             phone: form.phone,
             address: form.address,
@@ -143,7 +142,7 @@ export function CheckoutForm() {
 
       setPlaced({
         reference: payload.reference,
-        firstName: form.firstName.trim(),
+        firstName: form.fullName.trim().split(/\s+/)[0] ?? "",
         total,
       });
       clearCart();
@@ -174,15 +173,15 @@ export function CheckoutForm() {
             <BrandMark width={128} label="Classy V home" />
           </div>
 
-          <nav aria-label="Checkout" className="ui-sm mt-2 flex flex-wrap justify-center gap-2 text-white">
-            <Link href="/cart" className="hover-underline text-white">
+          <nav aria-label="Checkout" className="ui-sm mt-2 flex flex-wrap justify-center gap-2 text-foreground">
+            <Link href="/cart" className="hover-underline text-foreground">
               Cart
             </Link>
             <span className="flex items-center gap-2">
-              <span aria-hidden className="text-white">
+              <span aria-hidden className="text-foreground">
                 ›
               </span>
-              <span aria-current="page" className="font-bold text-white">
+              <span aria-current="page" className="font-bold text-foreground">
                 Checkout
               </span>
             </span>
@@ -212,35 +211,21 @@ export function CheckoutForm() {
 
             <h2 className="ui mt-7 font-bold">Delivery address</h2>
             <div className="mt-3 grid gap-3">
-              <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
-                <div>
-                  <label htmlFor="co-first" className="sr-only">
-                    First name
-                  </label>
-                  <input
-                    id="co-first"
-                    required
-                    autoComplete="given-name"
-                    placeholder="First name"
-                    value={form.firstName}
-                    onChange={(event) => update("firstName", event.target.value)}
-                    className="checkout-field"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="co-last" className="sr-only">
-                    Last name
-                  </label>
-                  <input
-                    id="co-last"
-                    required
-                    autoComplete="family-name"
-                    placeholder="Last name"
-                    value={form.lastName}
-                    onChange={(event) => update("lastName", event.target.value)}
-                    className="checkout-field"
-                  />
-                </div>
+              <div>
+                <label htmlFor="co-name" className="sr-only">
+                  Full name
+                </label>
+                <input
+                  id="co-name"
+                  required
+                  minLength={2}
+                  autoComplete="name"
+                  autoCapitalize="words"
+                  placeholder="Full name"
+                  value={form.fullName}
+                  onChange={(event) => update("fullName", event.target.value)}
+                  className="checkout-field"
+                />
               </div>
 
               <div>
@@ -319,8 +304,15 @@ export function CheckoutForm() {
                 ‹ Return to cart
               </Link>
 
-              <button type="submit" disabled={submitting} className="btn btn--solid">
-                {submitting ? "Placing order" : `Place order — ${formatPrice(total)}`}
+              <button type="submit" disabled={submitting} className="btn btn--buy">
+                {submitting ? (
+                  "Placing order…"
+                ) : (
+                  <>
+                    <span>Place order</span>
+                    <span className="btn--buy__total tabular-nums">{formatPrice(total)}</span>
+                  </>
+                )}
               </button>
             </div>
 

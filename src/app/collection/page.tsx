@@ -41,7 +41,7 @@ export default async function CollectionPage({ searchParams }: { searchParams: S
     <ShopIndex
       products={products}
       heading={heading}
-      note={`${products.length} ${products.length === 1 ? "product" : "products"}`}
+      count={products.length}
     />
   );
 }

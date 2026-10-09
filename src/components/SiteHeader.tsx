@@ -9,6 +9,7 @@ import { SearchOverlay } from "@/components/SearchOverlay";
 import { BagGlyph, MenuGlyph, SearchGlyph } from "@/components/SocialGlyphs";
 import { SocialLinks } from "@/components/SocialLinks";
 import { useStore } from "@/components/StoreProvider";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { CATEGORIES, COLLECTIONS } from "@/lib/products";
 
 export function SiteHeader() {
@@ -67,7 +68,7 @@ export function SiteHeader() {
           isHome ? "lg:pt-7 lg:pb-2" : "lg:pt-3 lg:pb-2"
         } ${
           isLookbookShop
-            ? "site-header--home"
+            ? `site-header--home ${isHome ? "site-header--hero" : ""}`
             : isProductPage
               ? "site-header--store site-header--product"
               : "site-header--store text-[var(--foreground)]"
@@ -111,7 +112,8 @@ export function SiteHeader() {
             />
           </div>
 
-          <div className="flex items-center justify-end">
+          <div className="flex items-center justify-end gap-3">
+            <ThemeToggle />
             <button
               type="button"
               onClick={openCart}
@@ -176,6 +178,7 @@ export function SiteHeader() {
             >
               <SearchGlyph className="h-5 w-5" />
             </button>
+            <ThemeToggle className="h-5 w-5" />
             <button type="button" onClick={openCart} className="flex items-center gap-2">
               <BagGlyph />
               <span className="ui hover-underline">Cart ({hydrated ? count : 0})</span>

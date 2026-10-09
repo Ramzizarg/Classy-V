@@ -94,65 +94,103 @@ function Segmented<T extends string>({
   );
 }
 
-function Slider({
+type Step = "gender" | "body" | "result";
+
+const STEPS: { id: Step; label: string }[] = [
+  { id: "gender", label: "Gender" },
+  { id: "body", label: "Height & weight" },
+  { id: "result", label: "Your size" },
+];
+
+const GENDER_LABELS: Record<Gender, string> = { men: "Men", women: "Women" };
+
+function GenderGlyph({ gender }: { gender: Gender }) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden fill="currentColor">
+      <circle cx="12" cy="4.4" r="2.6" />
+      {gender === "men" ? (
+        <path d="M8.2 8.6h7.6a2 2 0 0 1 2 2v4.9h-2.1V23h-2.6v-6.6h-2.2V23H8.3v-7.5H6.2v-4.9a2 2 0 0 1 2-2Z" />
+      ) : (
+        <path d="M9.7 8.6h4.6a1.6 1.6 0 0 1 1.5 1.1l2.6 7.1h-2.9V23h-2.3v-5.4h-2.4V23H8.5v-6.2H5.6l2.6-7.1a1.6 1.6 0 0 1 1.5-1.1Z" />
+      )}
+    </svg>
+  );
+}
+
+function StepIndicator({ step, onJump }: { step: Step; onJump: (step: Step) => void }) {
+  const current = STEPS.findIndex((entry) => entry.id === step);
+  return (
+    <ol className="size-steps" aria-label="Progress">
+      {STEPS.map((entry, index) => {
+        const state = index < current ? "done" : index === current ? "current" : "todo";
+        return (
+          <li key={entry.id} data-state={state}>
+            <button
+              type="button"
+              className="size-steps__dot"
+              disabled={state !== "done"}
+              onClick={() => onJump(entry.id)}
+              aria-label={`${entry.label}${state === "current" ? " (current step)" : ""}`}
+              aria-current={state === "current" ? "step" : undefined}
+            >
+              {state === "done" ? "✓" : index + 1}
+            </button>
+            <span className="size-steps__label ui-sm">{entry.label}</span>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
+function NumberField({
   id,
   label,
   unit,
   value,
   min,
   max,
+  showError,
+  autoFocus,
   onChange,
+  onBlur,
 }: {
   id: string;
   label: string;
   unit: string;
-  value: number;
+  value: string;
   min: number;
   max: number;
-  onChange: (value: number) => void;
+  showError: boolean;
+  autoFocus?: boolean;
+  onChange: (value: string) => void;
+  onBlur: () => void;
 }) {
-  const clamp = (n: number) => Math.min(max, Math.max(min, Math.round(n)));
-  const fill = ((value - min) / (max - min)) * 100;
   return (
-    <div className="size-field">
-      <div className="flex items-baseline justify-between">
-        <label htmlFor={id} className="ui-sm text-muted">
-          {label}
-        </label>
-        <span className="size-field__value tabular-nums">
-          {value}
-          <span className="ui-sm text-muted"> {unit}</span>
-        </span>
-      </div>
-      <div className="mt-1 flex items-center gap-2 sm:mt-2">
-        <button
-          type="button"
-          className="size-step"
-          aria-label={`Decrease ${label.toLowerCase()}`}
-          onClick={() => onChange(clamp(value - 1))}
-        >
-          −
-        </button>
+    <div className="min-w-0">
+      <label htmlFor={id} className="ui-sm text-muted">
+        {label}
+      </label>
+      <div className="size-num mt-1.5" data-error={showError}>
         <input
           id={id}
-          type="range"
-          min={min}
-          max={max}
-          step={1}
+          type="text"
+          inputMode="numeric"
+          autoComplete="off"
+          maxLength={3}
+          placeholder={unit === "cm" ? "175" : "70"}
           value={value}
-          onChange={(event) => onChange(clamp(Number(event.target.value)))}
-          className="size-range"
-          style={{ "--fill": `${fill}%` } as React.CSSProperties}
+          autoFocus={autoFocus}
+          aria-invalid={showError}
+          aria-describedby={`${id}-hint`}
+          onChange={(event) => onChange(event.target.value.replace(/\D/g, "").slice(0, 3))}
+          onBlur={onBlur}
         />
-        <button
-          type="button"
-          className="size-step"
-          aria-label={`Increase ${label.toLowerCase()}`}
-          onClick={() => onChange(clamp(value + 1))}
-        >
-          +
-        </button>
+        <span className="size-num__unit ui-sm">{unit}</span>
       </div>
+      <p id={`${id}-hint`} className={`ui-sm mt-1.5 ${showError ? "text-danger" : "text-muted"}`}>
+        {showError ? `Enter ${min}–${max} ${unit}` : `${min}–${max} ${unit}`}
+      </p>
     </div>
   );
 }
@@ -167,9 +205,39 @@ function SizeFinder({
   onSelectSize?: (size: string) => void;
 }) {
   const { profile, setProfile } = useFitProfile();
-  const current = profile ?? DEFAULT_PROFILE;
-  const update = (patch: Partial<FitProfile>) => setProfile({ ...current, ...patch });
+  const [step, setStep] = useState<Step>("gender");
+  const [gender, setGender] = useState<Gender | null>(null);
+  const [height, setHeight] = useState("");
+  const [weight, setWeight] = useState("");
+  const [touched, setTouched] = useState({ height: false, weight: false, submit: false });
 
+  const h = Number(height);
+  const w = Number(weight);
+  const heightValid = height !== "" && h >= HEIGHT_LIMITS.min && h <= HEIGHT_LIMITS.max;
+  const weightValid = weight !== "" && w >= WEIGHT_LIMITS.min && w <= WEIGHT_LIMITS.max;
+
+  const chooseGender = (next: Gender) => {
+    setGender(next);
+    if (!height && profile) setHeight(String(profile.height));
+    if (!weight && profile) setWeight(String(profile.weight));
+    setStep("body");
+  };
+
+  const submitBody = (event: React.FormEvent) => {
+    event.preventDefault();
+    setTouched((t) => ({ ...t, submit: true }));
+    if (!gender || !heightValid || !weightValid) return;
+    setProfile({ gender, height: h, weight: w, fit: profile?.fit ?? DEFAULT_PROFILE.fit });
+    setStep("result");
+  };
+
+  const restart = () => {
+    setGender(null);
+    setTouched({ height: false, weight: false, submit: false });
+    setStep("gender");
+  };
+
+  const current = profile ?? DEFAULT_PROFILE;
   const recommendation: SizeRecommendation | null = useMemo(
     () => (profile ? recommendSize(chart, profile) : null),
     [chart, profile],
@@ -178,61 +246,100 @@ function SizeFinder({
   const selectable = availability?.kind === "ok" ? availability.size : availability && "nearest" in availability ? availability.nearest : null;
 
   return (
-    <div className="mt-3 grid gap-3.5 sm:mt-4 sm:grid-cols-[1fr_minmax(0,0.9fr)] sm:gap-6">
-      <div className="space-y-3 sm:space-y-5">
-        <Segmented<Gender>
-          label="Gender"
-          value={current.gender}
-          options={[
-            { value: "men", label: "Men" },
-            { value: "women", label: "Women" },
-          ]}
-          onChange={(gender) => update({ gender })}
-        />
-        <Slider
-          id="size-height"
-          label="Height"
-          unit="cm"
-          value={current.height}
-          min={HEIGHT_LIMITS.min}
-          max={HEIGHT_LIMITS.max}
-          onChange={(height) => update({ height })}
-        />
-        <Slider
-          id="size-weight"
-          label="Weight"
-          unit="kg"
-          value={current.weight}
-          min={WEIGHT_LIMITS.min}
-          max={WEIGHT_LIMITS.max}
-          onChange={(weight) => update({ weight })}
-        />
-        <div>
-          <p className="ui-sm mb-1.5 text-muted sm:mb-2">How do you like it to fit?</p>
-          <Segmented<FitPreference>
-            label="Fit preference"
-            value={current.fit}
-            options={(["slim", "regular", "loose"] as const).map((fit) => ({ value: fit, label: FIT_LABELS[fit] }))}
-            onChange={(fit) => update({ fit })}
-          />
-        </div>
-      </div>
+    <div className="mx-auto mt-4 max-w-md sm:mt-5">
+      <StepIndicator step={step} onJump={setStep} />
 
-      <div className="size-result" aria-live="polite">
-        {!recommendation ? (
-          <div className="flex h-full flex-col items-center justify-center gap-2.5 py-1 text-center sm:gap-3 sm:py-6">
-            <span className="size-result__badge size-result__badge--empty">?</span>
-            <p className="ui text-muted">Set your height and weight to see your size.</p>
-            <button type="button" className="btn btn--solid ui w-full sm:w-auto" onClick={() => setProfile(current)}>
-              Find my size
-            </button>
+      {step === "gender" ? (
+        <div key="gender" className="size-pane text-center">
+          <p className="section-title">Who are you shopping for?</p>
+          <div role="radiogroup" aria-label="Gender" className="mt-5 flex justify-center gap-6 sm:gap-10">
+            {(["men", "women"] as const).map((option) => (
+              <button
+                key={option}
+                type="button"
+                role="radio"
+                aria-checked={gender === option}
+                className="size-gender"
+                onClick={() => chooseGender(option)}
+              >
+                <span className="size-gender__circle">
+                  <GenderGlyph gender={option} />
+                </span>
+                <span className="ui font-bold">{GENDER_LABELS[option]}</span>
+              </button>
+            ))}
           </div>
-        ) : (
-          <div className="flex h-full flex-col items-center gap-2 py-1 text-center sm:gap-3 sm:py-2">
+        </div>
+      ) : null}
+
+      {step === "body" ? (
+        <form key="body" className="size-pane" onSubmit={submitBody} noValidate>
+          <div className="flex items-center justify-between gap-3">
+            <button type="button" className="ui-sm hover-underline text-muted" onClick={() => setStep("gender")}>
+              ← Back
+            </button>
+            {gender ? (
+              <span className="size-chip ui-sm">
+                <GenderGlyph gender={gender} />
+                {GENDER_LABELS[gender]}
+              </span>
+            ) : null}
+          </div>
+          <p className="section-title mt-4 text-center">Your height &amp; weight</p>
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            <NumberField
+              id="size-height"
+              label="Height"
+              unit="cm"
+              value={height}
+              min={HEIGHT_LIMITS.min}
+              max={HEIGHT_LIMITS.max}
+              autoFocus={!height}
+              showError={(touched.height || touched.submit) && !heightValid}
+              onChange={setHeight}
+              onBlur={() => setTouched((t) => ({ ...t, height: true }))}
+            />
+            <NumberField
+              id="size-weight"
+              label="Weight"
+              unit="kg"
+              value={weight}
+              min={WEIGHT_LIMITS.min}
+              max={WEIGHT_LIMITS.max}
+              showError={(touched.weight || touched.submit) && !weightValid}
+              onChange={setWeight}
+              onBlur={() => setTouched((t) => ({ ...t, weight: true }))}
+            />
+          </div>
+          <button
+            type="submit"
+            className="btn btn--solid ui mt-5 w-full"
+            disabled={!heightValid || !weightValid}
+          >
+            Show my size
+          </button>
+        </form>
+      ) : null}
+
+      {step === "result" && !recommendation ? (
+        <div key="no-result" className="size-pane text-center">
+          <p className="prose-raw">
+            We don&apos;t have {GENDER_LABELS[current.gender].toLowerCase()}&apos;s sizing for this piece yet — check
+            the size chart instead.
+          </p>
+          <button type="button" className="ui-sm hover-underline mt-3 text-muted" onClick={restart}>
+            Start over
+          </button>
+        </div>
+      ) : null}
+
+      {step === "result" && recommendation ? (
+        <div key="result" className="size-pane size-result" aria-live="polite">
+          <div className="flex flex-col items-center gap-2 text-center sm:gap-3">
             <p className="ui-sm text-muted">Your size</p>
             <span className="size-result__badge">{recommendation.size}</span>
             <p className="ui-sm text-muted">
-              {FIT_LABELS[current.fit]} fit · {current.height} cm · {current.weight} kg
+              {GENDER_LABELS[current.gender]} · {current.height} cm · {current.weight} kg
             </p>
 
             {recommendation.alternative ? (
@@ -262,14 +369,34 @@ function SizeFinder({
               </p>
             ) : null}
 
+            <div className="mt-1 w-full">
+              <p className="ui-sm mb-1.5 text-muted">Preferred fit</p>
+              <Segmented<FitPreference>
+                label="Fit preference"
+                value={current.fit}
+                options={(["slim", "regular", "loose"] as const).map((fit) => ({ value: fit, label: FIT_LABELS[fit] }))}
+                onChange={(fit) => setProfile({ ...current, fit })}
+              />
+            </div>
+
             {onSelectSize && selectable ? (
-              <button type="button" className="btn btn--solid ui mt-auto w-full" onClick={() => onSelectSize(selectable)}>
+              <button type="button" className="btn btn--solid ui mt-1 w-full" onClick={() => onSelectSize(selectable)}>
                 Select size {selectable}
               </button>
             ) : null}
+
+            <div className="ui-sm flex items-center gap-3 text-muted">
+              <button type="button" className="hover-underline" onClick={() => setStep("body")}>
+                Edit height &amp; weight
+              </button>
+              <span aria-hidden>·</span>
+              <button type="button" className="hover-underline" onClick={restart}>
+                Start over
+              </button>
+            </div>
           </div>
-        )}
-      </div>
+        </div>
+      ) : null}
     </div>
   );
 }

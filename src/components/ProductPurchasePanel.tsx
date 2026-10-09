@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { ProductColourVariants } from "@/components/ProductColourVariants";
 import { SizeGuideModal } from "@/components/SizeGuideModal";
 import { useStore } from "@/components/StoreProvider";
@@ -32,9 +33,15 @@ export function ProductPurchasePanel({
     return product.sizes.find((entry) => entry.size.toUpperCase() === recommended?.toUpperCase())?.size ?? null;
   }, [sizeChart, finder, profile, product.sizes]);
 
+  const router = useRouter();
+  const [buying, setBuying] = useState(false);
+  const [needSize, setNeedSize] = useState(false);
+  const [nudge, setNudge] = useState(false);
+
   const selectSize = (next: string) => {
     setSize(next);
     setQuantity(1);
+    setNeedSize(false);
   };
 
   const soldOut = isSoldOut(product);
@@ -43,20 +50,38 @@ export function ProductPurchasePanel({
   const saved = hydrated && wishlist.includes(product.id);
   const selectedStock = product.sizes.find((entry) => entry.size === size)?.stock ?? 0;
 
+  useEffect(() => {
+    if (!soldOut) router.prefetch("/checkout");
+  }, [router, soldOut]);
+
+  const line = () => ({
+    productId: product.id,
+    slug: product.slug,
+    name: product.name,
+    unitPrice: price,
+    compareAtPrice: onSale ? product.price : null,
+    image: product.images[0],
+    size,
+    colorway: product.colorway,
+    quantity,
+  });
+
   const add = () => {
     if (soldOut || !size) return;
-    addLine({
-      productId: product.id,
-      slug: product.slug,
-      name: product.name,
-      unitPrice: price,
-      compareAtPrice: onSale ? product.price : null,
-      image: product.images[0],
-      size,
-      colorway: product.colorway,
-      quantity,
-    });
     /* No toast: `addLine` slides the cart open, which is the confirmation. */
+    addLine(line());
+  };
+
+  const buyNow = () => {
+    if (soldOut || buying) return;
+    if (!size) {
+      setNeedSize(true);
+      setNudge(true);
+      return;
+    }
+    setBuying(true);
+    addLine(line(), { openCart: false });
+    router.push("/checkout");
   };
 
   return (
@@ -94,7 +119,12 @@ export function ProductPurchasePanel({
           ) : null}
         </div>
 
-        <div className="mt-2 flex flex-wrap justify-center gap-1.5 lg:justify-start">
+        <div
+          className={`mt-2 flex flex-wrap justify-center gap-1.5 lg:justify-start ${nudge ? "size-grid--nudge" : ""} ${
+            needSize ? "size-grid--need" : ""
+          }`}
+          onAnimationEnd={() => setNudge(false)}
+        >
           {product.sizes.map((entry) => {
             const disabled = entry.stock === 0;
             const recommended = yourSize === entry.size;
@@ -108,7 +138,7 @@ export function ProductPurchasePanel({
                 className={`ui relative min-w-11 border px-3 py-2 transition-colors lg:min-w-16 lg:py-5 ${
                   size === entry.size
                     ? "border-selected bg-selected text-white"
-                    : "border-foreground hover:bg-foreground hover:text-black"
+                    : "border-foreground hover:bg-foreground hover:text-background"
                 } ${disabled ? "size-sold-out cursor-not-allowed border-line text-muted hover:bg-transparent hover:text-muted" : ""}`}
               >
                 {entry.size}
@@ -141,37 +171,64 @@ export function ProductPurchasePanel({
         ) : null}
       </div>
 
-      <div className="mt-4 flex items-stretch justify-center gap-2 lg:justify-start">
-        <div className="flex items-center border border-line">
+      <div className="purchase-actions mx-auto mt-4 lg:mx-0">
+        <div className="flex items-stretch gap-2">
+          <div className="flex items-center border border-line">
+            <button
+              type="button"
+              onClick={() => setQuantity((value) => Math.max(1, value - 1))}
+              aria-label="Decrease quantity"
+              className="ui h-10 w-8"
+            >
+              −
+            </button>
+            <span className="ui w-7 text-center tabular-nums">{quantity}</span>
+            <button
+              type="button"
+              onClick={() =>
+                setQuantity((value) => (selectedStock ? Math.min(selectedStock, value + 1) : value + 1))
+              }
+              aria-label="Increase quantity"
+              className="ui h-10 w-8"
+            >
+              +
+            </button>
+          </div>
+
           <button
             type="button"
-            onClick={() => setQuantity((value) => Math.max(1, value - 1))}
-            aria-label="Decrease quantity"
-            className="ui h-10 w-8"
+            onClick={add}
+            disabled={soldOut || !size}
+            className={`btn min-w-[150px] flex-1 ${soldOut ? "btn--sold-out" : "btn--solid"}`}
           >
-            −
-          </button>
-          <span className="ui w-7 text-center tabular-nums">{quantity}</span>
-          <button
-            type="button"
-            onClick={() =>
-              setQuantity((value) => (selectedStock ? Math.min(selectedStock, value + 1) : value + 1))
-            }
-            aria-label="Increase quantity"
-            className="ui h-10 w-8"
-          >
-            +
+            {soldOut ? "Sold out" : size ? "Add to cart" : "Select a size"}
           </button>
         </div>
 
-        <button
-          type="button"
-          onClick={add}
-          disabled={soldOut || !size}
-          className={`btn min-w-[150px] ${soldOut ? "btn--sold-out" : "btn--solid"}`}
-        >
-          {soldOut ? "Sold out" : size ? "Add to cart" : "Select a size"}
-        </button>
+        {!soldOut ? (
+          <>
+            <button
+              type="button"
+              onClick={buyNow}
+              disabled={buying}
+              aria-describedby={needSize ? "buy-now-hint" : undefined}
+              className="btn btn--buy mt-2 w-full"
+            >
+              <BoltGlyph />
+              <span>{buying ? "Going to checkout…" : "Buy now"}</span>
+              {size && !buying ? (
+                <span className="btn--buy__total tabular-nums">{formatPrice(price * quantity)}</span>
+              ) : null}
+            </button>
+            <p
+              id="buy-now-hint"
+              role="status"
+              className={`ui-sm mt-1.5 text-center lg:text-left ${needSize ? "text-selected" : "text-muted"}`}
+            >
+              {needSize ? "Pick a size first" : "Skip the cart — straight to checkout"}
+            </p>
+          </>
+        ) : null}
       </div>
 
       <button
@@ -195,6 +252,14 @@ export function ProductPurchasePanel({
         />
       ) : null}
     </div>
+  );
+}
+
+function BoltGlyph() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden className="btn--buy__icon" fill="currentColor">
+      <path d="M13.2 2 4.5 13.6h6.1L9.9 22l8.6-11.7h-6.1L13.2 2Z" />
+    </svg>
   );
 }
 

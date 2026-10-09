@@ -22,7 +22,7 @@ export function SizeGuideExplorer({ charts }: { charts: SizeChart[] }) {
             className={`ui border px-3 py-2 transition-colors ${
               entry.slug === chart.slug
                 ? "border-selected bg-selected text-white"
-                : "border-foreground hover:bg-foreground hover:text-black"
+                : "border-foreground hover:bg-foreground hover:text-background"
             }`}
           >
             {entry.title}

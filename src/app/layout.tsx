@@ -8,8 +8,10 @@ import { SiteEntryGate } from "@/components/SiteEntryGate";
 import { SiteLoadSplash } from "@/components/SiteLoadSplash";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import { ProductPageThemeSync } from "@/components/ProductPageThemeSync";
+import { SiteThemeSync } from "@/components/SiteThemeSync";
 import { getShippingRate } from "@/lib/shipping.server";
 import { SITE } from "@/lib/site";
+import { SITE_THEME_BOOT_SCRIPT } from "@/lib/siteTheme";
 import "./globals.css";
 
 const gelasio = Gelasio({
@@ -92,6 +94,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
       suppressHydrationWarning
     >
       <head>
+        <script dangerouslySetInnerHTML={{ __html: SITE_THEME_BOOT_SCRIPT }} />
         <script
           dangerouslySetInnerHTML={{
             __html: `(function(){try{if("scrollRestoration"in history)history.scrollRestoration="manual";}catch(e){}window.scrollTo(0,0);var p=location.pathname;var skip=/^\\/(dashboard|admin|api|backoffice|login)(\\/|$)/i.test(p);var product=/^\\/collection\\/[^/]+\\/?$/i.test(p);if(skip){document.documentElement.setAttribute("data-entry-ok","1");return;}var entry=false;if(product)entry=true;try{if(sessionStorage.getItem("classyv-entry-gate")==="yes")entry=true;}catch(e){}if(entry){document.documentElement.setAttribute("data-entry-ok","1");document.documentElement.setAttribute("data-boot-splash","1");}})();`,
@@ -109,6 +112,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         <StoreProvider shippingRate={shippingRate}>
           <ScrollToTop />
           <ProductPageThemeSync />
+          <SiteThemeSync />
           <StoreShell>{children}</StoreShell>
           <DeferredChrome />
           <SiteLoadSplash />
