@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import { usePathname, useSearchParams } from "next/navigation";
 import { BRAND_LOGO_SRC } from "@/components/BrandMark";
 
@@ -76,7 +77,8 @@ function SiteLoadSplashInner() {
   useEffect(() => {
     let alreadyPassed = false;
     try {
-      alreadyPassed = sessionStorage.getItem(ENTRY_KEY) === "yes";
+      alreadyPassed =
+        localStorage.getItem(ENTRY_KEY) === "yes" || sessionStorage.getItem(ENTRY_KEY) === "yes";
     } catch {
       alreadyPassed = false;
     }
@@ -107,7 +109,7 @@ function SiteLoadSplashInner() {
     return () => observer.disconnect();
   }, [entryOk]);
 
-  /* Cover the screen on link click — before the next page paints. */
+  /* Cover the screen on link click / history pop — before the next page paints. */
   useEffect(() => {
     if (!ready || !entryOk) return;
 
@@ -144,8 +146,20 @@ function SiteLoadSplashInner() {
       beginSplash();
     };
 
+    /* Browser / gesture back-forward: cover synchronously, before the router renders the page. */
+    const onPopState = () => {
+      if (!shouldShowSplash(window.location.pathname)) return;
+      const nextKey = `${window.location.pathname}?${new URLSearchParams(window.location.search).toString()}`;
+      if (nextKey === lastLocation.current) return;
+      flushSync(beginSplash);
+    };
+
     document.addEventListener("click", onClickCapture, true);
-    return () => document.removeEventListener("click", onClickCapture, true);
+    window.addEventListener("popstate", onPopState);
+    return () => {
+      document.removeEventListener("click", onClickCapture, true);
+      window.removeEventListener("popstate", onPopState);
+    };
   }, [ready, entryOk]);
 
   useEffect(() => {

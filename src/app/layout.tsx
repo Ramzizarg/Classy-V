@@ -97,7 +97,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         <script dangerouslySetInnerHTML={{ __html: SITE_THEME_BOOT_SCRIPT }} />
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{if("scrollRestoration"in history)history.scrollRestoration="manual";}catch(e){}window.scrollTo(0,0);var p=location.pathname;var skip=/^\\/(dashboard|admin|api|backoffice|login)(\\/|$)/i.test(p);var product=/^\\/collection\\/[^/]+\\/?$/i.test(p);if(skip){document.documentElement.setAttribute("data-entry-ok","1");return;}var entry=false;if(product)entry=true;try{if(sessionStorage.getItem("classyv-entry-gate")==="yes")entry=true;}catch(e){}if(entry){document.documentElement.setAttribute("data-entry-ok","1");document.documentElement.setAttribute("data-boot-splash","1");}})();`,
+            __html: `(function(){try{if("scrollRestoration"in history)history.scrollRestoration="manual";}catch(e){}window.scrollTo(0,0);var p=location.pathname;var skip=/^\\/(dashboard|admin|api|backoffice|login)(\\/|$)/i.test(p);if(skip){document.documentElement.setAttribute("data-entry-ok","1");return;}var entry=p!=="/";try{if(localStorage.getItem("classyv-entry-gate")==="yes"||sessionStorage.getItem("classyv-entry-gate")==="yes")entry=true;}catch(e){}if(entry){document.documentElement.setAttribute("data-entry-ok","1");document.documentElement.setAttribute("data-boot-splash","1");}})();`,
           }}
         />
         <style

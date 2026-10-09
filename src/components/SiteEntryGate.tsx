@@ -16,15 +16,15 @@ const ENTRY_CHANGE = "classyv:entry-gate-change";
 type GateChoice = "yes" | "no";
 type GatePhase = "idle" | "question" | "welcome" | "opening" | "rejected";
 
+/** The gate greets first-time visitors on the home page only. */
 function isExemptPath(path: string | null): boolean {
-  if (!path) return true;
-  // Back office / auth, and direct product PDP links (skip gate for shared product URLs).
-  if (/^\/(dashboard|admin|api|backoffice|login)(\/|$)/i.test(path)) return true;
-  return /^\/collection\/[^/]+\/?$/i.test(path);
+  return path !== "/";
 }
 
+/** "Yes" is remembered for good; "No" only for this visit, so they're asked again next time. */
 function readChoice(): GateChoice | null {
   try {
+    if (localStorage.getItem(STORAGE_KEY) === "yes") return "yes";
     const value = sessionStorage.getItem(STORAGE_KEY);
     return value === "yes" || value === "no" ? value : null;
   } catch {
@@ -34,6 +34,7 @@ function readChoice(): GateChoice | null {
 
 function writeChoice(choice: GateChoice) {
   try {
+    if (choice === "yes") localStorage.setItem(STORAGE_KEY, "yes");
     sessionStorage.setItem(STORAGE_KEY, choice);
   } catch {
     // Private browsing can block storage; the gate still works for this page view.
