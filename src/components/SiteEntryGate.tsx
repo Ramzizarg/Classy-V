@@ -16,15 +16,17 @@ const ENTRY_CHANGE = "classyv:entry-gate-change";
 type GateChoice = "yes" | "no";
 type GatePhase = "idle" | "question" | "welcome" | "opening" | "rejected";
 
-/** The gate greets first-time visitors on the home page only. */
-function isExemptPath(path: string | null): boolean {
-  return path !== "/";
-}
+/**
+ * The <head> boot script arms the gate only when a visitor's very first page load is
+ * the home page. Landing anywhere else first marks the gate as seen for good.
+ */
+const readArmed = () => document.documentElement.hasAttribute("data-entry-gate");
 
-/** "Yes" is remembered for good; "No" only for this visit, so they're asked again next time. */
+/** "Yes" (or a first visit that skipped home) is remembered for good; "No" only for this visit. */
 function readChoice(): GateChoice | null {
   try {
-    if (localStorage.getItem(STORAGE_KEY) === "yes") return "yes";
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved === "yes" || saved === "seen") return "yes";
     const value = sessionStorage.getItem(STORAGE_KEY);
     return value === "yes" || value === "no" ? value : null;
   } catch {
@@ -71,22 +73,24 @@ function subscribeToEntryGate(onStoreChange: () => void) {
 
 export function SiteEntryGate() {
   const pathname = usePathname();
-  const exempt = isExemptPath(pathname);
 
   const mounted = useSyncExternalStore(
     subscribeToEntryGate,
     () => true,
     () => false
   );
+  const armed = useSyncExternalStore(subscribeToEntryGate, readArmed, () => false);
+  const exempt = pathname !== "/" || !armed;
   const storedChoice = useSyncExternalStore(subscribeToEntryGate, readChoice, () => null);
   const [phase, setPhase] = useState<GatePhase>("question");
 
   useEffect(() => {
+    if (!mounted) return;
     if (exempt || storedChoice === "yes") {
       markEntryPassed();
       unlockPage();
     }
-  }, [exempt, storedChoice]);
+  }, [mounted, exempt, storedChoice]);
 
   useEffect(() => {
     if (phase !== "welcome") return;

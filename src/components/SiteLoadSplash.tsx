@@ -77,8 +77,8 @@ function SiteLoadSplashInner() {
   useEffect(() => {
     let alreadyPassed = false;
     try {
-      alreadyPassed =
-        localStorage.getItem(ENTRY_KEY) === "yes" || sessionStorage.getItem(ENTRY_KEY) === "yes";
+      const saved = localStorage.getItem(ENTRY_KEY);
+      alreadyPassed = saved === "yes" || saved === "seen" || sessionStorage.getItem(ENTRY_KEY) === "yes";
     } catch {
       alreadyPassed = false;
     }

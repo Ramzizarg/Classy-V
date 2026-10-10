@@ -4,9 +4,9 @@ import { useSyncExternalStore } from "react";
 import { MoonGlyph, SunGlyph } from "@/components/SocialGlyphs";
 import { readSiteTheme, setSiteTheme, subscribeSiteTheme, type SiteTheme } from "@/lib/siteTheme";
 
-const serverTheme = (): SiteTheme => "night";
+const serverTheme = (): SiteTheme => "day";
 
-/** Header switch between night (default) and day mode. Shows the mode it switches to. */
+/** Header switch between day (default) and night mode. Shows the mode it switches to. */
 export function ThemeToggle({ className = "h-6 w-6" }: { className?: string }) {
   const theme = useSyncExternalStore(subscribeSiteTheme, readSiteTheme, serverTheme);
   const next: SiteTheme = theme === "day" ? "night" : "day";

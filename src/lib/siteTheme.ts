@@ -1,5 +1,5 @@
 /**
- * Storefront day / night mode. Night is the brand default; day is opt-in and
+ * Storefront day / night mode. Day is the default; night is opt-in and
  * remembered per browser. The back office keeps its own light theme.
  */
 
@@ -13,9 +13,9 @@ const BROWSER_BAR: Record<SiteTheme, string> = { night: "#000000", day: "#ffffff
 
 export function readSiteTheme(): SiteTheme {
   try {
-    return localStorage.getItem(SITE_THEME_STORAGE_KEY) === "day" ? "day" : "night";
+    return localStorage.getItem(SITE_THEME_STORAGE_KEY) === "night" ? "night" : "day";
   } catch {
-    return "night";
+    return "day";
   }
 }
 
@@ -53,5 +53,5 @@ export function subscribeSiteTheme(onChange: () => void): () => void {
   };
 }
 
-/** Runs in <head> so a saved day mode is on the page before first paint. */
-export const SITE_THEME_BOOT_SCRIPT = `(function(){try{if(${UNTHEMED_PATH}.test(location.pathname))return;if(localStorage.getItem("${SITE_THEME_STORAGE_KEY}")==="day")document.documentElement.setAttribute("data-theme","day");}catch(e){}})();`;
+/** Runs in <head> so the right mode is on the page before first paint. */
+export const SITE_THEME_BOOT_SCRIPT = `(function(){if(${UNTHEMED_PATH}.test(location.pathname))return;var t=null;try{t=localStorage.getItem("${SITE_THEME_STORAGE_KEY}");}catch(e){}if(t!=="night")document.documentElement.setAttribute("data-theme","day");})();`;
