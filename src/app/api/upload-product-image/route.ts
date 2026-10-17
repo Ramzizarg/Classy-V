@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
     if (vercelBlobConfigured()) {
       const pathname = `uploads/${folder}/${filename}`;
       const blob = await put(pathname, bytes, {
-        access: "public",
+        access: "private",
         contentType,
         addRandomSuffix: false,
       });
