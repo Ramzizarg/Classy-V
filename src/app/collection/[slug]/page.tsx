@@ -10,6 +10,7 @@ import {
   effectivePrice,
   getCategory,
   getProduct,
+  isComingSoon,
   isSoldOut,
   relatedProducts,
 } from "@/lib/products";
@@ -54,6 +55,7 @@ export default async function ProductPage({ params }: { params: Params }) {
   ]);
   const sizeChart = resolveProductSizeChart(product.sizeGuide, typeChart);
 
+  const comingSoon = isComingSoon(product);
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Product",
@@ -63,11 +65,15 @@ export default async function ProductPage({ params }: { params: Params }) {
     brand: { "@type": "Brand", name: SITE.name },
     offers: {
       "@type": "Offer",
-      price,
-      priceCurrency: "TND",
-      availability: isSoldOut(product)
-        ? "https://schema.org/OutOfStock"
-        : "https://schema.org/InStock",
+      ...(comingSoon ? {} : { price, priceCurrency: "TND" }),
+      availability: comingSoon
+        ? "https://schema.org/PreOrder"
+        : isSoldOut(product)
+          ? "https://schema.org/OutOfStock"
+          : "https://schema.org/InStock",
+      ...(comingSoon && product.releaseAt
+        ? { availabilityStarts: product.releaseAt }
+        : {}),
     },
   };
 

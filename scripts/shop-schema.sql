@@ -47,6 +47,11 @@ CREATE INDEX IF NOT EXISTS products_category_idx ON products (category_id);
 ALTER TABLE products ADD COLUMN IF NOT EXISTS variant_group TEXT;
 CREATE INDEX IF NOT EXISTS products_variant_group_idx ON products (variant_group);
 
+-- Per-product drop schedule: grey "Coming soon" + countdown until release_at.
+ALTER TABLE products ADD COLUMN IF NOT EXISTS coming_soon BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE products ADD COLUMN IF NOT EXISTS release_at TIMESTAMPTZ;
+CREATE INDEX IF NOT EXISTS products_coming_soon_idx ON products (coming_soon) WHERE coming_soon = TRUE;
+
 -- Coupons -------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS coupons (
   id             SERIAL PRIMARY KEY,

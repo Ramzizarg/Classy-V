@@ -1,7 +1,11 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
+import { useCallback, useState } from "react";
+import { ProductCountdown } from "@/components/ProductCountdown";
 import { formatPrice } from "@/lib/format";
-import { effectivePrice, isSoldOut } from "@/lib/products";
+import { effectivePrice, isComingSoon, isSoldOut } from "@/lib/products";
 import type { Product } from "@/lib/types";
 
 export function ProductCard({
@@ -13,11 +17,18 @@ export function ProductCard({
   priority?: boolean;
   sizes?: string;
 }) {
-  const soldOut = isSoldOut(product);
+  const comingSoon = isComingSoon(product);
+  const soldOut = !comingSoon && isSoldOut(product);
   const price = effectivePrice(product);
+  const [dropUrgent, setDropUrgent] = useState(false);
+  const onDropUrgent = useCallback((urgent: boolean) => setDropUrgent(urgent), []);
 
   return (
-    <article className="product-card product-card--catalog">
+    <article
+      className={`product-card product-card--catalog${comingSoon ? " product-card--coming-soon" : ""}${
+        comingSoon && dropUrgent ? " product-card--drop-urgent" : ""
+      }`}
+    >
       <Link href={`/collection/${product.slug}`} className="flex h-full flex-col">
         <div className="media-frame product-card__media w-full">
           <Image
@@ -36,11 +47,25 @@ export function ProductCard({
             sizes={sizes}
             className="media-secondary absolute inset-0 h-full w-full object-contain opacity-0"
           />
+          {comingSoon ? (
+            <>
+              <span className="product-card__badge product-card__badge--coming-soon">Coming soon</span>
+              <div className="product-card__drop">
+                <ProductCountdown
+                  endsAt={product.releaseAt}
+                  variant="overlay"
+                  onUrgentChange={onDropUrgent}
+                />
+              </div>
+            </>
+          ) : soldOut ? (
+            <span className="product-card__badge">Sold out</span>
+          ) : null}
         </div>
 
         <div className="product-card__copy">
           <h3 className="product-card__title">{product.name}</h3>
-          {soldOut ? (
+          {comingSoon ? null : soldOut ? (
             <p className="product-card__sold-out">Sold out</p>
           ) : (
             <p className="product-card__footer-price">{formatPrice(price)}</p>

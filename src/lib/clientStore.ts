@@ -59,14 +59,30 @@ function emit(): void {
 }
 
 function commit(next: Partial<Omit<ShopState, "hydrated">>): void {
+  ensureInitialized();
   state = { ...state, ...next };
   persist();
   emit();
 }
 
 export function subscribe(listener: () => void): () => void {
-  ensureInitialized();
   listeners.add(listener);
+
+  /**
+   * Hydrate from localStorage after the current render. Calling ensureInitialized
+   * inside getSnapshot (or synchronously here) makes the first client snapshot
+   * differ from getServerSnapshot and triggers a hydration mismatch on Cart.
+   */
+  if (typeof window !== "undefined" && !initialized) {
+    queueMicrotask(() => {
+      if (initialized) {
+        emit();
+        return;
+      }
+      ensureInitialized();
+      emit();
+    });
+  }
 
   /** Keep tabs in sync when the cart changes elsewhere. */
   const onStorage = (event: StorageEvent) => {
@@ -83,7 +99,6 @@ export function subscribe(listener: () => void): () => void {
 }
 
 export function getSnapshot(): ShopState {
-  ensureInitialized();
   return state;
 }
 

@@ -10,6 +10,12 @@ const nextConfig: NextConfig = {
     formats: ["image/avif", "image/webp"],
     /** Placeholder catalog media is vector — replace with photos and this can be removed. */
     dangerouslyAllowSVG: true,
+    /**
+     * Local DNS (esp. Windows NAT64) can resolve public Blob hostnames to
+     * 64:ff9b::… addresses that Next 16’s SSRF guard treats as private.
+     * Safe in production on Vercel; only needed so /_next/image can fetch Blob URLs in dev.
+     */
+    dangerouslyAllowLocalIP: process.env.NODE_ENV === "development",
     contentDispositionType: "inline",
     deviceSizes: [640, 750, 828, 1080, 1200, 1536, 1920],
     imageSizes: [16, 32, 48, 64, 96, 128, 200, 256, 384],

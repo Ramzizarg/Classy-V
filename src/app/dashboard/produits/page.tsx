@@ -34,6 +34,8 @@ import {
   LayoutGrid,
   GripVertical,
   Truck,
+  Clock,
+  Calendar,
 } from "lucide-react";
 
 const SIZES = ["Standard", "S", "M", "L", "XL", "XXL"];
@@ -49,6 +51,99 @@ function productSalePrice(p: Pick<Product, "price" | "discount_price">): number 
 
 function formatDt(value: number): string {
   return Number.isInteger(value) ? String(value) : value.toFixed(2);
+}
+
+/** Local YYYY-MM-DD for date inputs. */
+function toLocalDateInput(iso: string | null | undefined): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+/** Local HH:MM for time inputs. */
+function toLocalTimeInput(iso: string | null | undefined): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+}
+
+/** Combine local date + time into an ISO string for Postgres. */
+function toReleaseIso(date: string, time: string): string | null {
+  if (!date.trim()) return null;
+  const t = time.trim() || "12:00";
+  const d = new Date(`${date.trim()}T${t}`);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toISOString();
+}
+
+function formatReleaseRelative(ms: number): string {
+  const abs = Math.abs(ms);
+  const s = Math.floor(abs / 1000);
+  const m = Math.floor(s / 60);
+  const h = Math.floor(m / 60);
+  const d = Math.floor(h / 24);
+  if (d > 0) return `${d}d ${h % 24}h`;
+  if (h > 0) return `${h}h ${m % 60}m`;
+  if (m > 0) return `${m}m`;
+  return `${s}s`;
+}
+
+function releaseSchedulePreview(date: string, time: string) {
+  const iso = toReleaseIso(date, time);
+  if (!iso) return null;
+  const at = new Date(iso);
+  const ms = at.getTime() - Date.now();
+  return {
+    iso,
+    past: ms <= 0,
+    relative: formatReleaseRelative(ms),
+    label: at.toLocaleString(undefined, {
+      weekday: "short",
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    }),
+  };
+}
+
+const RELEASE_TIME_PRESETS = ["09:00", "12:00", "18:00", "20:00"] as const;
+
+const RELEASE_DAY_PRESETS: { id: string; label: string; days: number; time: string }[] = [
+  { id: "tonight", label: "Tonight", days: 0, time: "20:00" },
+  { id: "tomorrow", label: "Tomorrow", days: 1, time: "12:00" },
+  { id: "2d", label: "In 2 days", days: 2, time: "12:00" },
+  { id: "7d", label: "In 7 days", days: 7, time: "12:00" },
+];
+
+function localPartsPlusDays(days: number, time: string): { date: string; time: string } {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() + days);
+  const [hh, mm] = time.split(":").map((n) => Number(n));
+  d.setHours(hh || 0, mm || 0, 0, 0);
+  // If "Tonight" already passed, roll to tomorrow evening.
+  if (days === 0 && d.getTime() <= Date.now()) {
+    d.setDate(d.getDate() + 1);
+  }
+  return {
+    date: toLocalDateInput(d.toISOString()),
+    time: `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`,
+  };
+}
+
+function isProductComingSoon(p: Product): boolean {
+  if (!p.coming_soon) return false;
+  if (!p.release_at) return true;
+  const at = Date.parse(p.release_at);
+  if (Number.isNaN(at)) return true;
+  return at > Date.now();
 }
 
 function CouponCountdown({ expiresAt, startsAt }: { expiresAt: string | null; startsAt: string | null }) {
@@ -180,6 +275,9 @@ export default function DashboardProduitsPage() {
   /** Selected sizes → qty text. Missing key = size not selected. */
   const [sizeStocks, setSizeStocks] = useState<Record<string, string>>({});
   const [productImageUrls, setProductImageUrls] = useState<string[]>([]);
+  const [comingSoon, setComingSoon] = useState(false);
+  const [releaseDate, setReleaseDate] = useState("");
+  const [releaseTime, setReleaseTime] = useState("");
 
   const formTotalStock = Object.values(sizeStocks).reduce((sum, raw) => {
     return sum + Math.max(0, Math.floor(Number(raw) || 0));
@@ -282,6 +380,9 @@ export default function DashboardProduitsPage() {
     setSizeStocks({});
     setProductImageUrls([]);
     setShowUrlImages(false);
+    setComingSoon(false);
+    setReleaseDate("");
+    setReleaseTime("");
     setFormOpen(true);
   };
 
@@ -321,6 +422,9 @@ export default function DashboardProduitsPage() {
     setCustomChart(guide.mode === "custom" ? guide.chart : null);
     setProductImageUrls(normalizeProductImages(p.images));
     setShowUrlImages(false);
+    setComingSoon(Boolean(p.coming_soon));
+    setReleaseDate(toLocalDateInput(p.release_at));
+    setReleaseTime(toLocalTimeInput(p.release_at) || "12:00");
     setFormOpen(true);
   };
 
@@ -418,6 +522,14 @@ export default function DashboardProduitsPage() {
         sizeGuide = { mode: "custom", chart: customChart };
       }
 
+      if (comingSoon && !releaseDate.trim()) {
+        throw new Error("Set a release date for Coming soon, or turn the option off.");
+      }
+      const releaseAt = comingSoon ? toReleaseIso(releaseDate, releaseTime) : null;
+      if (comingSoon && !releaseAt) {
+        throw new Error("Invalid release date/time.");
+      }
+
       const payload: Record<string, unknown> = {
         name: name.trim(),
         description: hasDescription ? description : null,
@@ -429,7 +541,9 @@ export default function DashboardProduitsPage() {
         size_guide_image: sizeGuideUrl || null,
         measurement_table: serializeProductSizeGuide(sizeGuide),
         sizes: sizePayload,
-        active: true,
+        active: editing?.active !== false,
+        coming_soon: comingSoon,
+        release_at: releaseAt,
         variant_group: variantGroup,
       };
 
@@ -1682,6 +1796,179 @@ export default function DashboardProduitsPage() {
               )}
             </div>
 
+            <div
+              className={`rounded-xl border p-4 space-y-3 transition-colors ${
+                comingSoon ? "border-zinc-300 bg-white shadow-sm" : "border-zinc-200 bg-zinc-50/80"
+              }`}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0 flex items-start gap-2.5">
+                  <span
+                    className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
+                      comingSoon ? "bg-zinc-900 text-white" : "bg-zinc-200 text-zinc-600"
+                    }`}
+                  >
+                    <Clock className="h-4 w-4" aria-hidden />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold text-black">Coming soon</p>
+                    <p className="mt-0.5 text-[11px] text-zinc-500 leading-snug">
+                      Hides the price, blocks purchase, and shows a live countdown until drop time.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={comingSoon}
+                  onClick={() => {
+                    setComingSoon((v) => {
+                      const next = !v;
+                      if (next && !releaseDate) {
+                        const preset = localPartsPlusDays(2, "12:00");
+                        setReleaseDate(preset.date);
+                        setReleaseTime(preset.time);
+                      }
+                      return next;
+                    });
+                  }}
+                  className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full transition-colors ${
+                    comingSoon ? "bg-zinc-900" : "bg-zinc-300"
+                  }`}
+                >
+                  <span
+                    className={`absolute top-1 h-4 w-4 rounded-full bg-white shadow transition-transform ${
+                      comingSoon ? "left-6" : "left-1"
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {comingSoon ? (
+                <div className="space-y-3 rounded-xl border border-zinc-200 bg-zinc-50 p-3 sm:p-3.5">
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 mb-2">
+                      Quick schedule
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {RELEASE_DAY_PRESETS.map((preset) => {
+                        const parts = localPartsPlusDays(preset.days, preset.time);
+                        const active = releaseDate === parts.date && releaseTime === parts.time;
+                        return (
+                          <button
+                            key={preset.id}
+                            type="button"
+                            onClick={() => {
+                              setReleaseDate(parts.date);
+                              setReleaseTime(parts.time);
+                            }}
+                            className={`rounded-lg border px-2.5 py-1.5 text-[11px] font-semibold transition-colors ${
+                              active
+                                ? "border-black bg-black text-white"
+                                : "border-zinc-300 bg-white text-zinc-700 hover:border-zinc-500 hover:text-black"
+                            }`}
+                          >
+                            {preset.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="rounded-lg border border-zinc-200 bg-white p-2.5">
+                      <label
+                        htmlFor="product-release-date"
+                        className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-black"
+                      >
+                        <Calendar className="h-3.5 w-3.5 text-zinc-500" aria-hidden />
+                        Release date <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        id="product-release-date"
+                        type="date"
+                        value={releaseDate}
+                        onChange={(e) => setReleaseDate(e.target.value)}
+                        required={comingSoon}
+                        className="w-full rounded-md border border-zinc-300 bg-white px-2.5 py-2 text-sm tabular-nums text-black focus:outline-none focus:ring-2 focus:ring-zinc-400"
+                      />
+                    </div>
+                    <div className="rounded-lg border border-zinc-200 bg-white p-2.5">
+                      <label
+                        htmlFor="product-release-time"
+                        className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-black"
+                      >
+                        <Clock className="h-3.5 w-3.5 text-zinc-500" aria-hidden />
+                        Release time
+                      </label>
+                      <input
+                        id="product-release-time"
+                        type="time"
+                        value={releaseTime}
+                        onChange={(e) => setReleaseTime(e.target.value)}
+                        className="w-full rounded-md border border-zinc-300 bg-white px-2.5 py-2 text-sm tabular-nums text-black focus:outline-none focus:ring-2 focus:ring-zinc-400"
+                      />
+                      <div className="mt-2 flex flex-wrap gap-1">
+                        {RELEASE_TIME_PRESETS.map((t) => (
+                          <button
+                            key={t}
+                            type="button"
+                            onClick={() => setReleaseTime(t)}
+                            className={`rounded-md border px-2 py-1 text-[10px] font-semibold tabular-nums transition-colors ${
+                              releaseTime === t
+                                ? "border-zinc-800 bg-zinc-800 text-white"
+                                : "border-zinc-200 bg-zinc-50 text-zinc-600 hover:border-zinc-400 hover:text-black"
+                            }`}
+                          >
+                            {t}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {(() => {
+                    const preview = releaseSchedulePreview(releaseDate, releaseTime);
+                    if (!preview) {
+                      return (
+                        <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                          Pick a release date so the storefront countdown can start.
+                        </p>
+                      );
+                    }
+                    return (
+                      <div
+                        className={`rounded-lg border px-3 py-2.5 ${
+                          preview.past
+                            ? "border-amber-200 bg-amber-50"
+                            : "border-emerald-200 bg-emerald-50"
+                        }`}
+                      >
+                        <p
+                          className={`text-xs font-semibold ${
+                            preview.past ? "text-amber-900" : "text-emerald-900"
+                          }`}
+                        >
+                          {preview.past ? "Release time is in the past" : "Drop scheduled"}
+                        </p>
+                        <p
+                          className={`mt-0.5 text-[11px] leading-snug ${
+                            preview.past ? "text-amber-800" : "text-emerald-800"
+                          }`}
+                        >
+                          {preview.label}
+                          <span className="text-zinc-400"> · </span>
+                          {preview.past
+                            ? `was ${preview.relative} ago — product will go live on save`
+                            : `in ${preview.relative} · your local time`}
+                        </p>
+                      </div>
+                    );
+                  })()}
+                </div>
+              ) : null}
+            </div>
+
             <div className="flex flex-col-reverse sm:flex-row gap-3 pt-4 border-t border-zinc-200">
               <button
                 type="submit"
@@ -1724,21 +2011,28 @@ export default function DashboardProduitsPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-black truncate">{p.name}</p>
-                    <p className="text-sm text-zinc-600">
-                      {(() => {
-                        const sale = productSalePrice(p);
-                        if (sale != null) {
-                          return (
-                            <>
-                              <span className="font-semibold text-black">{formatDt(sale)} DT</span>
-                              <span className="line-through text-zinc-400 ml-1.5">{formatDt(Number(p.price))} DT</span>
-                            </>
-                          );
-                        }
-                        return <span>{formatDt(Number(p.price))} DT</span>;
-                      })()}
-                    </p>
+                    {isProductComingSoon(p) ? (
+                      <p className="text-sm font-semibold text-zinc-500">Coming soon</p>
+                    ) : (
+                      <p className="text-sm text-zinc-600">
+                        {(() => {
+                          const sale = productSalePrice(p);
+                          if (sale != null) {
+                            return (
+                              <>
+                                <span className="font-semibold text-black">{formatDt(sale)} DT</span>
+                                <span className="line-through text-zinc-400 ml-1.5">{formatDt(Number(p.price))} DT</span>
+                              </>
+                            );
+                          }
+                          return <span>{formatDt(Number(p.price))} DT</span>;
+                        })()}
+                      </p>
+                    )}
                     <p className="mt-0.5 text-[11px] text-zinc-500">
+                      {isProductComingSoon(p) && p.release_at
+                        ? `Drops ${new Date(p.release_at).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })} · `
+                        : null}
                       Total stock {p.stock}
                       {(() => {
                         const rows = parseSizeStocks(p.sizes ?? null, p.stock);
@@ -1773,8 +2067,8 @@ export default function DashboardProduitsPage() {
                       className={`relative inline-flex h-6 w-10 shrink-0 cursor-pointer rounded-full transition-colors disabled:opacity-50 ${
                         isListedForShop(p) ? "bg-green-500" : "bg-red-500"
                       }`}
-                      title={isListedForShop(p) ? "Visible on store" : "Coming soon"}
-                      aria-label={isListedForShop(p) ? "Visible on store" : "Coming soon"}
+                      title={isListedForShop(p) ? "Visible on store" : "Hidden from store"}
+                      aria-label={isListedForShop(p) ? "Visible on store" : "Hidden from store"}
                     >
                       {togglingListedId === p.id ? (
                         <span className="absolute inset-0 flex items-center justify-center">
@@ -1821,7 +2115,7 @@ export default function DashboardProduitsPage() {
                   <th className="w-[6%] px-2 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-zinc-600 sm:text-xs hidden sm:table-cell">Stock</th>
                   <th className="w-[15%] px-2 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-zinc-600 sm:text-xs hidden md:table-cell">Category</th>
                   <th className="w-[7%] px-1 py-2 text-center text-[11px] font-semibold uppercase tracking-wide text-zinc-600 sm:text-xs hidden sm:table-cell" title="Toggle between in stock and out of stock">Stock</th>
-                  <th className="w-[7%] px-1 py-2 text-center text-[11px] font-semibold uppercase tracking-wide text-zinc-600 sm:text-xs hidden sm:table-cell" title="Visible on the store or coming soon">Store</th>
+                  <th className="w-[7%] px-1 py-2 text-center text-[11px] font-semibold uppercase tracking-wide text-zinc-600 sm:text-xs hidden sm:table-cell" title="Visible or hidden on the store">Store</th>
                   <th className="w-[18%] px-2 py-2 text-right text-[11px] font-semibold uppercase tracking-wide text-zinc-600 sm:text-xs">Actions</th>
                 </tr>
               </thead>
@@ -1846,33 +2140,59 @@ export default function DashboardProduitsPage() {
                             )}
                           </div>
                           <span className="font-medium text-black truncate min-w-0">{p.name}</span>
+                          {isProductComingSoon(p) ? (
+                            <span className="ml-1.5 shrink-0 rounded bg-zinc-500 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white">
+                              Soon
+                            </span>
+                          ) : null}
                         </div>
                       </td>
                       <td className="px-2 py-2 text-black text-xs sm:text-sm">
-                        {(() => {
-                          const sale = productSalePrice(p);
-                          const regular = Number(p.price);
-                          if (sale != null) {
+                        {isProductComingSoon(p) ? (
+                          <span
+                            className="flex flex-col gap-0.5 leading-tight text-zinc-500"
+                            title={
+                              p.release_at
+                                ? `Drops ${new Date(p.release_at).toLocaleString()}`
+                                : "Coming soon"
+                            }
+                          >
+                            <span className="font-semibold whitespace-nowrap">Coming soon</span>
+                            {p.release_at ? (
+                              <span className="whitespace-nowrap text-[10px]">
+                                {new Date(p.release_at).toLocaleString(undefined, {
+                                  dateStyle: "short",
+                                  timeStyle: "short",
+                                })}
+                              </span>
+                            ) : null}
+                          </span>
+                        ) : (
+                          (() => {
+                            const sale = productSalePrice(p);
+                            const regular = Number(p.price);
+                            if (sale != null) {
+                              return (
+                                <span
+                                  className="flex flex-col gap-0.5 leading-tight"
+                                  title={`${formatDt(regular)} DT → ${formatDt(sale)} DT`}
+                                >
+                                  <span className="font-semibold text-black whitespace-nowrap">
+                                    {formatDt(sale)} DT
+                                  </span>
+                                  <span className="line-through text-zinc-400 whitespace-nowrap text-[11px]">
+                                    {formatDt(regular)} DT
+                                  </span>
+                                </span>
+                              );
+                            }
                             return (
-                              <span
-                                className="flex flex-col gap-0.5 leading-tight"
-                                title={`${formatDt(regular)} DT → ${formatDt(sale)} DT`}
-                              >
-                                <span className="font-semibold text-black whitespace-nowrap">
-                                  {formatDt(sale)} DT
-                                </span>
-                                <span className="line-through text-zinc-400 whitespace-nowrap text-[11px]">
-                                  {formatDt(regular)} DT
-                                </span>
+                              <span className="block whitespace-nowrap" title={`${formatDt(regular)} DT`}>
+                                {formatDt(regular)} DT
                               </span>
                             );
-                          }
-                          return (
-                            <span className="block whitespace-nowrap" title={`${formatDt(regular)} DT`}>
-                              {formatDt(regular)} DT
-                            </span>
-                          );
-                        })()}
+                          })()
+                        )}
                       </td>
                       <td className="px-2 py-2 hidden sm:table-cell text-zinc-600 text-center">
                         <div className="font-semibold text-black">{p.stock}</div>
@@ -1915,8 +2235,8 @@ export default function DashboardProduitsPage() {
                           className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-50 mx-auto ${
                             isListedForShop(p) ? "bg-green-500" : "bg-red-500"
                           }`}
-                          title={isListedForShop(p) ? "Visible on the store — click for coming soon" : "Coming soon — click to publish on the store"}
-                          aria-label={isListedForShop(p) ? "Product visible on the store" : "Product hidden (coming soon)"}
+                          title={isListedForShop(p) ? "Visible on the store — click to hide" : "Hidden — click to show on the store"}
+                          aria-label={isListedForShop(p) ? "Product visible on the store" : "Product hidden"}
                         >
                           {togglingListedId === p.id ? (
                             <span className="absolute inset-0 flex items-center justify-center">

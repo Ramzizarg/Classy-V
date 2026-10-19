@@ -222,6 +222,13 @@ html.dashboard-light .site-bg {
   display: none;
 }
 
+/* Storefront ::selection is white-on-black; on the white back office that
+ * highlight is invisible. Force a dark selection so words/lines read clearly. */
+html.dashboard-light ::selection {
+  background: #111111;
+  color: #ffffff;
+}
+
 /* Product PDP: white page + black ink. */
 html.product-light {
   background-color: #ffffff;
@@ -343,12 +350,15 @@ html.product-light .gallery-dots__dot--active {
 }
 
 html.product-light .product-page .product-card__title,
-html.product-light .product-page .product-card__footer-price,
 html.product-light .product-page .page-title,
 html.product-light main .product-card__title,
-html.product-light main .product-card__footer-price,
 html.product-light main .page-title {
   color: #111111;
+}
+
+html.product-light .product-page .product-card__footer-price,
+html.product-light main .product-card__footer-price {
+  color: var(--price-ink);
 }
 
 html.product-light .btn--solid {
@@ -366,6 +376,14 @@ html.product-light .btn--sold-out:disabled,
 html.product-light .btn--sold-out:hover {
   border-color: #e11d2e;
   background: #e11d2e;
+  color: #ffffff;
+}
+
+html.product-light .btn--coming-soon,
+html.product-light .btn--coming-soon:disabled,
+html.product-light .btn--coming-soon:hover {
+  border-color: #6b7280;
+  background: #6b7280;
   color: #ffffff;
 }
 
@@ -620,6 +638,21 @@ html.dashboard-light select option {
     drop-shadow(0 0 6px rgb(255 255 255 / 0.55))
     drop-shadow(0 0 16px rgb(255 255 255 / 0.35))
     drop-shadow(0 0 28px rgb(255 255 255 / 0.18));
+  pointer-events: none;
+  -webkit-user-drag: none;
+  user-select: none;
+}
+
+/* Colour swatches use the same silhouette glow as the main PDP photo. */
+.product-colour-variants__thumb {
+  overflow: visible;
+}
+
+.product-colour-variants__img {
+  filter:
+    drop-shadow(0 0 4px rgb(255 255 255 / 0.55))
+    drop-shadow(0 0 10px rgb(255 255 255 / 0.35))
+    drop-shadow(0 0 18px rgb(255 255 255 / 0.18));
   pointer-events: none;
   -webkit-user-drag: none;
   user-select: none;
@@ -881,6 +914,174 @@ html.dashboard-light select option {
   border-color: #e11d2e;
   background: #e11d2e;
   color: #ffffff;
+}
+
+.btn--coming-soon,
+.btn--coming-soon:disabled,
+.btn--coming-soon:hover {
+  cursor: not-allowed;
+  border-color: #6b7280;
+  background: #6b7280;
+  color: #ffffff;
+  opacity: 1;
+}
+
+.product-coming-soon__label {
+  margin: 0 0 8px;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--price-ink);
+}
+
+.product-coming-soon__hint {
+  color: #ffffff;
+}
+
+html.product-light .product-coming-soon__hint,
+html[data-theme="day"] .product-coming-soon__hint {
+  color: #111111;
+}
+
+.product-coming-soon .product-countdown {
+  color: var(--price-ink);
+}
+
+.product-countdown {
+  display: inline-flex;
+  align-items: stretch;
+  justify-content: center;
+  gap: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color: #6b7280;
+  line-height: 1;
+}
+
+.product-countdown--static {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  align-items: center;
+}
+
+.product-countdown__block {
+  display: inline-flex;
+  align-items: center;
+}
+
+.product-countdown__cell {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.1em;
+  gap: 3px;
+}
+
+.product-countdown__value {
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  line-height: 1;
+}
+
+.product-countdown__unit {
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.72;
+  line-height: 1;
+}
+
+.product-countdown__sep {
+  align-self: flex-start;
+  padding: 0 5px;
+  margin-top: 0.15em;
+  font-size: 0.85em;
+  font-weight: 700;
+  opacity: 0.35;
+  line-height: 1;
+}
+
+.product-countdown--card .product-countdown__value {
+  font-size: 13px;
+}
+
+.product-countdown--overlay {
+  width: 100%;
+  max-width: 100%;
+  gap: 0;
+  color: #111111;
+  /* Equal columns so D/H/M/S stay aligned in narrow 2-col mobile cards. */
+  display: flex;
+}
+
+.product-countdown--overlay.product-countdown--static {
+  display: inline-flex;
+  width: auto;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: #4b5563;
+}
+
+.product-countdown--overlay .product-countdown__block {
+  flex: 1 1 0;
+  min-width: 0;
+  justify-content: center;
+}
+
+.product-countdown--overlay .product-countdown__cell {
+  flex: 1;
+  min-width: 0;
+  gap: 3px;
+}
+
+.product-countdown--overlay .product-countdown__value {
+  font-size: clamp(11px, 3.6vw, 15px);
+  color: #111111;
+}
+
+.product-countdown--overlay .product-countdown__unit {
+  font-size: clamp(7px, 2.2vw, 9px);
+  color: #6b7280;
+  letter-spacing: 0.08em;
+}
+
+.product-countdown--overlay .product-countdown__sep {
+  flex: 0 0 auto;
+  color: #9ca3af;
+  font-size: clamp(10px, 3vw, 13px);
+  padding: 0 clamp(2px, 1.2vw, 6px);
+  margin-top: 1px;
+}
+
+.product-countdown--panel {
+  gap: 0;
+}
+
+.product-countdown--panel .product-countdown__cell {
+  min-width: 3.2em;
+  gap: 6px;
+}
+
+.product-countdown--panel .product-countdown__value {
+  font-size: 28px;
+  color: var(--price-ink);
+}
+
+.product-countdown--panel .product-countdown__unit {
+  font-size: 10px;
+  letter-spacing: 0.16em;
+}
+
+.product-countdown--panel .product-countdown__sep {
+  font-size: 20px;
+  padding: 0 8px;
+  margin-top: 4px;
 }
 
 /**
@@ -2382,15 +2583,23 @@ textarea.checkout-field {
   }
 }
 
-.home-products .lookbook-card__title,
-.home-products .lookbook-card__price {
+.home-products .lookbook-card__title {
   color: #111111;
+}
+
+.home-products .lookbook-card__price {
+  color: var(--price-ink);
 }
 
 .home-products .lookbook-card__badge {
   color: #ffffff;
   background: #e11d2e;
   border: 0;
+}
+
+.home-products .lookbook-card__badge--coming-soon {
+  background: #6b7280;
+  color: #ffffff;
 }
 
 .home-products .lookbook-card__copy {
@@ -2400,6 +2609,20 @@ textarea.checkout-field {
 
 .home-products .lookbook-card__img {
   filter: none;
+}
+
+.home-products .lookbook-card--drop-urgent .lookbook-card__img--active {
+  animation: lookbook-drop-pulse-home 2.4s ease-in-out infinite;
+}
+
+@keyframes lookbook-drop-pulse-home {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.02);
+  }
 }
 
 .home-products .lookbook-card__dot {
@@ -2563,17 +2786,15 @@ textarea.checkout-field {
     outline: none;
   }
 
-  /* Sit beside the photo, not on top of it. */
+  /* Hug the photo edges so the control sits with the image. */
   .lookbook-card__nav--prev {
-    left: 0;
-    transform: translate(-100%, -50%);
-    padding-right: 6px;
+    left: 2px;
+    transform: translateY(-50%);
   }
 
   .lookbook-card__nav--next {
-    right: 0;
-    transform: translate(100%, -50%);
-    padding-left: 6px;
+    right: 2px;
+    transform: translateY(-50%);
   }
 
   .lookbook-card__sizes {
@@ -2867,15 +3088,23 @@ textarea.checkout-field {
   }
 }
 
-.lookbook-hero .lookbook-card__title,
-.lookbook-hero .lookbook-card__price {
+.lookbook-hero .lookbook-card__title {
   color: #ffffff;
+}
+
+.lookbook-hero .lookbook-card__price {
+  color: var(--price-ink);
 }
 
 .lookbook-hero .lookbook-card__badge {
   color: #ffffff;
   background: #e11d2e;
   border: 0;
+}
+
+.lookbook-hero .lookbook-card__badge--coming-soon {
+  background: #6b7280;
+  color: #ffffff;
 }
 
 /* Soft white silhouette halo so dark cutouts read on black. */
@@ -2982,6 +3211,11 @@ textarea.checkout-field {
   pointer-events: none;
 }
 
+.lookbook-card__badge--coming-soon {
+  background: #6b7280;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.12);
+}
+
 .lookbook-card__sold-out {
   margin: 0;
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -2991,6 +3225,82 @@ textarea.checkout-field {
   line-height: 1.2;
   text-transform: uppercase;
   color: #e11d2e;
+}
+
+/* Bottom strip — keeps the garment visible, timer easy to read. */
+.lookbook-card__drop {
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  bottom: 6px;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 6px 6px 5px;
+  pointer-events: none;
+  border-radius: 8px;
+  border: 1px solid rgb(17 17 17 / 0.06);
+  background: rgb(255 255 255 / 0.94);
+  box-shadow: 0 4px 16px rgb(0 0 0 / 0.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+@media (min-width: 768px) {
+  .lookbook-card__drop {
+    left: 10px;
+    right: 10px;
+    bottom: 10px;
+    padding: 8px 12px 7px;
+  }
+}
+
+.lookbook-card__media--coming-soon .lookbook-card__img--active {
+  transition:
+    opacity 180ms ease,
+    transform 2.4s ease;
+}
+
+.lookbook-card--drop-urgent .lookbook-card__img--active {
+  animation: lookbook-drop-pulse 2.4s ease-in-out infinite;
+}
+
+.lookbook-card--drop-urgent .lookbook-card__badge--coming-soon {
+  animation: lookbook-drop-label-pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes lookbook-drop-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    filter: drop-shadow(0 12px 18px rgb(0 0 0 / 0.14));
+  }
+  50% {
+    transform: scale(1.018);
+    filter: drop-shadow(0 14px 22px rgb(0 0 0 / 0.2));
+  }
+}
+
+@keyframes lookbook-drop-label-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.82;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lookbook-card--drop-urgent .lookbook-card__img--active,
+  .lookbook-card--drop-urgent .lookbook-card__badge--coming-soon,
+  .product-card--drop-urgent .media-primary {
+    animation: none;
+  }
 }
 
 /* Pagination bulls under product photos (home + category grids). */
@@ -3076,7 +3386,7 @@ textarea.checkout-field {
   line-height: 1.2;
   letter-spacing: 0;
   text-transform: none;
-  color: #ffffff;
+  color: var(--price-ink);
 }
 
 @media (min-width: 768px) {
@@ -3533,15 +3843,23 @@ textarea.checkout-field {
 }
 
 /* Related products on PDP — same dark lookbook tiles as collection. */
-.product-related .lookbook-card__title,
-.product-related .lookbook-card__price {
+.product-related .lookbook-card__title {
   color: #ffffff;
+}
+
+.product-related .lookbook-card__price {
+  color: var(--price-ink);
 }
 
 .product-related .lookbook-card__badge {
   color: #ffffff;
   background: #e11d2e;
   border: 0;
+}
+
+.product-related .lookbook-card__badge--coming-soon {
+  background: #6b7280;
+  color: #ffffff;
 }
 
 .product-related .lookbook-card__media {
@@ -3633,7 +3951,7 @@ textarea.checkout-field {
   font-weight: 700;
   line-height: 1.2;
   white-space: nowrap;
-  color: #ffffff;
+  color: var(--price-ink);
 }
 
 @media (min-width: 640px) {
@@ -3647,8 +3965,89 @@ textarea.checkout-field {
   margin-top: 4px;
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
   line-height: 1.2;
-  color: inherit;
+  text-transform: uppercase;
+  color: #e11d2e;
+}
+
+.product-card__badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
+  margin: 0;
+  padding: 5px 8px;
+  border-radius: 4px;
+  background: #e11d2e;
+  color: #ffffff;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  pointer-events: none;
+}
+
+.product-card__badge--coming-soon {
+  background: #6b7280;
+}
+
+.product-card__drop {
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  bottom: 6px;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 6px 5px;
+  pointer-events: none;
+  border-radius: 8px;
+  border: 1px solid rgb(17 17 17 / 0.06);
+  background: rgb(255 255 255 / 0.94);
+  box-shadow: 0 4px 16px rgb(0 0 0 / 0.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+@media (min-width: 768px) {
+  .product-card__drop {
+    left: 8px;
+    right: 8px;
+    bottom: 8px;
+    padding: 7px 10px 6px;
+  }
+}
+
+/* Product page panel: keep full labels readable on phones. */
+@media (max-width: 639px) {
+  .product-countdown--panel .product-countdown__cell {
+    min-width: 2.6em;
+    gap: 4px;
+  }
+
+  .product-countdown--panel .product-countdown__value {
+    font-size: 22px;
+  }
+
+  .product-countdown--panel .product-countdown__unit {
+    font-size: 9px;
+    letter-spacing: 0.12em;
+  }
+
+  .product-countdown--panel .product-countdown__sep {
+    font-size: 16px;
+    padding: 0 5px;
+  }
+}
+
+.product-card--drop-urgent .media-primary {
+  animation: lookbook-drop-pulse 2.4s ease-in-out infinite;
 }
 
 .media-frame {
@@ -4664,12 +5063,15 @@ html[data-theme="day"] .lookbook__shop,
 html[data-theme="day"] .lookbook__title,
 html[data-theme="day"] .lookbook__empty,
 html[data-theme="day"] .lookbook-card__title,
-html[data-theme="day"] .lookbook-card__price,
 html[data-theme="day"] .lookbook-hero .lookbook-card__nav,
 html[data-theme="day"] .lookbook-hero .lookbook-card__size,
-html[data-theme="day"] .product-related .lookbook-card__size,
-html[data-theme="day"] .product-card__footer-price {
+html[data-theme="day"] .product-related .lookbook-card__size {
   color: #111111;
+}
+
+html[data-theme="day"] .lookbook-card__price,
+html[data-theme="day"] .product-card__footer-price {
+  color: var(--price-ink);
 }
 
 html[data-theme="day"] .lookbook__all {
@@ -4702,6 +5104,13 @@ html[data-theme="day"] .product-gallery__main img {
     drop-shadow(0 0 6px rgb(0 0 0 / 0.55))
     drop-shadow(0 0 16px rgb(0 0 0 / 0.35))
     drop-shadow(0 0 28px rgb(0 0 0 / 0.18));
+}
+
+html[data-theme="day"] .product-colour-variants__img {
+  filter:
+    drop-shadow(0 0 4px rgb(0 0 0 / 0.55))
+    drop-shadow(0 0 10px rgb(0 0 0 / 0.35))
+    drop-shadow(0 0 18px rgb(0 0 0 / 0.18));
 }
 
 html[data-theme="day"] .lookbook-card__dot {

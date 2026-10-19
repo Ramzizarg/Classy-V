@@ -48,7 +48,17 @@ type ProductStockRow = {
   name: string;
   stock: number;
   sizes: unknown;
+  coming_soon: boolean | null;
+  release_at: string | Date | null;
 };
+
+function productIsComingSoon(row: ProductStockRow): boolean {
+  if (!row.coming_soon) return false;
+  if (!row.release_at) return true;
+  const at = new Date(row.release_at).getTime();
+  if (Number.isNaN(at)) return true;
+  return at > Date.now();
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -113,7 +123,7 @@ export async function POST(req: NextRequest) {
     const productIds = [...new Set([...demand.values()].map((d) => d.productId))];
     const placeholders = productIds.map((_, i) => `$${i + 1}`).join(", ");
     const { rows: productRows } = await neonQuery<ProductStockRow>(
-      `SELECT id, name, stock, sizes FROM products WHERE id IN (${placeholders})`,
+      `SELECT id, name, stock, sizes, coming_soon, release_at FROM products WHERE id IN (${placeholders})`,
       productIds
     );
 
@@ -126,6 +136,12 @@ export async function POST(req: NextRequest) {
       const row = byId.get(d.productId);
       if (!row) {
         return NextResponse.json({ error: `Product not found: ${d.name || d.productId}.` }, { status: 400 });
+      }
+      if (productIsComingSoon(row)) {
+        return NextResponse.json(
+          { error: `"${row.name}" is coming soon and cannot be ordered yet.` },
+          { status: 409 }
+        );
       }
 
       let state = nextByProduct.get(d.productId);

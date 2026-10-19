@@ -4,10 +4,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useRef, useState } from "react";
+import { ProductCountdown } from "@/components/ProductCountdown";
 import { useStore } from "@/components/StoreProvider";
 import { formatPrice } from "@/lib/format";
 import { getSizeOptionsForProduct, isProductOutOfStock } from "@/lib/productSizesDisplay";
-import { effectivePrice } from "@/lib/products";
+import { effectivePrice, isComingSoon } from "@/lib/products";
 import type { Product } from "@/lib/types";
 
 const SWIPE_PX = 28;
@@ -23,19 +24,22 @@ export function LookbookCard({
 }) {
   const router = useRouter();
   const { addLine } = useStore();
-  const soldOut = isProductOutOfStock(product);
+  const comingSoon = isComingSoon(product);
+  const soldOut = !comingSoon && isProductOutOfStock(product);
   const price = effectivePrice(product);
   const onSale = price < product.price;
   const images = product.images.length > 0 ? product.images : ["/images/logo.png"];
   const multi = images.length > 1;
   const href = `/collection/${product.slug}`;
   const sizeOptions = getSizeOptionsForProduct(product);
-  const showSizes = !soldOut && sizeOptions.some((o) => o.available);
+  const showSizes = !comingSoon && !soldOut && sizeOptions.some((o) => o.available);
   const [active, setActive] = useState(0);
   const [sizesOpen, setSizesOpen] = useState(false);
+  const [dropUrgent, setDropUrgent] = useState(false);
   const touch = useRef<{ x: number; y: number; axis: "none" | "x" | "y" } | null>(null);
   const suppressClick = useRef(false);
   const sizesAttr = "(min-width: 1280px) 25vw, (min-width: 768px) 33vw, 50vw";
+  const onDropUrgent = useCallback((urgent: boolean) => setDropUrgent(urgent), []);
 
   const goTo = useCallback(
     (index: number) => {
@@ -140,7 +144,9 @@ export function LookbookCard({
 
   return (
     <article
-      className={`lookbook-card${sizesOpen ? " lookbook-card--sizes-open" : ""}`}
+      className={`lookbook-card${sizesOpen ? " lookbook-card--sizes-open" : ""}${
+        comingSoon ? " lookbook-card--coming-soon" : ""
+      }${comingSoon && dropUrgent ? " lookbook-card--drop-urgent" : ""}`}
       onMouseLeave={(event) => {
         const activeEl = document.activeElement;
         if (activeEl instanceof HTMLElement && event.currentTarget.contains(activeEl)) {
@@ -171,7 +177,9 @@ export function LookbookCard({
         ) : null}
 
         <div
-          className={`lookbook-card__media${multi ? " lookbook-card__media--swipe" : ""}`}
+          className={`lookbook-card__media${multi ? " lookbook-card__media--swipe" : ""}${
+            comingSoon ? " lookbook-card__media--coming-soon" : ""
+          }`}
           role="link"
           tabIndex={0}
           aria-label={`View ${product.name}`}
@@ -211,9 +219,23 @@ export function LookbookCard({
             />
             );
           })}
+
+          {comingSoon ? (
+            <div className="lookbook-card__drop">
+              <ProductCountdown
+                endsAt={product.releaseAt}
+                variant="overlay"
+                onUrgentChange={onDropUrgent}
+              />
+            </div>
+          ) : null}
         </div>
 
-        {soldOut ? <span className="lookbook-card__badge">Sold out</span> : null}
+        {comingSoon ? (
+          <span className="lookbook-card__badge lookbook-card__badge--coming-soon">Coming soon</span>
+        ) : soldOut ? (
+          <span className="lookbook-card__badge">Sold out</span>
+        ) : null}
 
         {showSizes ? (
           <button
@@ -277,7 +299,7 @@ export function LookbookCard({
 
       <Link href={href} className="lookbook-card__copy">
         <h3 className="lookbook-card__title">{product.name}</h3>
-        {soldOut ? (
+        {comingSoon ? null : soldOut ? (
           <p className="lookbook-card__sold-out">Sold out</p>
         ) : (
           <p className="lookbook-card__price">{formatPrice(price)}</p>

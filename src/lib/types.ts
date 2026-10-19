@@ -53,7 +53,12 @@ export type Product = {
   sizeChartKey?: string;
   /** Size guide override for this product (standard / custom / off). */
   sizeGuide?: ProductSizeGuide;
+  /** Sort / publish metadata from `created_at`. */
   releasedAt: string;
+  /** Back-office flag: product is scheduled as a coming-soon drop. */
+  comingSoon?: boolean;
+  /** ISO datetime when the drop goes live; countdown target while coming soon. */
+  releaseAt?: string | null;
 };
 
 export type CartLine = {

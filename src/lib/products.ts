@@ -36,6 +36,15 @@ export function isSoldOut(product: Product): boolean {
   return totalStock(product) === 0;
 }
 
+/** True while the product is flagged coming soon and the release time is still in the future (or unset). */
+export function isComingSoon(product: Product, now = Date.now()): boolean {
+  if (!product.comingSoon) return false;
+  if (!product.releaseAt) return true;
+  const at = Date.parse(product.releaseAt);
+  if (Number.isNaN(at)) return true;
+  return at > now;
+}
+
 export function getProduct(slug: string, source: Product[] = PRODUCTS): Product | undefined {
   return source.find((product) => product.slug === slug);
 }

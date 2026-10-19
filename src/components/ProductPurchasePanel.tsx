@@ -3,11 +3,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ProductColourVariants } from "@/components/ProductColourVariants";
+import { ProductCountdown } from "@/components/ProductCountdown";
 import { SizeGuideModal } from "@/components/SizeGuideModal";
 import { useStore } from "@/components/StoreProvider";
 import { useFitProfile } from "@/components/useFitProfile";
 import { formatPrice } from "@/lib/format";
-import { effectivePrice, isSoldOut } from "@/lib/products";
+import { effectivePrice, isComingSoon, isSoldOut } from "@/lib/products";
 import { chartSupportsFinder, recommendSize, type SizeChart } from "@/lib/sizeCharts";
 import type { Product } from "@/lib/types";
 
@@ -44,15 +45,17 @@ export function ProductPurchasePanel({
     setNeedSize(false);
   };
 
-  const soldOut = isSoldOut(product);
+  const comingSoon = isComingSoon(product);
+  const soldOut = !comingSoon && isSoldOut(product);
   const price = effectivePrice(product);
   const onSale = price < product.price;
   const saved = hydrated && wishlist.includes(product.id);
   const selectedStock = product.sizes.find((entry) => entry.size === size)?.stock ?? 0;
+  const locked = comingSoon || soldOut;
 
   useEffect(() => {
-    if (!soldOut) router.prefetch("/checkout");
-  }, [router, soldOut]);
+    if (!locked) router.prefetch("/checkout");
+  }, [router, locked]);
 
   const line = () => ({
     productId: product.id,
@@ -67,13 +70,13 @@ export function ProductPurchasePanel({
   });
 
   const add = () => {
-    if (soldOut || !size) return;
+    if (locked || !size) return;
     /* No toast: `addLine` slides the cart open, which is the confirmation. */
     addLine(line());
   };
 
   const buyNow = () => {
-    if (soldOut || buying) return;
+    if (locked || buying) return;
     if (!size) {
       setNeedSize(true);
       setNudge(true);
@@ -90,24 +93,40 @@ export function ProductPurchasePanel({
         {product.name}
       </h1>
 
-      <p className="product-price mt-2 text-center lg:text-right">
-        {onSale ? (
-          <>
-            <span className="text-muted line-through">{formatPrice(product.price)}</span>{" "}
+      {comingSoon ? (
+        <div className="product-coming-soon mt-3 text-center lg:text-left">
+          <p className="product-coming-soon__label">Coming soon</p>
+          <ProductCountdown endsAt={product.releaseAt} variant="panel" />
+          {product.releaseAt ? (
+            <p className="product-coming-soon__hint ui-sm mt-2" suppressHydrationWarning>
+              Drops{" "}
+              {new Date(product.releaseAt).toLocaleString("en-GB", {
+                dateStyle: "medium",
+                timeStyle: "short",
+              })}
+            </p>
+          ) : null}
+        </div>
+      ) : (
+        <p className="product-price mt-2 text-center lg:text-right">
+          {onSale ? (
+            <>
+              <span className="text-muted line-through">{formatPrice(product.price)}</span>{" "}
+              <span className="product-price__current">{formatPrice(price)}</span>
+            </>
+          ) : (
             <span className="product-price__current">{formatPrice(price)}</span>
-          </>
-        ) : (
-          <span className="product-price__current">{formatPrice(price)}</span>
-        )}
-        {soldOut ? <span className="font-bold text-foreground"> — Sold Out</span> : null}
-      </p>
+          )}
+          {soldOut ? <span className="font-bold text-[color:#e11d2e]"> — Sold Out</span> : null}
+        </p>
+      )}
 
       <ProductColourVariants variants={variants} activeId={product.id} />
 
-      <div className="mt-5">
+      <div className={`mt-5${comingSoon ? " pointer-events-none opacity-40" : ""}`}>
         <div className="flex items-baseline justify-center gap-3 lg:justify-between lg:gap-0">
           <p className="ui-sm hidden text-muted lg:block">Size</p>
-          {sizeChart ? (
+          {sizeChart && !comingSoon ? (
             <button
               type="button"
               onClick={() => setGuideOpen(true)}
@@ -172,63 +191,71 @@ export function ProductPurchasePanel({
       </div>
 
       <div className="purchase-actions mx-auto mt-4 lg:mx-0">
-        <div className="flex items-stretch gap-2">
-          <div className="flex items-center border border-line">
-            <button
-              type="button"
-              onClick={() => setQuantity((value) => Math.max(1, value - 1))}
-              aria-label="Decrease quantity"
-              className="ui h-10 w-8"
-            >
-              −
-            </button>
-            <span className="ui w-7 text-center tabular-nums">{quantity}</span>
-            <button
-              type="button"
-              onClick={() =>
-                setQuantity((value) => (selectedStock ? Math.min(selectedStock, value + 1) : value + 1))
-              }
-              aria-label="Increase quantity"
-              className="ui h-10 w-8"
-            >
-              +
-            </button>
-          </div>
-
-          <button
-            type="button"
-            onClick={add}
-            disabled={soldOut || !size}
-            className={`btn min-w-[150px] flex-1 ${soldOut ? "btn--sold-out" : "btn--solid"}`}
-          >
-            {soldOut ? "Sold out" : size ? "Add to cart" : "Select a size"}
+        {comingSoon ? (
+          <button type="button" disabled className="btn btn--coming-soon w-full">
+            Coming soon
           </button>
-        </div>
-
-        {!soldOut ? (
+        ) : (
           <>
-            <button
-              type="button"
-              onClick={buyNow}
-              disabled={buying}
-              aria-describedby={needSize ? "buy-now-hint" : undefined}
-              className="btn btn--buy mt-2 w-full"
-            >
-              <BoltGlyph />
-              <span>{buying ? "Going to checkout…" : "Buy now"}</span>
-              {size && !buying ? (
-                <span className="btn--buy__total tabular-nums">{formatPrice(price * quantity)}</span>
-              ) : null}
-            </button>
-            <p
-              id="buy-now-hint"
-              role="status"
-              className={`ui-sm mt-1.5 text-center lg:text-left ${needSize ? "text-selected" : "text-muted"}`}
-            >
-              {needSize ? "Pick a size first" : "Skip the cart — straight to checkout"}
-            </p>
+            <div className="flex items-stretch gap-2">
+              <div className="flex items-center border border-line">
+                <button
+                  type="button"
+                  onClick={() => setQuantity((value) => Math.max(1, value - 1))}
+                  aria-label="Decrease quantity"
+                  className="ui h-10 w-8"
+                >
+                  −
+                </button>
+                <span className="ui w-7 text-center tabular-nums">{quantity}</span>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setQuantity((value) => (selectedStock ? Math.min(selectedStock, value + 1) : value + 1))
+                  }
+                  aria-label="Increase quantity"
+                  className="ui h-10 w-8"
+                >
+                  +
+                </button>
+              </div>
+
+              <button
+                type="button"
+                onClick={add}
+                disabled={soldOut || !size}
+                className={`btn min-w-[150px] flex-1 ${soldOut ? "btn--sold-out" : "btn--solid"}`}
+              >
+                {soldOut ? "Sold out" : size ? "Add to cart" : "Select a size"}
+              </button>
+            </div>
+
+            {!soldOut ? (
+              <>
+                <button
+                  type="button"
+                  onClick={buyNow}
+                  disabled={buying}
+                  aria-describedby={needSize ? "buy-now-hint" : undefined}
+                  className="btn btn--buy mt-2 w-full"
+                >
+                  <BoltGlyph />
+                  <span>{buying ? "Going to checkout…" : "Buy now"}</span>
+                  {size && !buying ? (
+                    <span className="btn--buy__total tabular-nums">{formatPrice(price * quantity)}</span>
+                  ) : null}
+                </button>
+                <p
+                  id="buy-now-hint"
+                  role="status"
+                  className={`ui-sm mt-1.5 text-center lg:text-left ${needSize ? "text-selected" : "text-muted"}`}
+                >
+                  {needSize ? "Pick a size first" : "Skip the cart — straight to checkout"}
+                </p>
+              </>
+            ) : null}
           </>
-        ) : null}
+        )}
       </div>
 
       <button

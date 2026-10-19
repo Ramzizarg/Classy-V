@@ -28,7 +28,7 @@ export function ProductColourVariants({
               href={`/collection/${variant.slug}`}
               aria-label={variant.name}
               aria-current={current ? "page" : undefined}
-              className={`media-frame h-20 w-20 border transition-colors lg:h-24 lg:w-24 ${
+              className={`media-frame product-colour-variants__thumb h-20 w-20 border transition-colors lg:h-24 lg:w-24 ${
                 current ? "border-price" : "border-line hover:border-foreground"
               }`}
             >
@@ -37,7 +37,7 @@ export function ProductColourVariants({
                 alt={variant.name}
                 fill
                 sizes="96px"
-                className="h-full w-full object-contain p-1"
+                className="product-colour-variants__img h-full w-full object-contain p-1"
               />
             </Link>
           );

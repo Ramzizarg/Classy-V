@@ -35,8 +35,12 @@ export type Product = {
   id: number;
   name: string;
   slug?: string;
-  /** `false` = visible on the shop as "coming soon" only (no purchase). Omitted/`true` = normal listing. */
+  /** `false` = hidden from purchase flows. Omitted/`true` = normal listing. */
   active?: boolean | null;
+  /** When true, storefront shows a grey Coming soon state (+ countdown if `release_at` is set). */
+  coming_soon?: boolean | null;
+  /** ISO datetime when the product becomes buyable. */
+  release_at?: string | null;
   description: string | null;
   price: number;
   /** Total stock across all sizes (synced on save / order). */

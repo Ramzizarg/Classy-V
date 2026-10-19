@@ -24,6 +24,8 @@ type ProductRow = {
   created_at: string | Date;
   variant_group: string | null;
   measurement_table: unknown;
+  coming_soon: boolean | null;
+  release_at: string | Date | null;
   category_slug: string | null;
   category_name: string | null;
 };
@@ -117,6 +119,8 @@ function rowToProduct(row: ProductRow): Product {
     featured: true,
     variantGroup: row.variant_group?.trim() || null,
     releasedAt: toIsoDate(row.created_at),
+    comingSoon: Boolean(row.coming_soon),
+    releaseAt: row.release_at != null ? toIsoDate(row.release_at) : null,
   };
 }
 
@@ -137,6 +141,8 @@ const getDatabaseProducts = cache(async (): Promise<Product[]> => {
               p.created_at,
               p.variant_group,
               p.measurement_table,
+              p.coming_soon,
+              p.release_at,
               c.slug AS category_slug,
               c.name AS category_name
          FROM products p
