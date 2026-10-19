@@ -1027,12 +1027,12 @@ html[data-theme="day"] .product-coming-soon__hint {
 }
 
 .product-countdown--overlay {
-  width: 100%;
+  width: auto;
   max-width: 100%;
   gap: 0;
   color: #111111;
-  /* Equal columns so D/H/M/S stay aligned in narrow 2-col mobile cards. */
-  display: flex;
+  display: inline-flex;
+  justify-content: center;
 }
 
 .product-countdown--overlay.product-countdown--static {
@@ -1044,15 +1044,13 @@ html[data-theme="day"] .product-coming-soon__hint {
 }
 
 .product-countdown--overlay .product-countdown__block {
-  flex: 1 1 0;
-  min-width: 0;
+  flex: 0 0 auto;
   justify-content: center;
 }
 
 .product-countdown--overlay .product-countdown__cell {
-  flex: 1;
-  min-width: 0;
-  gap: 3px;
+  min-width: 1.55em;
+  gap: 2px;
 }
 
 .product-countdown--overlay .product-countdown__value {
@@ -1063,14 +1061,14 @@ html[data-theme="day"] .product-coming-soon__hint {
 .product-countdown--overlay .product-countdown__unit {
   font-size: clamp(7px, 2.2vw, 9px);
   color: #6b7280;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
 }
 
 .product-countdown--overlay .product-countdown__sep {
   flex: 0 0 auto;
   color: #9ca3af;
   font-size: clamp(10px, 3vw, 13px);
-  padding: 0 clamp(2px, 1.2vw, 6px);
+  padding: 0 2px;
   margin-top: 1px;
 }
 
@@ -1079,8 +1077,8 @@ html[data-theme="day"] .product-coming-soon__hint {
 }
 
 .product-countdown--panel .product-countdown__cell {
-  min-width: 3.2em;
-  gap: 6px;
+  min-width: 2.4em;
+  gap: 4px;
 }
 
 .product-countdown--panel .product-countdown__value {
@@ -1090,12 +1088,12 @@ html[data-theme="day"] .product-coming-soon__hint {
 
 .product-countdown--panel .product-countdown__unit {
   font-size: 10px;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.12em;
 }
 
 .product-countdown--panel .product-countdown__sep {
   font-size: 20px;
-  padding: 0 8px;
+  padding: 0 4px;
   margin-top: 4px;
 }
 
@@ -3272,15 +3270,14 @@ textarea.checkout-field {
 }
 
 .lookbook-card__drop .product-countdown {
-  display: flex;
-  width: 100%;
+  display: inline-flex;
+  width: auto;
   justify-content: center;
   color: #e11d2e;
 }
 
 .lookbook-card__drop .product-countdown__block {
-  flex: 1 1 0;
-  min-width: 0;
+  flex: 0 0 auto;
   justify-content: center;
 }
 
@@ -4074,8 +4071,8 @@ textarea.checkout-field {
 /* Product page panel: keep full labels readable on phones. */
 @media (max-width: 639px) {
   .product-countdown--panel .product-countdown__cell {
-    min-width: 2.6em;
-    gap: 4px;
+    min-width: 2.1em;
+    gap: 3px;
   }
 
   .product-countdown--panel .product-countdown__value {
@@ -4084,12 +4081,12 @@ textarea.checkout-field {
 
   .product-countdown--panel .product-countdown__unit {
     font-size: 9px;
-    letter-spacing: 0.12em;
+    letter-spacing: 0.1em;
   }
 
   .product-countdown--panel .product-countdown__sep {
     font-size: 16px;
-    padding: 0 5px;
+    padding: 0 3px;
   }
 }
 
