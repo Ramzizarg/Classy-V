@@ -210,7 +210,7 @@ export function LookbookCard({
               aria-hidden={index !== active}
               fill
               sizes={sizesAttr}
-              quality={75}
+              quality={100}
               priority={priority && index === 0}
               loading={priority && index === 0 ? "eager" : "lazy"}
               fetchPriority={priority && index === 0 ? "high" : "auto"}

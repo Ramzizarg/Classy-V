@@ -85,11 +85,12 @@ export function BackToTop() {
   if (hide) return null;
 
   const circlePathId = `btt-circle-${pathId}`;
+  const isHome = pathname === "/";
 
   return (
     <button
       type="button"
-      className="back-to-top"
+      className={`back-to-top${isHome ? " back-to-top--home" : ""}`}
       data-visible={visible ? "true" : "false"}
       aria-label="Back to top"
       aria-hidden={!visible}

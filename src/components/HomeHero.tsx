@@ -21,7 +21,7 @@ export function HomeHero() {
           fill
           priority
           fetchPriority="high"
-          quality={75}
+          quality={100}
           sizes="(min-width: 768px) 1px, 100vw"
           className="home-hero__img home-hero__img--mobile"
         />
@@ -31,7 +31,7 @@ export function HomeHero() {
           alt=""
           aria-hidden
           fill
-          quality={75}
+          quality={100}
           sizes="(max-width: 767px) 1px, 100vw"
           className="home-hero__img home-hero__img--desktop"
         />

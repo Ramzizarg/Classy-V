@@ -399,7 +399,7 @@ export function ProductLightbox({ images, name, index, onIndexChange, onClose }:
                   src={image}
                   alt={`${name} — view ${slide + 1}`}
                   fill
-                  quality={75}
+                  quality={100}
                   /** Cap decode size — pinch zoom uses CSS scale, not a larger asset. */
                   sizes="(min-width: 1024px) 90vw, 100vw"
                   priority={slide === index}

@@ -3313,20 +3313,24 @@ textarea.checkout-field {
   color: #ffffff;
 }
 
-/* Soft white silhouette halo so dark cutouts read on black. */
+/*
+ * Soft white silhouette halo so dark cutouts read on black.
+ * Must NOT clip (overflow/contain/content-visibility) — clipping draws a white square.
+ */
+.lookbook-hero .lookbook-card,
+.lookbook-hero .lookbook-card__frame,
 .lookbook-hero .lookbook-card__media {
   overflow: visible;
+  content-visibility: visible;
+  contain: none;
 }
 
 .lookbook-hero .lookbook-card__img {
-  filter: none;
-}
-
-/* Desktop glow only when idle — never while scrolling the collection. */
-@media (hover: hover) and (min-width: 1024px) {
-  html:not(.is-scrolling) .lookbook-hero .lookbook-card__img {
-    filter: drop-shadow(0 0 18px rgb(255 255 255 / 0.28));
-  }
+  /* Glow follows PNG alpha — product shape only, not the media box. */
+  filter:
+    drop-shadow(0 0 6px rgb(255 255 255 / 0.55))
+    drop-shadow(0 0 16px rgb(255 255 255 / 0.35))
+    drop-shadow(0 0 28px rgb(255 255 255 / 0.18));
 }
 
 .lookbook__grid {
@@ -3369,17 +3373,17 @@ html.is-scrolling .lookbook__grid--scroll .lookbook-card__sizes {
   flex-direction: column;
   min-width: 0;
   height: 100%;
-  content-visibility: auto;
-  contain-intrinsic-size: auto 420px;
-  contain: layout style;
+  overflow: visible;
+  /* Avoid paint containment here — it squares off silhouette drop-shadows. */
   -webkit-touch-callout: none;
   -webkit-user-select: none;
   user-select: none;
 }
 
-.lookbook-hero .lookbook-card {
-  /* Tighter estimate for dense collection rows — browser skips offscreen tiles sooner. */
-  contain-intrinsic-size: auto 360px;
+/* Home white sheet: no silhouette glow, safe to skip offscreen tiles. */
+.home-products .lookbook-card {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 420px;
 }
 
 .lookbook-card__frame {
@@ -3392,7 +3396,8 @@ html.is-scrolling .lookbook__grid--scroll .lookbook-card__sizes {
   position: relative;
   aspect-ratio: 1 / 1.05;
   width: 100%;
-  overflow: hidden;
+  /* Keep visible so drop-shadow follows the cutout, not a clipped square. */
+  overflow: visible;
   background: transparent;
   cursor: pointer;
   -webkit-user-drag: none;
@@ -3406,10 +3411,10 @@ html.is-scrolling .lookbook__grid--scroll .lookbook-card__sizes {
 .lookbook-card__img {
   object-fit: contain;
   object-position: center bottom;
-  /* No filter on touch — drop-shadow is the #1 scroll paint cost on product grids. */
-  filter: none;
+  /* Soft floating shadow like illicitbloc cutouts */
+  filter: drop-shadow(0 12px 18px rgb(0 0 0 / 0.14));
   opacity: 0;
-  transition: opacity 160ms ease;
+  transition: opacity 180ms ease;
   pointer-events: none;
   -webkit-user-drag: none;
   user-select: none;
@@ -3417,12 +3422,6 @@ html.is-scrolling .lookbook__grid--scroll .lookbook-card__sizes {
 
 .lookbook-card__img--active {
   opacity: 1;
-}
-
-@media (hover: hover) and (min-width: 1024px) {
-  .lookbook-card__img {
-    filter: drop-shadow(0 8px 14px rgb(0 0 0 / 0.1));
-  }
 }
 
 .lookbook-card__badge {
@@ -3557,10 +3556,6 @@ html.is-scrolling .lookbook-card--drop-urgent .lookbook-card__badge--coming-soon
 html.is-scrolling .home-products .lookbook-card--drop-urgent .lookbook-card__img--active,
 html.is-scrolling .product-card--drop-urgent .media-primary {
   animation-play-state: paused !important;
-}
-
-html.is-scrolling .lookbook-card__img {
-  filter: none !important;
 }
 
 /* Pagination bulls under product photos (home + category grids). */
@@ -4122,18 +4117,19 @@ html.is-scrolling .lookbook-card__img {
   color: #ffffff;
 }
 
+.product-related .lookbook-card,
+.product-related .lookbook-card__frame,
 .product-related .lookbook-card__media {
   overflow: visible;
+  content-visibility: visible;
+  contain: none;
 }
 
 .product-related .lookbook-card__img {
-  filter: none;
-}
-
-@media (hover: hover) and (min-width: 1024px) {
-  .product-related .lookbook-card__img {
-    filter: drop-shadow(0 0 18px rgb(255 255 255 / 0.28));
-  }
+  filter:
+    drop-shadow(0 0 6px rgb(255 255 255 / 0.55))
+    drop-shadow(0 0 16px rgb(255 255 255 / 0.35))
+    drop-shadow(0 0 28px rgb(255 255 255 / 0.18));
 }
 
 .product-related .lookbook-card__dot {
@@ -4994,6 +4990,34 @@ html.is-scrolling .lookbook-card__img {
   transform: translate3d(0, 0, 0) scale(1);
 }
 
+/* Home + night only — brand red ring / core. */
+html:not([data-theme="day"]) .back-to-top--home {
+  color: #e10600;
+}
+
+html:not([data-theme="day"]) .back-to-top--home .back-to-top__text {
+  fill: #e10600;
+}
+
+html:not([data-theme="day"]) .back-to-top--home .back-to-top__core {
+  background: #e10600;
+  color: #ffffff;
+  box-shadow:
+    0 0 0 1px rgb(225 6 0 / 0.35),
+    0 6px 18px rgb(225 6 0 / 0.28);
+}
+
+html:not([data-theme="day"]) .back-to-top--home:focus-visible {
+  outline-color: #e10600;
+}
+
+html:not([data-theme="day"]) .back-to-top--home[data-visible="true"]:hover .back-to-top__core {
+  background: #ff1a0a;
+  box-shadow:
+    0 0 0 1px rgb(225 6 0 / 0.45),
+    0 8px 22px rgb(225 6 0 / 0.35);
+}
+
 html[data-footer-help="open"] .back-to-top {
   opacity: 0 !important;
   visibility: hidden !important;
@@ -5454,17 +5478,7 @@ html[data-theme="day"] .lookbook-hero .lookbook-card__expand {
 }
 
 html[data-theme="day"] .lookbook-hero .lookbook-card__img,
-html[data-theme="day"] .product-related .lookbook-card__img {
-  filter: none;
-}
-
-@media (hover: hover) and (min-width: 1024px) {
-  html[data-theme="day"] .lookbook-hero .lookbook-card__img,
-  html[data-theme="day"] .product-related .lookbook-card__img {
-    filter: drop-shadow(0 8px 16px rgb(0 0 0 / 0.16));
-  }
-}
-
+html[data-theme="day"] .product-related .lookbook-card__img,
 html[data-theme="day"] .product-gallery__main img {
   filter:
     drop-shadow(0 0 6px rgb(0 0 0 / 0.55))
