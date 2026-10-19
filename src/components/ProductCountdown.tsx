@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 /** Soft pulse on the product image when less than this remains. */
 export const DROP_URGENCY_MS = 60 * 60 * 1000; // 1 hour
@@ -23,7 +23,10 @@ type Variant = "card" | "overlay" | "panel";
 
 type Segment = { value: string; label: string };
 
-function buildSegments(ms: number, compact: boolean): { segments: Segment[]; d: number; h: number; m: number; s: number } {
+function buildSegments(
+  ms: number,
+  compact: boolean
+): { segments: Segment[]; d: number; h: number; m: number; s: number } {
   const { d, h, m, s } = partsFromMs(ms);
   if (compact) {
     const segments: Segment[] =
@@ -60,8 +63,7 @@ function buildSegments(ms: number, compact: boolean): { segments: Segment[]; d: 
 
 /**
  * Live drop countdown for coming-soon products.
- * Starts after mount so SSR and the first client paint stay identical.
- * Overlay uses compact D/H/M/S so it fits 2-column mobile product cards.
+ * Ticks only while on-screen so grid cards don’t burn timers off-viewport.
  */
 export function ProductCountdown({
   endsAt,
@@ -77,13 +79,31 @@ export function ProductCountdown({
   const target = endsAt ? Date.parse(endsAt) : NaN;
   const hasTarget = Number.isFinite(target);
   const [now, setNow] = useState<number | null>(null);
+  const [visible, setVisible] = useState(true);
+  const rootRef = useRef<HTMLDivElement>(null);
   const compact = variant === "overlay" || variant === "card";
+
+  useEffect(() => {
+    const el = rootRef.current;
+    if (!el || typeof IntersectionObserver === "undefined") return;
+
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry) return;
+        setVisible(entry.isIntersecting);
+      },
+      { root: null, rootMargin: "80px 0px", threshold: 0 }
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
 
   useEffect(() => {
     if (!hasTarget) {
       onUrgentChange?.(false);
       return;
     }
+    if (!visible) return;
 
     const tick = () => {
       const t = Date.now();
@@ -96,29 +116,38 @@ export function ProductCountdown({
     tick();
     const id = window.setInterval(tick, 1000);
     return () => window.clearInterval(id);
-  }, [hasTarget, target, onComplete, onUrgentChange]);
+  }, [hasTarget, target, visible, onComplete, onUrgentChange]);
 
   if (!hasTarget) {
     return (
-      <span className={`product-countdown product-countdown--${variant} product-countdown--static`}>
+      <div
+        ref={rootRef}
+        className={`product-countdown product-countdown--${variant} product-countdown--static`}
+      >
         Coming soon
-      </span>
+      </div>
     );
   }
 
   if (now == null) {
     return (
-      <span className={`product-countdown product-countdown--${variant} product-countdown--static`}>
+      <div
+        ref={rootRef}
+        className={`product-countdown product-countdown--${variant} product-countdown--static`}
+      >
         Coming soon
-      </span>
+      </div>
     );
   }
 
   if (now >= target) {
     return (
-      <span className={`product-countdown product-countdown--${variant} product-countdown--static`}>
+      <div
+        ref={rootRef}
+        className={`product-countdown product-countdown--${variant} product-countdown--static`}
+      >
         Available now
-      </span>
+      </div>
     );
   }
 
@@ -126,6 +155,7 @@ export function ProductCountdown({
 
   return (
     <div
+      ref={rootRef}
       className={`product-countdown product-countdown--${variant}`}
       role="timer"
       aria-live="polite"

@@ -23,6 +23,10 @@ const ComingSoonGate = dynamic(
   () => import("@/components/ComingSoonGate").then((m) => m.ComingSoonGate),
   { ssr: false }
 );
+const ScrollPerf = dynamic(
+  () => import("@/components/ScrollPerf").then((m) => m.ScrollPerf),
+  { ssr: false }
+);
 
 /**
  * Mounts non-critical chrome after first paint / idle so TBT and unused JS drop
@@ -56,6 +60,7 @@ export function DeferredChrome() {
 
   return (
     <>
+      <ScrollPerf />
       <PullToRefresh />
       <BackToTop />
       <PresenceBeacon />

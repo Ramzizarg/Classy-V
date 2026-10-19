@@ -399,9 +399,9 @@ export function ProductLightbox({ images, name, index, onIndexChange, onClose }:
                   src={image}
                   alt={`${name} — view ${slide + 1}`}
                   fill
-                  quality={100}
-                  /** Asks for a source large enough to hold up when pinched in. */
-                  sizes="(min-width: 1024px) 90vw, 180vw"
+                  quality={75}
+                  /** Cap decode size — pinch zoom uses CSS scale, not a larger asset. */
+                  sizes="(min-width: 1024px) 90vw, 100vw"
                   priority={slide === index}
                   draggable={false}
                   onLoad={(event) => {

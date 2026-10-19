@@ -116,7 +116,8 @@ export function ProductGallery({ images, name }: { images: string[]; name: strin
             alt={`${name} — view ${active + 1}`}
             fill
             priority
-            quality={100}
+            fetchPriority="high"
+            quality={75}
             sizes="(min-width: 1280px) 520px, (min-width: 1024px) 460px, (min-width: 640px) 480px, 90vw"
             className="h-full w-full object-contain p-1 sm:p-2"
             draggable={false}

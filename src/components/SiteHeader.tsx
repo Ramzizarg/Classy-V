@@ -54,40 +54,40 @@ export function SiteHeader() {
   const isHome = pathname === "/";
   const isProductPage = /^\/collection\/[^/]+/.test(pathname);
 
-  /** Home (mobile + desktop): slide the bar away once the products sheet reaches it. */
+  /** Home: slide the bar away once the products sheet reaches it (no scroll listeners). */
   useEffect(() => {
     if (!isHome) {
       setHomeRetreat(false);
       return;
     }
 
-    let frame = 0;
-    const sync = () => {
-      frame = 0;
-      const sheet = document.querySelector<HTMLElement>(".home-products");
-      if (!sheet) {
-        setHomeRetreat(false);
-        return;
-      }
+    const sentinel = document.querySelector<HTMLElement>(".home-header-sentinel");
+    if (!sentinel) {
+      setHomeRetreat(false);
+      return;
+    }
+
+    let observer: IntersectionObserver | null = null;
+
+    const attach = () => {
+      observer?.disconnect();
       const headerEl = document.querySelector<HTMLElement>(".site-header");
       const threshold = (headerEl?.offsetHeight ?? 72) + 12;
-      setHomeRetreat(sheet.getBoundingClientRect().top <= threshold);
+      observer = new IntersectionObserver(
+        ([entry]) => {
+          if (!entry) return;
+          setHomeRetreat(!entry.isIntersecting);
+        },
+        { root: null, rootMargin: `-${threshold}px 0px 0px 0px`, threshold: 0 }
+      );
+      observer.observe(sentinel);
     };
 
-    const onScroll = () => {
-      if (frame) return;
-      frame = window.requestAnimationFrame(sync);
-    };
-
-    sync();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onScroll);
-    document.addEventListener("touchmove", onScroll, { passive: true });
+    attach();
+    window.addEventListener("resize", attach);
     return () => {
-      if (frame) window.cancelAnimationFrame(frame);
-      window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onScroll);
-      document.removeEventListener("touchmove", onScroll);
+      window.removeEventListener("resize", attach);
+      observer?.disconnect();
     };
   }, [isHome]);
   const category = searchParams.get("category");

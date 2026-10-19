@@ -44,9 +44,9 @@ export function ShopIndex({
               </Link>
             </div>
           ) : (
-            <div className="lookbook__grid">
+            <div className="lookbook__grid lookbook__grid--scroll">
               {products.map((product, index) => (
-                <LookbookCard key={product.id} product={product} priority={index < 4} />
+                <LookbookCard key={product.id} product={product} priority={index < 2} />
               ))}
             </div>
           )}

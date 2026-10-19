@@ -81,7 +81,7 @@ export function StoreProvider({
     return () => {
       cancelled = true;
     };
-  }, [hydrated, cartOpen]);
+  }, [hydrated]);
 
   const showToast = useCallback((message: string) => {
     setToast(message);

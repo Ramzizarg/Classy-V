@@ -23,8 +23,8 @@ import { SITE } from "@/lib/site";
 
 type Params = Promise<{ slug: string }>;
 
-/** Catalog is DB-backed, so pages are resolved per request rather than prerendered. */
-export const dynamic = "force-dynamic";
+/** Cache product HTML briefly — stock still refreshes via catalog + cart reconcile. */
+export const revalidate = 60;
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const { slug } = await params;

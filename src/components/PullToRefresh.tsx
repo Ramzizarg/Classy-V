@@ -30,6 +30,7 @@ function shouldEnable(pathname: string) {
 
 /**
  * Mobile pull-to-refresh: drag down from the top to reveal logo + spinner, then reload.
+ * Non-passive touchmove is attached only while a pull is armed — normal scroll stays native.
  */
 export function PullToRefresh() {
   const pathname = usePathname();
@@ -42,6 +43,9 @@ export function PullToRefresh() {
   const pulling = useRef(false);
   const armed = useRef(false);
   const refreshingRef = useRef(false);
+  const moveBound = useRef(false);
+  const raf = useRef(0);
+  const pendingPull = useRef(0);
 
   const enabled = shouldEnable(pathname);
 
@@ -50,11 +54,33 @@ export function PullToRefresh() {
 
     const isMobile = () => window.matchMedia(MOBILE_MQ).matches;
 
-    const setPullBoth = (value: number) => {
+    const flushPull = (value: number) => {
       pullRef.current = value;
-      setPull(value);
       const shift = value > 6 ? Math.max(value, MIN_REVEAL) : 0;
       document.documentElement.style.setProperty("--pull-refresh", `${shift}px`);
+      pendingPull.current = value;
+      if (raf.current) return;
+      raf.current = window.requestAnimationFrame(() => {
+        raf.current = 0;
+        setPull(pendingPull.current);
+      });
+    };
+
+    const detachMove = () => {
+      if (!moveBound.current) return;
+      document.removeEventListener("touchmove", onTouchMove);
+      moveBound.current = false;
+    };
+
+    const attachMove = () => {
+      if (moveBound.current) return;
+      document.addEventListener("touchmove", onTouchMove, { passive: false });
+      moveBound.current = true;
+    };
+
+    const resetPullUi = () => {
+      document.documentElement.removeAttribute("data-pull-dragging");
+      flushPull(0);
     };
 
     const onTouchStart = (event: TouchEvent) => {
@@ -66,14 +92,18 @@ export function PullToRefresh() {
         target.closest('[aria-modal="true"], [role="dialog"], [data-no-pull-refresh]')
       ) {
         armed.current = false;
+        detachMove();
         return;
       }
       if (document.body.style.overflow === "hidden") {
         armed.current = false;
+        detachMove();
         return;
       }
-      if (scrollTop() > 4) {
+      /* Only arm at the very top — skip listener cost while the page is scrolling. */
+      if (scrollTop() > 2) {
         armed.current = false;
+        detachMove();
         return;
       }
       const t = event.touches[0];
@@ -83,14 +113,15 @@ export function PullToRefresh() {
       axis.current = "none";
       armed.current = true;
       pulling.current = false;
+      attachMove();
     };
 
     const onTouchMove = (event: TouchEvent) => {
       if (!armed.current || refreshingRef.current) return;
-      if (scrollTop() > 4) {
+      if (scrollTop() > 2 && !pulling.current) {
         armed.current = false;
-        document.documentElement.removeAttribute("data-pull-dragging");
-        setPullBoth(0);
+        detachMove();
+        resetPullUi();
         return;
       }
       const t = event.touches[0];
@@ -102,6 +133,7 @@ export function PullToRefresh() {
         if (dy <= 0 || Math.abs(dy) < Math.abs(dx) * 1.5) {
           axis.current = "x";
           armed.current = false;
+          detachMove();
           return;
         }
         axis.current = "y";
@@ -111,21 +143,23 @@ export function PullToRefresh() {
       if (dy <= 6) {
         if (dy <= 0) {
           pulling.current = false;
-          document.documentElement.removeAttribute("data-pull-dragging");
-          setPullBoth(0);
+          resetPullUi();
+          detachMove();
+          armed.current = false;
         }
         return;
       }
       pulling.current = true;
       document.documentElement.setAttribute("data-pull-dragging", "1");
       const resisted = Math.min(MAX_PULL, (dy - 6) * 0.65);
-      setPullBoth(resisted);
+      flushPull(resisted);
       if (resisted > 4 && event.cancelable) {
         event.preventDefault();
       }
     };
 
     const onTouchEnd = () => {
+      detachMove();
       if (!armed.current) return;
       armed.current = false;
       document.documentElement.removeAttribute("data-pull-dragging");
@@ -137,25 +171,25 @@ export function PullToRefresh() {
         refreshingRef.current = true;
         setRefreshing(true);
         document.documentElement.setAttribute("data-pull-refreshing", "1");
-        setPullBoth(Math.max(distance, MIN_REVEAL));
+        flushPull(Math.max(distance, MIN_REVEAL));
         window.setTimeout(() => {
           window.location.reload();
         }, 480);
         return;
       }
-      setPullBoth(0);
+      flushPull(0);
     };
 
     document.addEventListener("touchstart", onTouchStart, { passive: true });
-    document.addEventListener("touchmove", onTouchMove, { passive: false });
-    document.addEventListener("touchend", onTouchEnd);
-    document.addEventListener("touchcancel", onTouchEnd);
+    document.addEventListener("touchend", onTouchEnd, { passive: true });
+    document.addEventListener("touchcancel", onTouchEnd, { passive: true });
 
     return () => {
+      detachMove();
       document.removeEventListener("touchstart", onTouchStart);
-      document.removeEventListener("touchmove", onTouchMove);
       document.removeEventListener("touchend", onTouchEnd);
       document.removeEventListener("touchcancel", onTouchEnd);
+      if (raf.current) window.cancelAnimationFrame(raf.current);
       document.documentElement.style.removeProperty("--pull-refresh");
       document.documentElement.removeAttribute("data-pull-dragging");
       document.documentElement.removeAttribute("data-pull-refreshing");

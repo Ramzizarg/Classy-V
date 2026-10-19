@@ -210,10 +210,11 @@ export function LookbookCard({
               aria-hidden={index !== active}
               fill
               sizes={sizesAttr}
-              quality={100}
+              quality={75}
               priority={priority && index === 0}
               loading={priority && index === 0 ? "eager" : "lazy"}
               fetchPriority={priority && index === 0 ? "high" : "auto"}
+              decoding="async"
               className={`lookbook-card__img${index === active ? " lookbook-card__img--active" : ""}`}
               draggable={false}
             />
@@ -242,28 +243,31 @@ export function LookbookCard({
 
       {showSizes ? (
         <div className="lookbook-card__sizes" aria-label="Available sizes">
-          {sizeOptions.map((option) => (
-            <button
-              key={option.label}
-              type="button"
-              disabled={!option.available}
-              className={`lookbook-card__size${option.available ? "" : " lookbook-card__size--gone"}`}
-              aria-label={
-                option.available
-                  ? `Add ${product.name} size ${option.label} to cart`
-                  : `${option.label} unavailable`
-              }
-              onClick={(event) => {
-                event.preventDefault();
-                event.stopPropagation();
-                if (!option.available) return;
-                addSizeToCart(option.label);
-                (event.currentTarget as HTMLButtonElement).blur();
-              }}
-            >
-              {option.label}
-            </button>
-          ))}
+          <div className="lookbook-card__sizes-inner">
+            {sizeOptions.map((option) => (
+              <button
+                key={option.label}
+                type="button"
+                disabled={!option.available}
+                className={`lookbook-card__size${option.available ? "" : " lookbook-card__size--gone"}`}
+                aria-label={
+                  option.available
+                    ? `Add ${product.name} size ${option.label} to cart`
+                    : `${option.label} unavailable`
+                }
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  if (!option.available) return;
+                  addSizeToCart(option.label);
+                  setSizesOpen(false);
+                  (event.currentTarget as HTMLButtonElement).blur();
+                }}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
         </div>
       ) : null}
 

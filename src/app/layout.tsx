@@ -21,6 +21,7 @@ const gelasio = Gelasio({
   variable: "--font-gelasio",
   display: "swap",
   preload: true,
+  adjustFontFallback: true,
 });
 
 /** Editorial italic serif — matches illicitbloc product titles. */
@@ -30,7 +31,9 @@ const instrumentSerif = Instrument_Serif({
   style: ["normal", "italic"],
   variable: "--font-instrument",
   display: "swap",
-  preload: true,
+  /* Don’t compete with LCP — Gelasio is the primary UI face. */
+  preload: false,
+  adjustFontFallback: true,
 });
 
 export const viewport: Viewport = {
@@ -89,7 +92,6 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   return (
     <html
       lang="en"
-      data-scroll-behavior="smooth"
       className={`min-h-dvh antialiased ${gelasio.variable} ${instrumentSerif.variable}`}
       suppressHydrationWarning
     >
@@ -102,7 +104,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         />
         <style
           dangerouslySetInnerHTML={{
-            __html: `html[data-boot-splash="1"]::before{content:"";position:fixed;inset:0;z-index:10000;background:#000;pointer-events:none;animation:boot-splash-cover 1500ms ease-in-out both}html[data-boot-splash="1"]::after{content:"";position:fixed;top:50%;left:50%;z-index:10001;width:min(36vw,200px);aspect-ratio:1;margin:0;pointer-events:none;background:url("/images/loogo.png") center/contain no-repeat;filter:brightness(0) invert(1);transform-origin:center center;animation:boot-splash-mark 1500ms cubic-bezier(0.22,1,0.36,1) both}@keyframes boot-splash-mark{0%{transform:translate(-50%,-50%) scale(0.55);opacity:0}34%{transform:translate(-50%,-50%) scale(1);opacity:1}64%{transform:translate(-50%,-50%) scale(1);opacity:1}100%{transform:translate(-50%,-50%) scale(1.6);opacity:0}}@keyframes boot-splash-cover{0%,68%{opacity:1}100%{opacity:0;visibility:hidden}}`,
+            __html: `html[data-boot-splash="1"]::before{content:"";position:fixed;inset:0;z-index:10000;background:#000;pointer-events:none;animation:boot-splash-cover 800ms ease-in-out both}html[data-boot-splash="1"]::after{content:"";position:fixed;top:50%;left:50%;z-index:10001;width:min(36vw,200px);aspect-ratio:1;margin:0;pointer-events:none;background:url("/images/loogo.png") center/contain no-repeat;filter:brightness(0) invert(1);transform-origin:center center;animation:boot-splash-mark 800ms cubic-bezier(0.22,1,0.36,1) both}@keyframes boot-splash-mark{0%{transform:translate(-50%,-50%) scale(0.55);opacity:0}34%{transform:translate(-50%,-50%) scale(1);opacity:1}64%{transform:translate(-50%,-50%) scale(1);opacity:1}100%{transform:translate(-50%,-50%) scale(1.45);opacity:0}}@keyframes boot-splash-cover{0%,62%{opacity:1}100%{opacity:0;visibility:hidden}}`,
           }}
         />
       </head>

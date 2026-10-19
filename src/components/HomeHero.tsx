@@ -20,7 +20,8 @@ export function HomeHero() {
           alt={`${SITE.name} look`}
           fill
           priority
-          quality={100}
+          fetchPriority="high"
+          quality={75}
           sizes="(min-width: 768px) 1px, 100vw"
           className="home-hero__img home-hero__img--mobile"
         />
@@ -30,7 +31,7 @@ export function HomeHero() {
           alt=""
           aria-hidden
           fill
-          quality={100}
+          quality={75}
           sizes="(max-width: 767px) 1px, 100vw"
           className="home-hero__img home-hero__img--desktop"
         />
