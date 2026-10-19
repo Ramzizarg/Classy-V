@@ -855,6 +855,21 @@ html.dashboard-light select option {
   margin-top: 0.9rem;
 }
 
+/* Spec-style product copy: one field per line, same type as .prose-raw. */
+.product-description__specs {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 11px;
+  line-height: 1.75;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.product-description__specs li + li {
+  margin-top: 0.15rem;
+}
+
 /* Links -------------------------------------------------------------------- */
 
 .hover-underline:hover,
@@ -2858,15 +2873,33 @@ textarea.checkout-field {
   color: #ffffff;
 }
 
-/* Home: fixed transparent bar over the lifestyle hero. */
+/* Home: fixed transparent bar over the lifestyle hero (mobile + desktop). */
 .site-header--home {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
+  z-index: 100;
   overflow: hidden;
   background: transparent;
   color: #ffffff;
+  transition: transform 220ms ease, opacity 180ms ease;
+  will-change: transform;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+/* Products sheet reached the bar — slide away so the drop stays clear. */
+.site-header--home.site-header--retreat {
+  transform: translate3d(0, calc(-100% - 12px), 0);
+  opacity: 0;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .site-header--home {
+    transition: none;
+  }
 }
 
 /* Store pages: fixed transparent bar (same as home). */
@@ -3227,35 +3260,49 @@ textarea.checkout-field {
   color: #e11d2e;
 }
 
-/* Bottom strip — keeps the garment visible, timer easy to read. */
+/* Under the photo — garment stays unobstructed. */
 .lookbook-card__drop {
-  position: absolute;
-  left: 6px;
-  right: 6px;
-  bottom: 6px;
-  z-index: 3;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 0;
-  padding: 6px 6px 5px;
-  pointer-events: none;
-  border-radius: 8px;
-  border: 1px solid rgb(17 17 17 / 0.06);
-  background: rgb(255 255 255 / 0.94);
-  box-shadow: 0 4px 16px rgb(0 0 0 / 0.1);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  width: 100%;
+  margin: 8px 0 0;
+  padding: 0;
   box-sizing: border-box;
-  overflow: hidden;
+}
+
+.lookbook-card__drop .product-countdown {
+  display: flex;
+  width: 100%;
+  justify-content: center;
+  color: #e11d2e;
+}
+
+.lookbook-card__drop .product-countdown__block {
+  flex: 1 1 0;
+  min-width: 0;
+  justify-content: center;
+}
+
+.lookbook-card__drop .product-countdown__value,
+.lookbook-card__drop .product-countdown__unit,
+.lookbook-card__drop .product-countdown__sep {
+  color: #e11d2e;
+}
+
+.lookbook-card__drop .product-countdown__unit,
+.lookbook-card__drop .product-countdown__sep {
+  opacity: 0.75;
+}
+
+/* Countdown after name on coming-soon cards. */
+.lookbook-card__copy + .lookbook-card__drop {
+  margin-top: 6px;
 }
 
 @media (min-width: 768px) {
-  .lookbook-card__drop {
-    left: 10px;
-    right: 10px;
-    bottom: 10px;
-    padding: 8px 12px 7px;
+  .lookbook-card__copy + .lookbook-card__drop {
+    margin-top: 8px;
   }
 }
 
@@ -4819,16 +4866,18 @@ html {
   --pull-refresh: 0px;
 }
 
-.site-shell {
-  transform: translateY(var(--pull-refresh, 0px));
-}
-
-html[data-pull-dragging="1"] .site-shell {
-  transition: none;
-}
-
-html:not([data-pull-dragging="1"]) .site-shell {
+/*
+ * Pull shifts page content only. No transform when idle — otherwise
+ * translateY(0) traps position:fixed and breaks the mobile home header.
+ */
+.site-pull {
   transition: transform 180ms ease;
+}
+
+html[data-pull-dragging="1"] .site-pull,
+html[data-pull-refreshing="1"] .site-pull {
+  transform: translateY(var(--pull-refresh, 0px));
+  transition: none;
 }
 
 .pull-refresh {
@@ -4917,7 +4966,7 @@ html:not([data-pull-dragging="1"]) .pull-refresh {
     display: none !important;
   }
 
-  .site-shell {
+  .site-pull {
     transform: none !important;
   }
 }

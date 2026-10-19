@@ -18,6 +18,7 @@ import { colourVariants, getCatalog } from "@/lib/storefrontCatalog";
 import { getShippingRate } from "@/lib/shipping.server";
 import { resolveProductSizeChart } from "@/lib/sizeCharts";
 import { getTypeSizeChart } from "@/lib/sizeCharts.server";
+import { productDescriptionLines } from "@/lib/productDescription";
 import { SITE } from "@/lib/site";
 
 type Params = Promise<{ slug: string }>;
@@ -56,6 +57,7 @@ export default async function ProductPage({ params }: { params: Params }) {
   const sizeChart = resolveProductSizeChart(product.sizeGuide, typeChart);
 
   const comingSoon = isComingSoon(product);
+  const descriptionLines = productDescriptionLines(product.description);
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Product",
@@ -119,10 +121,18 @@ export default async function ProductPage({ params }: { params: Params }) {
                 id: "description",
                 title: "Description",
                 body: (
-                  <div className="prose-raw">
-                    <p>{product.description}</p>
+                  <div className="product-description">
+                    {descriptionLines.length > 1 ? (
+                      <ul className="product-description__specs">
+                        {descriptionLines.map((line) => (
+                          <li key={line}>{line}</li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="prose-raw">{descriptionLines[0] || product.description}</p>
+                    )}
                     {product.details.length > 0 ? (
-                      <ul className="mt-3 list-disc pl-4">
+                      <ul className="prose-raw mt-3 list-disc pl-4">
                         {product.details.map((detail) => (
                           <li key={detail}>{detail}</li>
                         ))}

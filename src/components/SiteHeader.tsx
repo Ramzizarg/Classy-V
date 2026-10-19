@@ -18,6 +18,7 @@ export function SiteHeader() {
   const { count, openCart, hydrated } = useStore();
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [homeRetreat, setHomeRetreat] = useState(false);
   const [lastLocation, setLastLocation] = useState(`${pathname}?${searchParams.toString()}`);
 
   const locationKey = `${pathname}?${searchParams.toString()}`;
@@ -52,6 +53,43 @@ export function SiteHeader() {
   const isLookbookShop = pathname === "/" || pathname === "/collection";
   const isHome = pathname === "/";
   const isProductPage = /^\/collection\/[^/]+/.test(pathname);
+
+  /** Home (mobile + desktop): slide the bar away once the products sheet reaches it. */
+  useEffect(() => {
+    if (!isHome) {
+      setHomeRetreat(false);
+      return;
+    }
+
+    let frame = 0;
+    const sync = () => {
+      frame = 0;
+      const sheet = document.querySelector<HTMLElement>(".home-products");
+      if (!sheet) {
+        setHomeRetreat(false);
+        return;
+      }
+      const headerEl = document.querySelector<HTMLElement>(".site-header");
+      const threshold = (headerEl?.offsetHeight ?? 72) + 12;
+      setHomeRetreat(sheet.getBoundingClientRect().top <= threshold);
+    };
+
+    const onScroll = () => {
+      if (frame) return;
+      frame = window.requestAnimationFrame(sync);
+    };
+
+    sync();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    document.addEventListener("touchmove", onScroll, { passive: true });
+    return () => {
+      if (frame) window.cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+      document.removeEventListener("touchmove", onScroll);
+    };
+  }, [isHome]);
   const category = searchParams.get("category");
   const collection = searchParams.get("collection");
   const onShop = pathname === "/" || pathname.startsWith("/collection");
@@ -72,7 +110,7 @@ export function SiteHeader() {
             : isProductPage
               ? "site-header--store site-header--product"
               : "site-header--store text-[var(--foreground)]"
-        }`}
+        }${homeRetreat ? " site-header--retreat" : ""}`}
       >
         <div className="site-top-line" aria-hidden="true" />
         {/*

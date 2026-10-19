@@ -219,16 +219,6 @@ export function LookbookCard({
             />
             );
           })}
-
-          {comingSoon ? (
-            <div className="lookbook-card__drop">
-              <ProductCountdown
-                endsAt={product.releaseAt}
-                variant="overlay"
-                onUrgentChange={onDropUrgent}
-              />
-            </div>
-          ) : null}
         </div>
 
         {comingSoon ? (
@@ -305,6 +295,16 @@ export function LookbookCard({
           <p className="lookbook-card__price">{formatPrice(price)}</p>
         )}
       </Link>
+
+      {comingSoon ? (
+        <div className="lookbook-card__drop">
+          <ProductCountdown
+            endsAt={product.releaseAt}
+            variant="card"
+            onUrgentChange={onDropUrgent}
+          />
+        </div>
+      ) : null}
     </article>
   );
 }

@@ -136,6 +136,7 @@ export function PullToRefresh() {
       if (shouldReload) {
         refreshingRef.current = true;
         setRefreshing(true);
+        document.documentElement.setAttribute("data-pull-refreshing", "1");
         setPullBoth(Math.max(distance, MIN_REVEAL));
         window.setTimeout(() => {
           window.location.reload();
@@ -157,6 +158,7 @@ export function PullToRefresh() {
       document.removeEventListener("touchcancel", onTouchEnd);
       document.documentElement.style.removeProperty("--pull-refresh");
       document.documentElement.removeAttribute("data-pull-dragging");
+      document.documentElement.removeAttribute("data-pull-refreshing");
     };
   }, [enabled]);
 

@@ -1521,9 +1521,13 @@ export default function DashboardProduitsPage() {
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                rows={4}
+                rows={6}
+                placeholder={"Material: 100% Cotton\nFabric Weight: 350 GSM\nFit: Cropped / Oversized"}
                 className="w-full bg-white text-black text-xs border border-zinc-300 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-zinc-400 resize-y min-h-[96px] overflow-y-auto"
               />
+              <p className="mt-1 text-[11px] text-zinc-500">
+                Tip: one field per line (Material, Fit, Style…). Packed ALL CAPS text is split automatically on the store.
+              </p>
             </div>
 
             <div>

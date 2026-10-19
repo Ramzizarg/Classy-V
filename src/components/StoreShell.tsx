@@ -44,6 +44,10 @@ export function StoreShell({ children }: { children: React.ReactNode }) {
 
   return (
     <>
+      {/*
+        Header stays outside .site-pull so position:fixed is viewport-fixed on
+        mobile (a parent transform would pin it to the pull layer instead).
+      */}
       <Suspense fallback={null}>
         <SiteHeader />
       </Suspense>
@@ -53,18 +57,20 @@ export function StoreShell({ children }: { children: React.ReactNode }) {
           aria-hidden="true"
         />
       ) : null}
-      {/* Desktop shop links live in the header — shell is always a single column. */}
-      <div
-        className={`site-shell shell-width flex-1 site-shell--no-rail${isHome ? " site-shell--home" : ""}`}
-      >
+      <div className="site-pull flex min-h-0 flex-1 flex-col">
+        {/* Desktop shop links live in the header — shell is always a single column. */}
         <div
-          className={`site-shell__main flex min-w-0 flex-1 flex-col lg:min-h-0 ${
-            isLookbookShop ? "min-h-dvh" : "min-h-[calc(100dvh-var(--header-height))]"
-          }`}
+          className={`site-shell shell-width flex-1 site-shell--no-rail${isHome ? " site-shell--home" : ""}`}
         >
-          <main className="flex-1">{children}</main>
+          <div
+            className={`site-shell__main flex min-w-0 flex-1 flex-col lg:min-h-0 ${
+              isLookbookShop ? "min-h-dvh" : "min-h-[calc(100dvh-var(--header-height))]"
+            }`}
+          >
+            <main className="flex-1">{children}</main>
+          </div>
+          <SiteFooter />
         </div>
-        <SiteFooter />
       </div>
       <CartDrawer />
     </>
