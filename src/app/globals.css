@@ -4586,7 +4586,7 @@ html.is-scrolling .product-card--drop-urgent .media-primary {
   overflow: hidden;
   overscroll-behavior: none;
   background: #000;
-  animation: splash-cover 800ms ease-in-out both;
+  animation: splash-cover 1500ms ease-in-out both;
   /* Stay viewport-fixed even if ancestors use transform. */
   transform: translateZ(0);
 }
@@ -4599,14 +4599,14 @@ html.is-scrolling .product-card--drop-urgent .media-primary {
   height: auto;
   margin: 0;
   transform-origin: center center;
-  animation: splash-mark 800ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: splash-mark 1500ms cubic-bezier(0.22, 1, 0.36, 1) both;
   /* Black-ink logo → pure white on black splash. */
   filter: brightness(0) invert(1);
 }
 
 @keyframes splash-cover {
   0%,
-  62% {
+  68% {
     opacity: 1;
   }
   100% {
@@ -4630,7 +4630,7 @@ html.is-scrolling .product-card--drop-urgent .media-primary {
     opacity: 1;
   }
   100% {
-    transform: translate(-50%, -50%) scale(1.45);
+    transform: translate(-50%, -50%) scale(1.6);
     opacity: 0;
   }
 }
@@ -5169,7 +5169,7 @@ html[data-footer-help="open"] .back-to-top {
   /* Keep the boot / logo-replay splash readable when motion is reduced. */
   .splash,
   .splash-mark {
-    animation-duration: 800ms !important;
+    animation-duration: 1500ms !important;
   }
 
   html {

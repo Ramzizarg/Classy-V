@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { BRAND_LOGO_SRC } from "@/components/BrandMark";
 
 /** Matches the `splash-cover` / `splash-mark` animations in globals.css. */
-const SPLASH_MS = 800;
+const SPLASH_MS = 1500;
 const REPLAY_EVENT = "classyv:replay-splash";
 const ENTRY_KEY = "classyv-entry-gate";
 
@@ -67,8 +67,7 @@ function SiteLoadSplashInner() {
     let alreadyPassed = false;
     try {
       const saved = localStorage.getItem(ENTRY_KEY);
-      alreadyPassed =
-        saved === "yes" || saved === "seen" || sessionStorage.getItem(ENTRY_KEY) === "yes";
+      alreadyPassed = saved === "yes" || sessionStorage.getItem(ENTRY_KEY) === "yes";
     } catch {
       alreadyPassed = false;
     }

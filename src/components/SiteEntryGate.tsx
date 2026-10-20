@@ -22,11 +22,10 @@ type GatePhase = "idle" | "question" | "welcome" | "opening" | "rejected";
  */
 const readArmed = () => document.documentElement.hasAttribute("data-entry-gate");
 
-/** "Yes" (or a first visit that skipped home) is remembered for good; "No" only for this visit. */
+/** "Yes" is remembered for good; "No" only for this visit. Visiting other pages first does not skip home. */
 function readChoice(): GateChoice | null {
   try {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved === "yes" || saved === "seen") return "yes";
+    if (localStorage.getItem(STORAGE_KEY) === "yes") return "yes";
     const value = sessionStorage.getItem(STORAGE_KEY);
     return value === "yes" || value === "no" ? value : null;
   } catch {
