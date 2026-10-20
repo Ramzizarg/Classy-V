@@ -1,14 +1,14 @@
 import Image from "next/image";
 import { SITE } from "@/lib/site";
 
-/** Mobile-only hero frame. */
-const MOBILE_SRC = "/images/exp_mobile_header_img.webp";
-/** Desktop-only hero frame (replace file in /public to update). */
-const DESKTOP_SRC = "/images/Resized_August_header_image_2.webp";
+/** Mobile-only hero frame (3:4). */
+const MOBILE_SRC = "/images/hero-mobile.jpg";
+/** Desktop-only hero frame (16:9). */
+const DESKTOP_SRC = "/images/hero-desktop.jpg";
 
 /**
  * Full-bleed home hero: mobile and desktop each get their own lifestyle frame.
- * Next Image optimizes to AVIF/WebP at the right size (LCP).
+ * Served unoptimized so the original files are not re-encoded.
  */
 export function HomeHero() {
   return (
@@ -22,6 +22,7 @@ export function HomeHero() {
           priority
           fetchPriority="high"
           quality={100}
+          unoptimized
           sizes="(min-width: 768px) 1px, 100vw"
           className="home-hero__img home-hero__img--mobile"
         />
@@ -32,6 +33,7 @@ export function HomeHero() {
           aria-hidden
           fill
           quality={100}
+          unoptimized
           sizes="(max-width: 767px) 1px, 100vw"
           className="home-hero__img home-hero__img--desktop"
         />

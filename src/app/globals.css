@@ -2409,7 +2409,7 @@ textarea.checkout-field {
 
 .home-hero__img {
   object-fit: cover;
-  object-position: center 30%;
+  object-position: center center;
   image-rendering: auto;
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
