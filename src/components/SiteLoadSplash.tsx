@@ -40,12 +40,21 @@ function fitSplashCover() {
   html.style.setProperty("--splash-mark-y", `${markY}px`);
 }
 
+function releaseScroll() {
+  document.body.style.removeProperty("overflow");
+  document.body.style.removeProperty("touch-action");
+  document.documentElement.style.removeProperty("overflow");
+}
+
 function clearBootSplash() {
   document.documentElement.removeAttribute("data-boot-splash");
+  document.documentElement.removeAttribute("data-splash-on");
+  document.documentElement.removeAttribute("data-splash-reveal");
   document.documentElement.style.removeProperty("--splash-cover-h");
   document.documentElement.style.removeProperty("--splash-mark-y");
   const boot = document.getElementById("boot-splash");
   if (boot?.getAttribute("data-source") === "boot") boot.remove();
+  releaseScroll();
 }
 
 function shouldShowSplash(pathname: string) {
@@ -69,6 +78,7 @@ function SiteLoadSplashInner() {
   const [entryOk, setEntryOk] = useState(false);
   const [playId, setPlayId] = useState(0);
   const [visible, setVisible] = useState(false);
+  const [locking, setLocking] = useState(false);
 
   const bootPlayed = useRef(false);
   /** First visit: skip splash once the entry gate (yes/no) just finished. */
@@ -91,6 +101,7 @@ function SiteLoadSplashInner() {
   const finishSplash = () => {
     splashActive.current = false;
     setVisible(false);
+    setLocking(false);
     setSplashLock(false);
     setSplashReveal(false);
     clearBootSplash();
@@ -101,6 +112,7 @@ function SiteLoadSplashInner() {
   const startTimers = () => {
     clearTimers();
     setSplashReveal(false);
+    setLocking(true);
     revealTimer.current = window.setTimeout(() => {
       setSplashReveal(true);
       revealTimer.current = null;
@@ -202,45 +214,31 @@ function SiteLoadSplashInner() {
       clearTimers();
       setSplashLock(false);
       setSplashReveal(false);
+      releaseScroll();
     },
     [],
   );
 
   useEffect(() => {
-    const active = visible || document.documentElement.getAttribute("data-boot-splash") === "1";
-    if (!active) return;
+    if (!locking) {
+      releaseScroll();
+      return;
+    }
 
     fitSplashCover();
     const vv = window.visualViewport;
     vv?.addEventListener("resize", fitSplashCover);
     vv?.addEventListener("scroll", fitSplashCover);
     window.addEventListener("resize", fitSplashCover);
-
-    const html = document.documentElement;
-    const previousBodyOverflow = document.body.style.overflow;
-    const previousHtmlOverflow = html.style.overflow;
-    const previousBodyTouch = document.body.style.touchAction;
-
     document.body.style.overflow = "hidden";
-    document.body.style.touchAction = "none";
-
-    const blockScroll = (event: Event) => {
-      event.preventDefault();
-    };
-    document.addEventListener("touchmove", blockScroll, { passive: false });
-    document.addEventListener("wheel", blockScroll, { passive: false });
 
     return () => {
-      document.body.style.overflow = previousBodyOverflow;
-      html.style.overflow = previousHtmlOverflow;
-      document.body.style.touchAction = previousBodyTouch;
-      document.removeEventListener("touchmove", blockScroll);
-      document.removeEventListener("wheel", blockScroll);
+      releaseScroll();
       vv?.removeEventListener("resize", fitSplashCover);
       vv?.removeEventListener("scroll", fitSplashCover);
       window.removeEventListener("resize", fitSplashCover);
     };
-  }, [visible]);
+  }, [locking]);
 
   if (!visible) return null;
 
