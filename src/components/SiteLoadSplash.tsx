@@ -9,6 +9,12 @@ const SPLASH_MS = 1500;
 const REPLAY_EVENT = "classyv:replay-splash";
 const ENTRY_KEY = "classyv-entry-gate";
 
+function setSplashLock(on: boolean) {
+  const html = document.documentElement;
+  if (on) html.setAttribute("data-splash-on", "1");
+  else html.removeAttribute("data-splash-on");
+}
+
 function clearBootSplash() {
   document.documentElement.removeAttribute("data-boot-splash");
   const boot = document.getElementById("boot-splash");
@@ -53,12 +59,14 @@ function SiteLoadSplashInner() {
   const beginSplash = () => {
     clearBootSplash();
     splashActive.current = true;
+    setSplashLock(true);
     setPlayId((id) => id + 1);
     setVisible(true);
     clearHideTimer();
     hideTimer.current = window.setTimeout(() => {
       splashActive.current = false;
       setVisible(false);
+      setSplashLock(false);
       hideTimer.current = null;
     }, SPLASH_MS);
   };
@@ -117,6 +125,7 @@ function SiteLoadSplashInner() {
       clearHideTimer();
       splashActive.current = false;
       setVisible(false);
+      setSplashLock(false);
       clearBootSplash();
       return;
     }
@@ -126,17 +135,19 @@ function SiteLoadSplashInner() {
 
     if (skipBootAfterGate.current) {
       skipBootAfterGate.current = false;
+      setSplashLock(false);
       clearBootSplash();
       return;
     }
 
-    /* Refresh / return visit: native CSS boot splash already animating — don't restart. */
+    /* Refresh / return visit: native boot splash already covering — don't restart. */
     if (document.documentElement.getAttribute("data-boot-splash") === "1") {
       splashActive.current = true;
       clearHideTimer();
       hideTimer.current = window.setTimeout(() => {
         splashActive.current = false;
         clearBootSplash();
+        setSplashLock(false);
         hideTimer.current = null;
       }, SPLASH_MS);
       return;
@@ -145,7 +156,13 @@ function SiteLoadSplashInner() {
     beginSplash();
   }, [ready, entryOk, allowed]);
 
-  useEffect(() => () => clearHideTimer(), []);
+  useEffect(
+    () => () => {
+      clearHideTimer();
+      setSplashLock(false);
+    },
+    [],
+  );
 
   useEffect(() => {
     if (!visible) return;

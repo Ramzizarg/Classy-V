@@ -2388,8 +2388,11 @@ textarea.checkout-field {
 @media (min-width: 768px) {
   .home-hero-fixed,
   .home-hero-spacer {
+    height: 100vh;
     height: 100svh;
     height: 100dvh;
+    height: 100lvh;
+    min-height: 100%;
   }
 }
 
@@ -4580,28 +4583,50 @@ html.is-scrolling .product-card--drop-urgent .media-primary {
  */
 .splash {
   position: fixed;
+  inset: 0;
   top: 0;
-  left: 0;
   right: 0;
   bottom: 0;
-  z-index: 10000;
+  left: 0;
+  z-index: 2147483646;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 100vw;
-  width: 100dvw;
-  height: 100vh;
-  height: 100dvh;
-  height: 100lvh;
-  min-width: 100%;
-  min-height: 100%;
+  width: 100%;
+  height: 100%;
+  min-width: 100vw;
+  min-width: 100dvw;
+  min-height: 100vh;
+  min-height: 100dvh;
+  min-height: 100lvh;
   min-height: -webkit-fill-available;
   overflow: hidden;
   overscroll-behavior: none;
   background: #000;
+  visibility: visible !important;
   animation: splash-cover 1500ms ease-in-out both;
-  /* Stay viewport-fixed even if ancestors use transform. */
-  transform: translateZ(0);
+}
+
+html[data-boot-splash="1"],
+html[data-splash-on="1"] {
+  background: #000 !important;
+  overflow: hidden !important;
+}
+
+html[data-boot-splash="1"] body,
+html[data-splash-on="1"] body {
+  background: #000 !important;
+  visibility: hidden !important;
+  overflow: hidden !important;
+  pointer-events: none !important;
+}
+
+html[data-boot-splash="1"] .home-hero-fixed,
+html[data-boot-splash="1"] .home-hero,
+html[data-splash-on="1"] .home-hero-fixed,
+html[data-splash-on="1"] .home-hero {
+  opacity: 0 !important;
+  visibility: hidden !important;
 }
 
 .splash-mark {
