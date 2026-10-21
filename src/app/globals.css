@@ -2428,6 +2428,8 @@ textarea.checkout-field {
   .home-hero__img--desktop {
     display: block !important;
     object-position: center center;
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: high-quality;
   }
 }
 
@@ -4578,11 +4580,22 @@ html.is-scrolling .product-card--drop-urgent .media-primary {
  */
 .splash {
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   z-index: 10000;
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 100vw;
+  width: 100dvw;
+  height: 100vh;
+  height: 100dvh;
+  height: 100lvh;
+  min-width: 100%;
+  min-height: 100%;
+  min-height: -webkit-fill-available;
   overflow: hidden;
   overscroll-behavior: none;
   background: #000;

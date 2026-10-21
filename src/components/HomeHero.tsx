@@ -26,12 +26,14 @@ export function HomeHero() {
           sizes="(min-width: 768px) 1px, 100vw"
           className="home-hero__img home-hero__img--mobile"
         />
-        {/* Desktop — not priority on mobile so Lighthouse mobile isn’t fighting two heros. */}
+        {/* Desktop LCP — original pixels, no extra encode. Hidden on mobile via CSS. */}
         <Image
           src={DESKTOP_SRC}
           alt=""
           aria-hidden
           fill
+          priority
+          fetchPriority="high"
           quality={100}
           unoptimized
           sizes="(max-width: 767px) 1px, 100vw"
