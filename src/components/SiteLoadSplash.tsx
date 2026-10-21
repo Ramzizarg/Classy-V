@@ -25,19 +25,25 @@ function setSplashReveal(on: boolean) {
 
 function fitSplashCover() {
   const vv = window.visualViewport;
+  const viewH = vv?.height || window.innerHeight || document.documentElement.clientHeight || 0;
+  const offset = vv?.offsetTop || 0;
   const height = Math.ceil(
     Math.max(
       window.innerHeight || 0,
       document.documentElement.clientHeight || 0,
-      vv ? vv.height + Math.abs(vv.offsetTop || 0) : 0,
+      viewH + Math.abs(offset),
     ) + 240,
   );
-  document.documentElement.style.setProperty("--splash-cover-h", `${height}px`);
+  const markY = Math.round(offset + viewH / 2);
+  const html = document.documentElement;
+  html.style.setProperty("--splash-cover-h", `${height}px`);
+  html.style.setProperty("--splash-mark-y", `${markY}px`);
 }
 
 function clearBootSplash() {
   document.documentElement.removeAttribute("data-boot-splash");
   document.documentElement.style.removeProperty("--splash-cover-h");
+  document.documentElement.style.removeProperty("--splash-mark-y");
   const boot = document.getElementById("boot-splash");
   if (boot?.getAttribute("data-source") === "boot") boot.remove();
 }

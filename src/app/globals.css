@@ -4614,7 +4614,7 @@ html[data-splash-on="1"]:not([data-splash-reveal]) body {
 .splash-mark,
 #boot-splash .boot-splash-mark {
   position: absolute;
-  top: 50%;
+  top: var(--splash-mark-y, 50dvh);
   left: 50%;
   width: min(42vw, 280px);
   height: auto;
