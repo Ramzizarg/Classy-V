@@ -6,6 +6,8 @@ import { BRAND_LOGO_SRC } from "@/components/BrandMark";
 
 /** Matches the `splash-cover` / `splash-mark` animations in globals.css. */
 const SPLASH_MS = 1500;
+/** Unhide the page when the cover starts fading — no extra black hold. */
+const REVEAL_MS = Math.round(SPLASH_MS * 0.68);
 const REPLAY_EVENT = "classyv:replay-splash";
 const ENTRY_KEY = "classyv-entry-gate";
 
@@ -15,8 +17,27 @@ function setSplashLock(on: boolean) {
   else html.removeAttribute("data-splash-on");
 }
 
+function setSplashReveal(on: boolean) {
+  const html = document.documentElement;
+  if (on) html.setAttribute("data-splash-reveal", "1");
+  else html.removeAttribute("data-splash-reveal");
+}
+
+function fitSplashCover() {
+  const vv = window.visualViewport;
+  const height = Math.ceil(
+    Math.max(
+      window.innerHeight || 0,
+      document.documentElement.clientHeight || 0,
+      vv ? vv.height + Math.abs(vv.offsetTop || 0) : 0,
+    ) + 240,
+  );
+  document.documentElement.style.setProperty("--splash-cover-h", `${height}px`);
+}
+
 function clearBootSplash() {
   document.documentElement.removeAttribute("data-boot-splash");
+  document.documentElement.style.removeProperty("--splash-cover-h");
   const boot = document.getElementById("boot-splash");
   if (boot?.getAttribute("data-source") === "boot") boot.remove();
 }
@@ -48,12 +69,37 @@ function SiteLoadSplashInner() {
   const skipBootAfterGate = useRef(false);
   const splashActive = useRef(false);
   const hideTimer = useRef<number | null>(null);
+  const revealTimer = useRef<number | null>(null);
 
-  const clearHideTimer = () => {
+  const clearTimers = () => {
     if (hideTimer.current != null) {
       window.clearTimeout(hideTimer.current);
       hideTimer.current = null;
     }
+    if (revealTimer.current != null) {
+      window.clearTimeout(revealTimer.current);
+      revealTimer.current = null;
+    }
+  };
+
+  const finishSplash = () => {
+    splashActive.current = false;
+    setVisible(false);
+    setSplashLock(false);
+    setSplashReveal(false);
+    clearBootSplash();
+    hideTimer.current = null;
+    revealTimer.current = null;
+  };
+
+  const startTimers = () => {
+    clearTimers();
+    setSplashReveal(false);
+    revealTimer.current = window.setTimeout(() => {
+      setSplashReveal(true);
+      revealTimer.current = null;
+    }, REVEAL_MS);
+    hideTimer.current = window.setTimeout(finishSplash, SPLASH_MS);
   };
 
   const beginSplash = () => {
@@ -62,13 +108,8 @@ function SiteLoadSplashInner() {
     setSplashLock(true);
     setPlayId((id) => id + 1);
     setVisible(true);
-    clearHideTimer();
-    hideTimer.current = window.setTimeout(() => {
-      splashActive.current = false;
-      setVisible(false);
-      setSplashLock(false);
-      hideTimer.current = null;
-    }, SPLASH_MS);
+    fitSplashCover();
+    startTimers();
   };
 
   useEffect(() => {
@@ -122,11 +163,8 @@ function SiteLoadSplashInner() {
     if (!ready || !entryOk) return;
 
     if (!allowed) {
-      clearHideTimer();
-      splashActive.current = false;
-      setVisible(false);
-      setSplashLock(false);
-      clearBootSplash();
+      clearTimers();
+      finishSplash();
       return;
     }
 
@@ -136,20 +174,17 @@ function SiteLoadSplashInner() {
     if (skipBootAfterGate.current) {
       skipBootAfterGate.current = false;
       setSplashLock(false);
+      setSplashReveal(false);
       clearBootSplash();
       return;
     }
 
+    fitSplashCover();
+
     /* Refresh / return visit: native boot splash already covering — don't restart. */
     if (document.documentElement.getAttribute("data-boot-splash") === "1") {
       splashActive.current = true;
-      clearHideTimer();
-      hideTimer.current = window.setTimeout(() => {
-        splashActive.current = false;
-        clearBootSplash();
-        setSplashLock(false);
-        hideTimer.current = null;
-      }, SPLASH_MS);
+      startTimers();
       return;
     }
 
@@ -158,14 +193,22 @@ function SiteLoadSplashInner() {
 
   useEffect(
     () => () => {
-      clearHideTimer();
+      clearTimers();
       setSplashLock(false);
+      setSplashReveal(false);
     },
     [],
   );
 
   useEffect(() => {
-    if (!visible) return;
+    const active = visible || document.documentElement.getAttribute("data-boot-splash") === "1";
+    if (!active) return;
+
+    fitSplashCover();
+    const vv = window.visualViewport;
+    vv?.addEventListener("resize", fitSplashCover);
+    vv?.addEventListener("scroll", fitSplashCover);
+    window.addEventListener("resize", fitSplashCover);
 
     const html = document.documentElement;
     const previousBodyOverflow = document.body.style.overflow;
@@ -173,7 +216,6 @@ function SiteLoadSplashInner() {
     const previousBodyTouch = document.body.style.touchAction;
 
     document.body.style.overflow = "hidden";
-    html.style.overflow = "hidden";
     document.body.style.touchAction = "none";
 
     const blockScroll = (event: Event) => {
@@ -188,6 +230,9 @@ function SiteLoadSplashInner() {
       document.body.style.touchAction = previousBodyTouch;
       document.removeEventListener("touchmove", blockScroll);
       document.removeEventListener("wheel", blockScroll);
+      vv?.removeEventListener("resize", fitSplashCover);
+      vv?.removeEventListener("scroll", fitSplashCover);
+      window.removeEventListener("resize", fitSplashCover);
     };
   }, [visible]);
 

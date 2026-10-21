@@ -4588,37 +4588,33 @@ html.is-scrolling .product-card--drop-urgent .media-primary {
   left: 0;
   right: 0;
   z-index: 2147483646;
-  width: 100vw;
-  width: 100dvw;
-  height: 150vh;
-  height: 150dvh;
-  height: 150lvh;
-  min-width: 100%;
-  min-height: 150vh;
+  width: 100%;
+  height: var(--splash-cover-h, 100lvh);
+  min-height: var(--splash-cover-h, 100lvh);
   overflow: hidden;
   overscroll-behavior: none;
   background: #000;
-  box-shadow: 0 50vh 0 0 #000;
+  visibility: visible !important;
   animation: splash-cover 1500ms ease-in-out both;
 }
 
 html[data-boot-splash="1"],
 html[data-splash-on="1"] {
   background: #000 !important;
-  overflow: visible !important;
 }
 
-html[data-boot-splash="1"] body,
-html[data-splash-on="1"] body {
+/* Hide the page until the cover starts fading — any short overlay is still black. */
+html[data-boot-splash="1"]:not([data-splash-reveal]) body,
+html[data-splash-on="1"]:not([data-splash-reveal]) body {
   background: #000 !important;
+  visibility: hidden !important;
   overflow: hidden !important;
 }
 
 .splash-mark,
 #boot-splash .boot-splash-mark {
   position: absolute;
-  /* 50vh = visible screen center, even though the cover is extra-tall. */
-  top: 50vh;
+  top: 50%;
   left: 50%;
   width: min(42vw, 280px);
   height: auto;
