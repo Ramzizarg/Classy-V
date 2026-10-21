@@ -4603,7 +4603,6 @@ html.is-scrolling .product-card--drop-urgent .media-primary {
   overflow: hidden;
   overscroll-behavior: none;
   background: #000;
-  visibility: visible !important;
   animation: splash-cover 1500ms ease-in-out both;
 }
 
@@ -4616,17 +4615,7 @@ html[data-splash-on="1"] {
 html[data-boot-splash="1"] body,
 html[data-splash-on="1"] body {
   background: #000 !important;
-  visibility: hidden !important;
   overflow: hidden !important;
-  pointer-events: none !important;
-}
-
-html[data-boot-splash="1"] .home-hero-fixed,
-html[data-boot-splash="1"] .home-hero,
-html[data-splash-on="1"] .home-hero-fixed,
-html[data-splash-on="1"] .home-hero {
-  opacity: 0 !important;
-  visibility: hidden !important;
 }
 
 .splash-mark {
