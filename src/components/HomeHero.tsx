@@ -3,8 +3,8 @@ import { SITE } from "@/lib/site";
 
 /** Mobile-only hero frame (3:4). */
 const MOBILE_SRC = "/images/hero-mobile.jpg";
-/** Desktop-only hero frame (16:9). */
-const DESKTOP_SRC = "/images/hero-desktop.jpg";
+/** Desktop-only hero frame (16:9) — 2x HQ export, served without recompression. */
+const DESKTOP_SRC = "/images/hero-desktop-hq.jpg";
 
 /**
  * Full-bleed home hero: mobile and desktop each get their own lifestyle frame.
