@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isAdminAuthenticated } from "@/lib/adminAuth";
 import { neonQuery, resolveDatabaseUrl } from "@/lib/neon-db";
+import { deleteXDeliveryParcel, ensureXDeliveryColumns, xdeliveryConfigured } from "@/lib/xdelivery.server";
 import {
   incrementSizeStock,
   parseSizeStocks,
@@ -39,9 +40,22 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid order." }, { status: 400 });
     }
 
-    const orderCheck = await neonQuery<{ id: number }>(`SELECT id FROM shop_orders WHERE id = $1 LIMIT 1`, [orderId]);
+    await ensureXDeliveryColumns();
+    const orderCheck = await neonQuery<{ id: number; xdelivery_barcode: string | null }>(
+      `SELECT id, xdelivery_barcode FROM shop_orders WHERE id = $1 LIMIT 1`,
+      [orderId],
+    );
     if (!orderCheck.rows[0]?.id) {
       return NextResponse.json({ error: "Order not found." }, { status: 404 });
+    }
+
+    const barcode = orderCheck.rows[0].xdelivery_barcode?.trim();
+    if (barcode && xdeliveryConfigured()) {
+      try {
+        await deleteXDeliveryParcel(barcode);
+      } catch (err) {
+        console.error("[delete-order] X-Delivery delete failed:", err);
+      }
     }
 
     const itemsRes = await neonQuery<OrderItemRow>(

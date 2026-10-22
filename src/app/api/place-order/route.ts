@@ -10,6 +10,7 @@ import {
   type SizeStock,
 } from "@/lib/productSizeStock";
 import { sendOrderEmails, type OrderEmailPayload } from "@/lib/sendOrderEmails";
+import { matchDelegation, matchGovernorate } from "@/lib/xdeliveryLocations";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -31,6 +32,7 @@ type PlaceOrderBody = {
   phone2?: string;
   address?: string;
   city?: string;
+  governorate?: string;
   postalCode?: string;
   country?: string;
   note?: string;
@@ -74,14 +76,20 @@ export async function POST(req: NextRequest) {
     const phone2 = phone2Raw.length > 0 ? phone2Raw : "";
     const address = body.address?.trim() ?? "";
     const city = body.city?.trim() ?? "";
+    const governorate = body.governorate?.trim() ?? "";
     const postalCode = body.postalCode?.trim() ?? "";
     const country = body.country?.trim() ?? "";
     const note = body.note?.trim() ?? "";
     const paymentMethod = body.paymentMethod === "bank-transfer" ? "bank-transfer" : "cash-on-delivery";
     const items = Array.isArray(body.items) ? body.items : [];
 
-    if (!fullName || !phone || !address || !city || !country) {
+    const governorateName = matchGovernorate(governorate);
+    const delegationName = governorateName ? matchDelegation(governorateName, city) : null;
+    if (!fullName || !phone || !address || !country) {
       return NextResponse.json({ error: "Missing required fields." }, { status: 400 });
+    }
+    if (!governorateName || !delegationName) {
+      return NextResponse.json({ error: "Choose a valid X-Delivery governorate and delegation." }, { status: 400 });
     }
     if (!isValidPhone(phone)) {
       return NextResponse.json({ error: PHONE_ERROR }, { status: 400 });
@@ -173,10 +181,10 @@ export async function POST(req: NextRequest) {
     const reference = buildOrderReference();
     const orderRes = await neonQuery<{ id: number }>(
       `INSERT INTO shop_orders (
-        reference, full_name, email, phone_number, phone_number_2, address, city,
+        reference, full_name, email, phone_number, phone_number_2, address, city, governorate,
         postal_code, country, note, coupon_code, discount_amount, subtotal,
         shipping_price, total_price, payment_method, status
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
       RETURNING id`,
       [
         reference,
@@ -185,7 +193,8 @@ export async function POST(req: NextRequest) {
         phone,
         phone2 || null,
         address,
-        city,
+        delegationName,
+        governorateName,
         postalCode || null,
         country,
         note || null,
@@ -250,7 +259,7 @@ export async function POST(req: NextRequest) {
       total,
       address,
       city,
-      governorate: "",
+      governorate,
     };
 
     const emailResult = await sendOrderEmails(emailPayload);

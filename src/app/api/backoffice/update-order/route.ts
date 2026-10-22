@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { isAdminAuthenticated } from "@/lib/adminAuth";
 import { neonQuery, resolveDatabaseUrl } from "@/lib/neon-db";
 import { isValidPhone, normalizePhoneInput, PHONE_ERROR } from "@/lib/phoneValidation";
+import { matchDelegation, matchGovernorate } from "@/lib/xdeliveryLocations";
 import {
   decrementSizeStock,
   incrementSizeStock,
@@ -54,6 +55,7 @@ export async function POST(req: NextRequest) {
       phone2?: string;
       address?: string;
       city?: string;
+      governorate?: string;
       postalCode?: string;
       country?: string;
       note?: string;
@@ -75,13 +77,19 @@ export async function POST(req: NextRequest) {
     const phone2 = phone2Raw.length > 0 ? phone2Raw : "";
     const address = body.address?.trim() ?? "";
     const city = body.city?.trim() ?? "";
+    const governorate = body.governorate?.trim() ?? "";
     const postalCode = body.postalCode?.trim() ?? "";
     const country = body.country?.trim() ?? "";
     const note = body.note?.trim() ?? "";
     const items = Array.isArray(body.items) ? body.items : [];
 
-    if (!fullName || !phone || !address || !city || !country) {
+    const governorateName = matchGovernorate(governorate);
+    const delegationName = governorateName ? matchDelegation(governorateName, city) : null;
+    if (!fullName || !phone || !address || !country) {
       return NextResponse.json({ error: "Missing customer fields." }, { status: 400 });
+    }
+    if (!governorateName || !delegationName) {
+      return NextResponse.json({ error: "Choose a valid X-Delivery governorate and delegation." }, { status: 400 });
     }
     if (!isValidPhone(phone)) {
       return NextResponse.json({ error: PHONE_ERROR }, { status: 400 });
@@ -224,20 +232,22 @@ export async function POST(req: NextRequest) {
          phone_number_2 = $4,
          address = $5,
          city = $6,
-         postal_code = $7,
-         country = $8,
-         note = $9,
-         subtotal = $10,
-         shipping_price = $11,
-         total_price = $12
-       WHERE id = $13`,
+         governorate = $7,
+         postal_code = $8,
+         country = $9,
+         note = $10,
+         subtotal = $11,
+         shipping_price = $12,
+         total_price = $13
+       WHERE id = $14`,
       [
         fullName,
         email || null,
         phone,
         phone2 || null,
         address,
-        city,
+        delegationName,
+        governorateName,
         postalCode || null,
         country,
         note || null,

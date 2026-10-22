@@ -17,17 +17,29 @@ import {
   Filter,
   X,
   Plus,
-  BadgeCheck,
+  Send,
   Trash2,
   Pencil,
   Search,
+  RefreshCw,
 } from "lucide-react";
+import {
+  XDELIVERY_STATUS_FILTERS,
+  XDELIVERY_STATUS_LABELS,
+  xdeliveryFilterKey,
+} from "@/lib/xdeliveryLocations";
 import DashboardCreateOrderModal from "@/components/DashboardCreateOrderModal";
+import { XDeliveryStatusBadge, useXDeliveryConnection } from "@/components/DashboardXDeliveryStatus";
 
-/** Gross sales: what customers were charged, rejected orders excluded. */
-function sumOrderRevenue(orders: Pick<OrderRow, "total_price" | "status">[]) {
+function isLostSale(order: Pick<OrderRow, "status" | "xdelivery_barcode" | "xdelivery_status">) {
+  if (xdeliveryFilterKey(order.xdelivery_barcode, order.xdelivery_status) === "RETURNED") return true;
+  return order.status?.toLowerCase() === "rejected";
+}
+
+/** Gross sales: what customers were charged, returns and rejected orders excluded. */
+function sumOrderRevenue(orders: Pick<OrderRow, "total_price" | "status" | "xdelivery_barcode" | "xdelivery_status">[]) {
   return orders
-    .filter((order) => normalizeStatus(order.status) !== "rejected")
+    .filter((order) => !isLostSale(order))
     .reduce((sum, order) => sum + (Number(order.total_price) || 0), 0);
 }
 
@@ -40,6 +52,7 @@ type OrderRow = {
   phone_number_2?: string | null;
   address: string | null;
   city: string;
+  governorate?: string | null;
   postal_code: string | null;
   country: string | null;
   note: string | null;
@@ -50,6 +63,9 @@ type OrderRow = {
   status: string;
   created_at: string;
   confirmed_by_phone?: boolean;
+  xdelivery_barcode?: string | null;
+  xdelivery_status?: string | null;
+  xdelivery_motif?: string | null;
   items_count?: number;
 };
 
@@ -58,9 +74,14 @@ function orderLabel(order: Pick<OrderRow, "id" | "reference">) {
   return order.reference?.trim() ? order.reference.trim() : `#${order.id}`;
 }
 
-function formatDestination(order: Pick<OrderRow, "address" | "city" | "postal_code" | "country">) {
-  const locality = [order.postal_code, order.city].filter(Boolean).join(" ");
-  return [order.address, locality, order.country].filter(Boolean).join(", ");
+function formatDestination(order: Pick<OrderRow, "address" | "city" | "governorate" | "postal_code" | "country">) {
+  const locality = [order.city, order.governorate].filter(Boolean).join(", ");
+  return [order.address, locality, order.postal_code, order.country].filter(Boolean).join(", ");
+}
+
+function xdeliveryLabel(status: string | null | undefined) {
+  if (!status) return "";
+  return XDELIVERY_STATUS_LABELS[status.toUpperCase()] ?? status;
 }
 
 function paymentLabel(method: string | null) {
@@ -68,7 +89,7 @@ function paymentLabel(method: string | null) {
   return "Cash on delivery";
 }
 
-type StatusFilter = "all" | "pending" | "confirmed" | "rejected" | "delivered" | "out_for_delivery";
+type StatusFilter = (typeof XDELIVERY_STATUS_FILTERS)[number]["value"];
 type PhoneFilter = "all" | "yes" | "no";
 type DatePreset = "all" | "today" | "week" | "month" | "custom";
 
@@ -127,16 +148,6 @@ function detectDatePreset(from: string, to: string, now = new Date()): DatePrese
   return "custom";
 }
 
-const STATUS_OPTIONS = [
-  { value: "pending", label: "Pending" },
-  { value: "confirmed", label: "Confirmed" },
-  { value: "rejected", label: "Rejected" },
-  { value: "out_for_delivery", label: "Out for delivery" },
-  { value: "delivered", label: "Delivered" },
-] as const;
-
-type EditableStatus = (typeof STATUS_OPTIONS)[number]["value"];
-
 type OrderItemRow = {
   product_id: number;
   product_name: string;
@@ -185,13 +196,14 @@ function compareSizes(a: string, b: string) {
   return ua.localeCompare(ub, "en");
 }
 
-function normalizeStatus(status: string): EditableStatus {
-  const s = status?.toLowerCase();
-  if (s === "delivered") return "delivered";
-  if (s === "confirmed") return "confirmed";
-  if (s === "shipped" || s === "out_for_delivery") return "out_for_delivery";
-  if (s === "rejected") return "rejected";
-  return "pending";
+function deliveryStyle(key: string) {
+  if (key === "CREATED") return "bg-amber-100 text-amber-800";
+  if (key === "PENDING") return "bg-violet-100 text-violet-800";
+  if (key === "COLLECTED" || key === "ARRIVED_AT_DEPOT") return "bg-sky-100 text-sky-800";
+  if (key === "OUT_FOR_DELIVERY") return "bg-blue-100 text-blue-800";
+  if (key === "DELIVERED") return "bg-emerald-100 text-emerald-800";
+  if (key === "RETURNED") return "bg-red-100 text-red-800";
+  return "bg-zinc-100 text-zinc-700";
 }
 
 export default function DashboardAnalytiquesPage() {
@@ -210,6 +222,7 @@ export default function DashboardAnalytiquesPage() {
   const [dateTo, setDateTo] = useState("");
   const [createOrderOpen, setCreateOrderOpen] = useState(false);
   const [editingOrderId, setEditingOrderId] = useState<number | null>(null);
+  const [syncingDelivery, setSyncingDelivery] = useState(false);
   const [confirmDialog, setConfirmDialog] = useState<null | {
     kind: "delete";
     order: OrderRow;
@@ -217,6 +230,9 @@ export default function DashboardAnalytiquesPage() {
     description: string;
     detail?: string;
   }>(null);
+
+  const { link: xdeliveryLink, detail: xdeliveryDetail } = useXDeliveryConnection();
+  const xdeliveryReady = xdeliveryLink === "connected";
 
   const datePreset = useMemo(() => detectDatePreset(dateFrom, dateTo), [dateFrom, dateTo]);
 
@@ -232,15 +248,6 @@ export default function DashboardAnalytiquesPage() {
     setDateTo(range.to);
   };
 
-  const getStatusStyle = (status: string) => {
-    const s = normalizeStatus(status);
-    if (s === "rejected") return "bg-red-100 text-red-800";
-    if (s === "delivered") return "bg-emerald-100 text-emerald-800";
-    if (s === "confirmed") return "bg-violet-100 text-violet-800";
-    if (s === "pending") return "bg-amber-100 text-amber-800";
-    if (s === "out_for_delivery") return "bg-blue-100 text-blue-800";
-    return "bg-zinc-100 text-zinc-700";
-  };
   const patchOrder = (orderId: number, patch: Partial<OrderRow>) => {
     setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, ...patch } : o)));
   };
@@ -266,22 +273,36 @@ export default function DashboardAnalytiquesPage() {
     }
   };
 
-  const handleStatusChange = async (order: OrderRow, nextStatus: EditableStatus, e: React.SyntheticEvent) => {
+  const handleSendToXDelivery = async (order: OrderRow, e: React.SyntheticEvent) => {
     e.stopPropagation();
-    if (normalizeStatus(order.status) === nextStatus || savingStatusId === order.id) return;
+    if (order.xdelivery_barcode || savingStatusId === order.id) return;
+    if (!xdeliveryReady) {
+      setError(xdeliveryDetail || "X-Delivery is not connected.");
+      return;
+    }
 
     setSavingStatusId(order.id);
     setError(null);
-    const previous = order.status;
-    patchOrder(order.id, { status: nextStatus });
-
     try {
-      const supabase = supabaseBrowserClient();
-      const { error: updateErr } = await supabase.from("shop_orders").update({ status: nextStatus }).eq("id", order.id);
-      if (updateErr) throw updateErr;
+      const res = await fetch("/api/backoffice/xdelivery", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "push", orderId: order.id }),
+      });
+      const data = (await res.json().catch(() => null)) as {
+        error?: string;
+        barcode?: string | null;
+        xdelivery_status?: string | null;
+      } | null;
+      if (!res.ok) throw new Error(data?.error || "Unable to send to X-Delivery.");
+      patchOrder(order.id, {
+        status: "confirmed",
+        xdelivery_barcode: data?.barcode ?? null,
+        xdelivery_status: data?.xdelivery_status || "CREATED",
+        xdelivery_motif: "",
+      });
     } catch (err) {
-      patchOrder(order.id, { status: previous });
-      setError(err instanceof Error ? err.message : "Unable to change status.");
+      setError(err instanceof Error ? err.message : "Unable to send to X-Delivery.");
     } finally {
       setSavingStatusId(null);
     }
@@ -346,6 +367,7 @@ export default function DashboardAnalytiquesPage() {
       phone_number_2: order.phone_number_2 ?? null,
       address: order.address,
       city: order.city,
+      governorate: order.governorate ?? null,
       postal_code: order.postal_code,
       country: order.country,
       note: order.note,
@@ -426,27 +448,36 @@ export default function DashboardAnalytiquesPage() {
     );
   };
 
-  const renderStatusSelect = (order: OrderRow, compact = false) => {
-    const current = normalizeStatus(order.status);
+  const renderDeliveryStatus = (order: OrderRow, compact = false) => {
+    const key = xdeliveryFilterKey(order.xdelivery_barcode, order.xdelivery_status);
     const saving = savingStatusId === order.id;
 
+    if (order.xdelivery_barcode) {
+      return (
+        <span
+          title={order.xdelivery_motif || order.xdelivery_barcode}
+          className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${deliveryStyle(key)} ${
+            compact ? "text-[10px] px-2 py-0.5" : ""
+          }`}
+        >
+          {xdeliveryLabel(order.xdelivery_status) || "En attente"}
+        </span>
+      );
+    }
+
     return (
-      <select
-        value={current}
-        disabled={saving}
-        onClick={(e) => e.stopPropagation()}
-        onChange={(e) => handleStatusChange(order, e.target.value as EditableStatus, e)}
-        className={`rounded-full border-0 py-1 pl-2.5 pr-7 text-xs font-semibold uppercase cursor-pointer focus:outline-none focus:ring-2 focus:ring-black/20 disabled:opacity-60 ${getStatusStyle(
-          current
-        )} ${compact ? "text-[10px] py-0.5" : ""}`}
-        aria-label={`Order status ${orderLabel(order)}`}
+      <button
+        type="button"
+        onClick={(e) => handleSendToXDelivery(order, e)}
+        disabled={saving || !xdeliveryReady}
+        title={xdeliveryReady ? "Send this order to X-Delivery" : xdeliveryDetail || "X-Delivery is not connected"}
+        className={`inline-flex items-center gap-1 rounded-full bg-black px-2.5 py-1 text-xs font-semibold text-white transition hover:bg-zinc-800 disabled:opacity-60 ${
+          compact ? "text-[10px] px-2 py-0.5" : ""
+        }`}
       >
-        {STATUS_OPTIONS.map((opt) => (
-          <option key={opt.value} value={opt.value}>
-            {opt.label}
-          </option>
-        ))}
-      </select>
+        {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
+        Send
+      </button>
     );
   };
 
@@ -458,7 +489,7 @@ export default function DashboardAnalytiquesPage() {
       const { data: ordersData, error: ordersErr } = await supabase
         .from("shop_orders")
         .select(
-          "id, reference, full_name, email, phone_number, phone_number_2, address, city, postal_code, country, note, payment_method, subtotal, shipping_price, total_price, status, created_at, confirmed_by_phone"
+          "id, reference, full_name, email, phone_number, phone_number_2, address, city, governorate, postal_code, country, note, payment_method, subtotal, shipping_price, total_price, status, created_at, confirmed_by_phone, xdelivery_barcode, xdelivery_status, xdelivery_motif"
         )
         .order("created_at", { ascending: false });
       if (ordersErr) throw ordersErr;
@@ -528,13 +559,16 @@ export default function DashboardAnalytiquesPage() {
   startOfWeek.setHours(0, 0, 0, 0);
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
+  const deliveryKeyOf = (o: OrderRow) => xdeliveryFilterKey(o.xdelivery_barcode, o.xdelivery_status);
   const totalOrders = orders.length;
   const totalRevenue = sumOrderRevenue(orders);
-  const pending = orders.filter((o) => normalizeStatus(o.status) === "pending").length;
-  const confirmed = orders.filter((o) => normalizeStatus(o.status) === "confirmed").length;
-  const rejected = orders.filter((o) => normalizeStatus(o.status) === "rejected").length;
-  const delivered = orders.filter((o) => normalizeStatus(o.status) === "delivered").length;
-  const outForDelivery = orders.filter((o) => normalizeStatus(o.status) === "out_for_delivery").length;
+  const notSent = orders.filter((o) => deliveryKeyOf(o) === "not_sent").length;
+  const waiting = orders.filter((o) => deliveryKeyOf(o) === "CREATED").length;
+  const inProgress = orders.filter((o) =>
+    ["PENDING", "COLLECTED", "ARRIVED_AT_DEPOT", "OUT_FOR_DELIVERY"].includes(deliveryKeyOf(o)),
+  ).length;
+  const delivered = orders.filter((o) => deliveryKeyOf(o) === "DELIVERED").length;
+  const returned = orders.filter((o) => deliveryKeyOf(o) === "RETURNED").length;
 
   const ordersThisWeek = orders.filter((o) => new Date(o.created_at) >= startOfWeek);
   const revenueThisWeek = sumOrderRevenue(ordersThisWeek);
@@ -547,7 +581,7 @@ export default function DashboardAnalytiquesPage() {
       list = list.filter((o) => orderMatchesDateRange(o.created_at, dateFrom, dateTo));
     }
     if (statusFilter === "all") return list;
-    return list.filter((o) => normalizeStatus(o.status) === statusFilter);
+    return list.filter((o) => xdeliveryFilterKey(o.xdelivery_barcode, o.xdelivery_status) === statusFilter);
   }, [orders, statusFilter, dateFrom, dateTo]);
 
   const phoneYesCount = useMemo(
@@ -596,17 +630,17 @@ export default function DashboardAnalytiquesPage() {
     {
       label: "Total revenue",
       value: formatPrice(totalRevenue),
-      hint: "Gross sales, rejected excluded",
+      hint: "Gross sales, returns excluded",
       icon: PiggyBank,
       bg: "bg-black",
       border: "border-black",
       text: "text-white",
     },
-    { label: "Pending", value: pending, icon: Clock, bg: "bg-amber-50", border: "border-amber-200", text: "text-amber-800" },
-    { label: "Confirmed", value: confirmed, icon: BadgeCheck, bg: "bg-violet-50", border: "border-violet-200", text: "text-violet-800" },
-    { label: "Rejected", value: rejected, icon: X, bg: "bg-red-50", border: "border-red-200", text: "text-red-800" },
-    { label: "Delivered", value: delivered, icon: CheckCircle, bg: "bg-emerald-50", border: "border-emerald-200", text: "text-emerald-800" },
-    { label: "Out for delivery", value: outForDelivery, icon: Truck, bg: "bg-blue-50", border: "border-blue-200", text: "text-blue-800" },
+    { label: "Not sent", value: notSent, icon: Send, bg: "bg-zinc-50", border: "border-zinc-200", text: "text-zinc-800" },
+    { label: "En attente", value: waiting, icon: Clock, bg: "bg-amber-50", border: "border-amber-200", text: "text-amber-800" },
+    { label: "En cours", value: inProgress, icon: Truck, bg: "bg-blue-50", border: "border-blue-200", text: "text-blue-800" },
+    { label: "Livrés", value: delivered, icon: CheckCircle, bg: "bg-emerald-50", border: "border-emerald-200", text: "text-emerald-800" },
+    { label: "Retours", value: returned, icon: X, bg: "bg-red-50", border: "border-red-200", text: "text-red-800" },
   ];
 
   const style = { fontFamily: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" };
@@ -621,15 +655,6 @@ export default function DashboardAnalytiquesPage() {
       </div>
     );
   }
-
-  const filterLabels: Record<StatusFilter, string> = {
-    all: "All",
-    pending: "Pending",
-    confirmed: "Confirmed",
-    rejected: "Rejected",
-    delivered: "Delivered",
-    out_for_delivery: "Shipped",
-  };
 
   const datePresetLabels: Record<Exclude<DatePreset, "custom">, string> = {
     all: "All dates",
@@ -724,6 +749,33 @@ export default function DashboardAnalytiquesPage() {
           <p className="text-sm text-zinc-600 mt-1">Orders & statistics</p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <XDeliveryStatusBadge surface="light" link={xdeliveryLink} detail={xdeliveryDetail} />
+          <button
+            type="button"
+            disabled={syncingDelivery || !xdeliveryReady}
+            onClick={async () => {
+              setSyncingDelivery(true);
+              setError(null);
+              try {
+                const res = await fetch("/api/backoffice/xdelivery", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ action: "sync" }),
+                });
+                const data = (await res.json().catch(() => null)) as { error?: string } | null;
+                if (!res.ok) throw new Error(data?.error || "X-Delivery sync failed.");
+                await loadOrders();
+              } catch (err) {
+                setError(err instanceof Error ? err.message : "X-Delivery sync failed.");
+              } finally {
+                setSyncingDelivery(false);
+              }
+            }}
+            className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-zinc-300 bg-white px-4 py-3 text-sm font-semibold text-black hover:bg-zinc-50 disabled:opacity-60 sm:w-auto sm:py-2.5"
+          >
+            {syncingDelivery ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+            Sync X-Delivery
+          </button>
           <button
             type="button"
             onClick={() => {
@@ -886,16 +938,16 @@ export default function DashboardAnalytiquesPage() {
               <div className="flex items-center gap-2 min-w-0 flex-wrap">
                 <Filter className="h-4 w-4 text-zinc-500 shrink-0" />
                 <div className="flex flex-wrap gap-1 rounded-lg border border-zinc-200 p-0.5 bg-zinc-50">
-                  {(["all", "pending", "confirmed", "rejected", "delivered", "out_for_delivery"] as const).map((f) => (
+                  {XDELIVERY_STATUS_FILTERS.map((f) => (
                     <button
-                      key={f}
+                      key={f.value}
                       type="button"
-                      onClick={() => setStatusFilter(f)}
+                      onClick={() => setStatusFilter(f.value)}
                       className={`px-2.5 py-1.5 text-xs font-medium uppercase rounded-md transition-colors whitespace-nowrap shrink-0 ${
-                        statusFilter === f ? "bg-white text-black shadow-sm border border-zinc-200" : "text-zinc-500 hover:text-zinc-700"
+                        statusFilter === f.value ? "bg-white text-black shadow-sm border border-zinc-200" : "text-zinc-500 hover:text-zinc-700"
                       }`}
                     >
-                      {filterLabels[f]}
+                      {f.label}
                     </button>
                   ))}
                 </div>
@@ -995,7 +1047,7 @@ export default function DashboardAnalytiquesPage() {
                           </span>
                         ) : null}
                         {renderPhoneConfirm(o, true)}
-                        {renderStatusSelect(o, true)}
+                        {renderDeliveryStatus(o, true)}
                         <span className="ml-auto flex items-center gap-0.5">
                           {renderEditButton(o, true)}
                           {renderDeleteButton(o, true)}
@@ -1029,6 +1081,15 @@ export default function DashboardAnalytiquesPage() {
                           {formatDestination(o) ? <p>{formatDestination(o)}</p> : null}
                           {o.email ? <p className="truncate">{o.email}</p> : null}
                           {o.payment_method ? <p>Payment: {paymentLabel(o.payment_method)}</p> : null}
+                          {o.xdelivery_barcode ? (
+                            <p>
+                              X-Delivery {o.xdelivery_barcode}
+                              {o.xdelivery_status ? ` · ${xdeliveryLabel(o.xdelivery_status)}` : ""}
+                              {o.xdelivery_motif ? ` · ${o.xdelivery_motif}` : ""}
+                            </p>
+                          ) : (
+                            <p>Not sent to X-Delivery yet.</p>
+                          )}
                           {o.note ? <p className="italic">“{o.note}”</p> : null}
                         </div>
                         <div className="mt-2 grid grid-cols-2 gap-2" onClick={(e) => e.stopPropagation()}>
@@ -1067,7 +1128,7 @@ export default function DashboardAnalytiquesPage() {
                     <th className="px-4 py-3 text-right font-semibold uppercase tracking-wider text-zinc-600">Items</th>
                     <th className="px-4 py-3 text-left font-semibold uppercase tracking-wider text-zinc-600">Size</th>
                     <th className="px-4 py-3 text-right font-semibold uppercase tracking-wider text-zinc-600">Total</th>
-                    <th className="px-4 py-3 text-left font-semibold uppercase tracking-wider text-zinc-600">Status</th>
+                    <th className="px-4 py-3 text-left font-semibold uppercase tracking-wider text-zinc-600">X-Delivery</th>
                     <th className="px-4 py-3 text-center font-semibold uppercase tracking-wider text-zinc-600 w-12"> </th>
                     <th className="px-4 py-3 w-10" />
                   </tr>
@@ -1079,6 +1140,11 @@ export default function DashboardAnalytiquesPage() {
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
                             <span className="font-mono font-semibold text-black shrink-0">{orderLabel(o)}</span>
+                            {o.xdelivery_barcode ? (
+                              <span className="rounded bg-zinc-100 px-1.5 py-0.5 font-mono text-[10px] text-zinc-600">
+                                {o.xdelivery_barcode}
+                              </span>
+                            ) : null}
                             {orderItems[o.id] && (
                               <div className="flex -space-x-2 shrink-0">
                                 {orderItems[o.id].slice(0, 3).map((item, i) => (
@@ -1111,7 +1177,7 @@ export default function DashboardAnalytiquesPage() {
                         <td className="px-4 py-3 text-zinc-700 font-medium">{formatOrderSizes(orderItems[o.id])}</td>
                         <td className="px-4 py-3 text-right font-semibold text-black">{formatPrice(Number(o.total_price))}</td>
                         <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
-                          {renderStatusSelect(o)}
+                          {renderDeliveryStatus(o)}
                         </td>
                         <td className="px-2 py-3 text-center" onClick={(e) => e.stopPropagation()}>
                           <div className="inline-flex items-center gap-0.5">
@@ -1150,6 +1216,15 @@ export default function DashboardAnalytiquesPage() {
                                 {formatDestination(o) ? (
                                   <p className="mt-2 text-zinc-500">Address: {formatDestination(o)}</p>
                                 ) : null}
+                                {o.xdelivery_barcode ? (
+                                  <p className="mt-1 text-zinc-500">
+                                    X-Delivery {o.xdelivery_barcode}
+                                    {o.xdelivery_status ? ` · ${xdeliveryLabel(o.xdelivery_status)}` : ""}
+                                    {o.xdelivery_motif ? ` · ${o.xdelivery_motif}` : ""}
+                                  </p>
+                                ) : (
+                                  <p className="mt-1 text-zinc-400">Not sent to X-Delivery yet. Use Send to create the parcel.</p>
+                                )}
                                 {o.email && <p className="mt-1 text-zinc-500">Email: {o.email}</p>}
                                 <p className="mt-1 text-zinc-500">
                                   Subtotal {formatPrice(Number(o.subtotal) || 0)} · Shipping{" "}

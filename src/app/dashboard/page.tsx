@@ -116,7 +116,7 @@ export default async function DashboardPage() {
       ) : null}
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6">
-        <div className="rounded-xl border border-zinc-200 bg-gradient-to-br from-zinc-50 to-white px-4 py-4 flex flex-col min-h-[7.5rem]">
+        <div className="rounded-xl border border-zinc-200 bg-gradient-to-br from-zinc-50 to-white px-3 py-3 sm:px-4 sm:py-4 flex flex-col min-h-[7.5rem]">
           <div className="flex items-center justify-between gap-2 mb-2">
             <span className="text-[10px] sm:text-xs font-medium uppercase tracking-wider text-zinc-500 truncate">
               Total orders
@@ -137,7 +137,7 @@ export default async function DashboardPage() {
           </Link>
         </div>
 
-        <div className="rounded-xl border border-zinc-200 bg-gradient-to-br from-zinc-50 to-white px-4 py-4 flex flex-col min-h-[7.5rem]">
+        <div className="rounded-xl border border-zinc-200 bg-gradient-to-br from-zinc-50 to-white px-3 py-3 sm:px-4 sm:py-4 flex flex-col min-h-[7.5rem]">
           <div className="flex items-center justify-between gap-2 mb-2">
             <span className="text-[10px] sm:text-xs font-medium uppercase tracking-wider text-zinc-500 truncate">
               Products
@@ -159,7 +159,7 @@ export default async function DashboardPage() {
           </Link>
         </div>
 
-        <div className="rounded-xl border border-black bg-gradient-to-br from-zinc-900 to-black px-4 py-4 flex flex-col min-h-[7.5rem] text-white">
+        <div className="rounded-xl border border-black bg-gradient-to-br from-zinc-900 to-black px-3 py-3 sm:px-4 sm:py-4 flex flex-col min-h-[7.5rem] text-white">
           <div className="flex items-center justify-between gap-2 mb-2">
             <span className="text-[10px] sm:text-xs font-medium uppercase tracking-wider text-white/70 truncate">
               Total revenue

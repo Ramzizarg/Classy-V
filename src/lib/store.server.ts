@@ -173,11 +173,11 @@ export async function saveOrder(order: Omit<Order, "id">): Promise<Order> {
 
   const { rows } = await neonQuery<{ id: number }>(
     `INSERT INTO shop_orders (
-       reference, created_at, full_name, email, phone_number, address, governorate, city,
+       reference, created_at, full_name, email, phone_number, phone_number_2, address, governorate, city,
        postal_code, country, note, subtotal, shipping_price, discount_amount,
        coupon_code, total_price, payment_method, status
      ) VALUES (
-       $1, $2::timestamptz, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18
+       $1, $2::timestamptz, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19
      )
      RETURNING id`,
     [
@@ -186,6 +186,7 @@ export async function saveOrder(order: Omit<Order, "id">): Promise<Order> {
       customer.fullName,
       customer.email || null,
       customer.phone,
+      customer.phone2?.trim() || null,
       customer.address,
       customer.governorate,
       customer.city ?? null,

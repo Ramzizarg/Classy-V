@@ -92,6 +92,10 @@ ALTER TABLE shop_orders ADD COLUMN IF NOT EXISTS note           TEXT;
 ALTER TABLE shop_orders ADD COLUMN IF NOT EXISTS payment_method TEXT NOT NULL DEFAULT 'cash-on-delivery';
 ALTER TABLE shop_orders ADD COLUMN IF NOT EXISTS subtotal       NUMERIC(12, 2) NOT NULL DEFAULT 0;
 ALTER TABLE shop_orders ADD COLUMN IF NOT EXISTS shipping_price NUMERIC(12, 2) NOT NULL DEFAULT 0;
+ALTER TABLE shop_orders ADD COLUMN IF NOT EXISTS xdelivery_barcode TEXT;
+ALTER TABLE shop_orders ADD COLUMN IF NOT EXISTS xdelivery_status TEXT;
+ALTER TABLE shop_orders ADD COLUMN IF NOT EXISTS xdelivery_motif TEXT;
+ALTER TABLE shop_orders ADD COLUMN IF NOT EXISTS xdelivery_synced_at TIMESTAMPTZ;
 
 CREATE INDEX IF NOT EXISTS shop_orders_created_at_idx ON shop_orders (created_at DESC);
 CREATE INDEX IF NOT EXISTS shop_orders_status_idx ON shop_orders (status);

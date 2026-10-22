@@ -17,12 +17,14 @@ type PresencePayload = {
 type Props = {
   /** Compact badge for the header, or a full dashboard card. */
   variant?: "badge" | "card";
+  /** Smaller header pill for the mobile back-office bar. */
+  compact?: boolean;
 };
 
 /**
  * Live "people on the site now" indicator for the back office (Shopify-style).
  */
-export function DashboardOnlineVisitors({ variant = "badge" }: Props) {
+export function DashboardOnlineVisitors({ variant = "badge", compact = false }: Props) {
   const [online, setOnline] = useState<number | null>(null);
   const [pages, setPages] = useState<PagePresence[]>([]);
   const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
@@ -155,7 +157,7 @@ export function DashboardOnlineVisitors({ variant = "badge" }: Props) {
   if (variant === "card") {
     return (
       <>
-        <div className="rounded-xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white px-4 py-4 flex flex-col min-h-[7.5rem]">
+        <div className="rounded-xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white px-3 py-3 sm:px-4 sm:py-4 flex flex-col min-h-[7.5rem]">
           <div className="flex items-center justify-between gap-2 mb-2">
             <span className="text-[10px] sm:text-xs font-medium uppercase tracking-wider text-emerald-800/80 truncate">
               Online now
@@ -195,17 +197,20 @@ export function DashboardOnlineVisitors({ variant = "badge" }: Props) {
       <button
         type="button"
         onClick={() => setPopupOpen(true)}
-        className="inline-flex items-center gap-2 rounded-full border border-emerald-500/35 bg-emerald-500/15 px-3 py-1.5 text-emerald-300 transition hover:bg-emerald-500/25"
+        className={`inline-flex items-center rounded-full border border-emerald-500/35 bg-emerald-500/15 text-emerald-300 transition hover:bg-emerald-500/25 ${
+          compact ? "gap-1.5 px-2 py-1" : "gap-2 px-3 py-1.5"
+        }`}
         title="View visitors by page"
+        aria-label={online == null ? "Online visitors" : `${online} online`}
         aria-live="polite"
       >
-        <span className="relative flex h-2 w-2">
+        <span className="relative flex h-2 w-2 shrink-0">
           <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
           <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
         </span>
-        <Users className="h-3.5 w-3.5 shrink-0" aria-hidden />
-        <span className="text-[11px] font-semibold uppercase tracking-[0.1em] whitespace-nowrap">
-          {online == null ? "…" : `${online} online`}
+        {compact ? null : <Users className="h-3.5 w-3.5 shrink-0" aria-hidden />}
+        <span className="whitespace-nowrap text-[10px] font-semibold uppercase tracking-[0.1em] sm:text-[11px]">
+          {online == null ? "…" : compact ? `${online}` : `${online} online`}
         </span>
       </button>
       {popup}

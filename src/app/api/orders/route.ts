@@ -5,7 +5,7 @@ import { applyCoupon } from "@/lib/coupons.server";
 import { priceCart } from "@/lib/pricing.server";
 import { buildOrderReference, saveOrder } from "@/lib/store.server";
 import { getShippingRate } from "@/lib/shipping.server";
-import { TUNISIA_GOVERNORATES } from "@/lib/site";
+import { matchDelegation, matchGovernorate } from "@/lib/xdeliveryLocations";
 import type { OrderCustomer } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -17,7 +17,7 @@ type Payload = {
 };
 
 /** Email is optional: most Tunisian orders are placed with a phone number only. */
-const REQUIRED_FIELDS: (keyof OrderCustomer)[] = ["fullName", "phone", "address", "governorate"];
+const REQUIRED_FIELDS: (keyof OrderCustomer)[] = ["fullName", "phone", "address", "governorate", "city"];
 
 export async function POST(request: Request) {
   let payload: Payload;
@@ -41,9 +41,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Enter a valid email address." }, { status: 400 });
   }
 
-  const governorate = customer.governorate!.trim();
-  if (!TUNISIA_GOVERNORATES.some((entry) => entry === governorate)) {
+  const governorateName = matchGovernorate(customer.governorate!.trim());
+  if (!governorateName) {
     return NextResponse.json({ error: "Choose a delivery governorate." }, { status: 400 });
+  }
+  const city = matchDelegation(governorateName, customer.city?.trim() ?? "") ?? "";
+  if (!city) {
+    return NextResponse.json({ error: "Choose a delivery delegation." }, { status: 400 });
   }
 
   const requested = (Array.isArray(payload.lines) ? payload.lines : []).filter(isCartLine);
@@ -81,8 +85,10 @@ export async function POST(request: Request) {
       fullName: customer.fullName!.trim(),
       email: email.toLowerCase(),
       phone: customer.phone!.trim(),
+      phone2: customer.phone2?.trim() || undefined,
       address: customer.address!.trim(),
-      governorate,
+      governorate: governorateName,
+      city,
       country: "Tunisia",
       note: customer.note?.toString().trim() || undefined,
     },

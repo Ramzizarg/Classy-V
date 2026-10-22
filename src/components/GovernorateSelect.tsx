@@ -21,12 +21,18 @@ export function GovernorateSelect({
   value,
   onChange,
   invalid = false,
+  placeholder = "Governorate",
+  disabled = false,
+  emptyLabel = "No governorate matches that.",
 }: {
   id: string;
   options: readonly string[];
   value: string;
   onChange: (value: string) => void;
   invalid?: boolean;
+  placeholder?: string;
+  disabled?: boolean;
+  emptyLabel?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -71,6 +77,7 @@ export function GovernorateSelect({
   }, [open, activeIndex]);
 
   const openList = () => {
+    if (disabled) return;
     setOpen(true);
     setActiveIndex(Math.max(0, matches.indexOf(value)));
   };
@@ -129,7 +136,8 @@ export function GovernorateSelect({
         autoComplete="off"
         readOnly={pickOnly}
         inputMode={pickOnly ? "none" : undefined}
-        placeholder={value || "Governorate"}
+        placeholder={value || placeholder}
+        disabled={disabled}
         value={open && !pickOnly ? query : value}
         onChange={(event) => {
           setQuery(event.target.value);
@@ -143,13 +151,13 @@ export function GovernorateSelect({
         onKeyDown={handleKeyDown}
         className={`checkout-field checkout-field--menu ${
           pickOnly ? "checkout-field--pick" : ""
-        } ${invalid ? "checkout-field--invalid" : ""}`}
+        } ${invalid ? "checkout-field--invalid" : ""} ${disabled ? "opacity-50" : ""}`}
       />
 
       {open ? (
-        <ul ref={listRef} id={listId} role="listbox" aria-label="Governorate" className="checkout-menu">
+        <ul ref={listRef} id={listId} role="listbox" aria-label={placeholder} className="checkout-menu">
           {matches.length === 0 ? (
-            <li className="checkout-menu-empty">No governorate matches that.</li>
+            <li className="checkout-menu-empty">{emptyLabel}</li>
           ) : (
             matches.map((option, index) => (
               <li

@@ -9,6 +9,7 @@ import { isValidPhone, normalizePhoneInput, PHONE_ERROR } from "@/lib/phoneValid
 import { getSizeOptionsForProduct } from "@/lib/productSizesDisplay";
 import { stockForSize, parseSizeStocks } from "@/lib/productSizeStock";
 import { SHIPPING_COUNTRIES } from "@/lib/site";
+import { XDELIVERY_GOVERNORATES, delegationsFor, matchDelegation } from "@/lib/xdeliveryLocations";
 import type { Product } from "@/lib/shop-db-types";
 
 type DraftLine = {
@@ -58,6 +59,7 @@ type EditOrder = {
   phone_number_2?: string | null;
   address: string | null;
   city: string;
+  governorate?: string | null;
   postal_code: string | null;
   country: string | null;
   note: string | null;
@@ -84,6 +86,7 @@ export default function DashboardCreateOrderModal({ open, onClose, onCreated, ed
   const [phone2, setPhone2] = useState("");
   const [address, setAddress] = useState("");
   const [city, setCity] = useState("");
+  const [governorate, setGovernorate] = useState("");
   const [postalCode, setPostalCode] = useState("");
   const [country, setCountry] = useState<string>(SHIPPING_COUNTRIES[0]);
   const [note, setNote] = useState("");
@@ -149,8 +152,9 @@ export default function DashboardCreateOrderModal({ open, onClose, onCreated, ed
       setPhone2(normalizePhoneInput(editOrder.phone_number_2 || ""));
       setAddress(editOrder.address || "");
       setCity(editOrder.city || "");
+      setGovernorate(editOrder.governorate || "");
       setPostalCode(editOrder.postal_code || "");
-      setCountry(editOrder.country || SHIPPING_COUNTRIES[0]);
+      setCountry(editOrder.country || "Tunisia");
       setNote(editOrder.note || "");
       setPickProductId("");
       setPickSize("");
@@ -172,8 +176,9 @@ export default function DashboardCreateOrderModal({ open, onClose, onCreated, ed
     setPhone2("");
     setAddress("");
     setCity("");
+    setGovernorate("");
     setPostalCode("");
-    setCountry(SHIPPING_COUNTRIES[0]);
+    setCountry("Tunisia");
     setNote("");
     setLines([]);
     setPickProductId("");
@@ -319,8 +324,12 @@ export default function DashboardCreateOrderModal({ open, onClose, onCreated, ed
     const zip = postalCode.trim();
     const ctry = country.trim();
     const orderNote = note.trim();
-    if (!fn || !ph || !addr || !ct || !ctry) {
+    if (!fn || !ph || !addr || !ct || !ctry || !governorate) {
       setFormError("Fill in all customer fields (email and postal code optional).");
+      return;
+    }
+    if (!matchDelegation(governorate, ct)) {
+      setFormError("Choose a valid X-Delivery delegation.");
       return;
     }
     if (!isValidPhone(ph)) {
@@ -350,6 +359,7 @@ export default function DashboardCreateOrderModal({ open, onClose, onCreated, ed
             phone2: ph2 || null,
             address: addr,
             city: ct,
+            governorate,
             postalCode: zip,
             country: ctry,
             note: orderNote,
@@ -379,6 +389,7 @@ export default function DashboardCreateOrderModal({ open, onClose, onCreated, ed
             phone2: ph2 || null,
             address: addr,
             city: ct,
+            governorate,
             postalCode: zip,
             country: ctry,
             note: orderNote,
@@ -512,13 +523,43 @@ export default function DashboardCreateOrderModal({ open, onClose, onCreated, ed
                   />
                 </label>
                 <label className="block text-xs font-medium text-black">
-                  City
-                  <input
+                  Governorate
+                  <select
+                    required
+                    value={governorate}
+                    onChange={(e) => {
+                      setGovernorate(e.target.value);
+                      setCity("");
+                    }}
+                    className="mt-1 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm text-black focus:outline-none focus:ring-2 focus:ring-black/15"
+                  >
+                    <option value="">Choose</option>
+                    {XDELIVERY_GOVERNORATES.map((name) => (
+                      <option key={name} value={name}>
+                        {name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="block text-xs font-medium text-black">
+                  Delegation
+                  <select
                     required
                     value={city}
+                    disabled={!governorate}
                     onChange={(e) => setCity(e.target.value)}
-                    className="mt-1 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm text-black focus:outline-none focus:ring-2 focus:ring-black/15"
-                  />
+                    className="mt-1 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm text-black focus:outline-none focus:ring-2 focus:ring-black/15 disabled:opacity-50"
+                  >
+                    <option value="">{governorate ? "Choose" : "Choose governorate first"}</option>
+                    {city && !delegationsFor(governorate).includes(city) ? (
+                      <option value={city}>{city}</option>
+                    ) : null}
+                    {delegationsFor(governorate).map((name) => (
+                      <option key={name} value={name}>
+                        {name}
+                      </option>
+                    ))}
+                  </select>
                 </label>
                 <label className="block text-xs font-medium text-black">
                   Postal code <span className="font-normal text-zinc-400">(optional)</span>

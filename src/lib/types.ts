@@ -78,6 +78,8 @@ export type OrderCustomer = {
   /** Optional at checkout — an empty string when the customer skipped it. */
   email: string;
   phone: string;
+  /** Optional second number, sent to X-Delivery as customerPhone2. */
+  phone2?: string;
   address: string;
   /** One of Tunisia's 24 governorates; delivery is domestic only. */
   governorate: string;

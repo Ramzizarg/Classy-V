@@ -10,14 +10,16 @@ import { OrderPlacedModal } from "@/components/OrderPlacedModal";
 import { useStore } from "@/components/StoreProvider";
 import { shippingCost } from "@/lib/cart";
 import { formatPrice } from "@/lib/format";
-import { TUNISIA_GOVERNORATES } from "@/lib/site";
+import { XDELIVERY_GOVERNORATES, delegationsFor, matchDelegation, matchGovernorate } from "@/lib/xdeliveryLocations";
 
 const EMPTY = {
   email: "",
   fullName: "",
   address: "",
   governorate: "",
+  city: "",
   phone: "",
+  phone2: "",
   note: "",
 };
 
@@ -35,6 +37,7 @@ export function CheckoutForm() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [governorateError, setGovernorateError] = useState("");
+  const [delegationError, setDelegationError] = useState("");
 
   const [codeInput, setCodeInput] = useState("");
   const [coupon, setCoupon] = useState<AppliedCoupon | null>(null);
@@ -124,8 +127,10 @@ export function CheckoutForm() {
             fullName: form.fullName.trim().replace(/\s+/g, " "),
             email: form.email,
             phone: form.phone,
+            phone2: form.phone2.trim() || undefined,
             address: form.address,
             governorate: form.governorate,
+            city: form.city,
             note: form.note,
           },
           couponCode: coupon?.code ?? null,
@@ -156,8 +161,13 @@ export function CheckoutForm() {
     event.preventDefault();
 
     // The governorate control is not a native input, so it needs its own check.
-    if (!TUNISIA_GOVERNORATES.some((entry) => entry === form.governorate)) {
+    const governorateName = matchGovernorate(form.governorate);
+    if (!governorateName) {
       setGovernorateError("Choose your governorate.");
+      return;
+    }
+    if (!matchDelegation(governorateName, form.city)) {
+      setDelegationError("Choose your delegation.");
       return;
     }
 
@@ -234,16 +244,39 @@ export function CheckoutForm() {
                 </label>
                 <GovernorateSelect
                   id="co-governorate"
-                  options={TUNISIA_GOVERNORATES}
+                  options={XDELIVERY_GOVERNORATES}
                   value={form.governorate}
                   invalid={Boolean(governorateError)}
                   onChange={(governorate) => {
-                    update("governorate", governorate);
+                    setForm((current) => ({ ...current, governorate, city: "" }));
                     setGovernorateError("");
+                    setDelegationError("");
                   }}
                 />
                 {governorateError ? (
                   <p className="ui-sm mt-1.5 text-danger">{governorateError}</p>
+                ) : null}
+              </div>
+
+              <div>
+                <label htmlFor="co-delegation" className="sr-only">
+                  Delegation
+                </label>
+                <GovernorateSelect
+                  id="co-delegation"
+                  options={delegationsFor(form.governorate)}
+                  value={form.city}
+                  invalid={Boolean(delegationError)}
+                  disabled={!form.governorate}
+                  placeholder="Delegation"
+                  emptyLabel="No delegation matches that."
+                  onChange={(city) => {
+                    update("city", city);
+                    setDelegationError("");
+                  }}
+                />
+                {delegationError ? (
+                  <p className="ui-sm mt-1.5 text-danger">{delegationError}</p>
                 ) : null}
               </div>
 
@@ -280,6 +313,22 @@ export function CheckoutForm() {
                 <p className="ui-sm mt-1.5 text-muted">
                   We call this number to confirm your delivery.
                 </p>
+              </div>
+
+              <div>
+                <label htmlFor="co-phone2" className="sr-only">
+                  Second phone (optional)
+                </label>
+                <input
+                  id="co-phone2"
+                  type="tel"
+                  inputMode="tel"
+                  autoComplete="tel"
+                  placeholder="Second phone (optional)"
+                  value={form.phone2}
+                  onChange={(event) => update("phone2", event.target.value)}
+                  className="checkout-field"
+                />
               </div>
             </div>
 

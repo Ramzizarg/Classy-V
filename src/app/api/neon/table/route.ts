@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type { QueryResultRow } from "@neondatabase/serverless";
 import { neonQuery, resolveDatabaseUrl } from "@/lib/neon-db";
+import { ensureXDeliveryColumns } from "@/lib/xdelivery.server";
 
 export const runtime = "nodejs";
 
@@ -185,6 +186,10 @@ export async function POST(req: Request) {
 
     if (!ALLOWED_TABLES.has(table)) {
       return NextResponse.json({ data: null, error: `Table not allowed: ${table}` }, { status: 400 });
+    }
+
+    if (table === "shop_orders") {
+      await ensureXDeliveryColumns();
     }
 
     const tableIdent = safeIdent(table);
