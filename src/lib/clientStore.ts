@@ -1,4 +1,5 @@
 import { CART_STORAGE_KEY, WISHLIST_STORAGE_KEY, cartLineKey, isCartLine } from "@/lib/cart";
+import { productHoverImage } from "@/lib/products";
 import type { CartLine, Product } from "@/lib/types";
 
 /**
@@ -147,11 +148,17 @@ export function refreshLinesFromCatalog(products: Product[]): void {
     const product = byId.get(line.productId);
     if (!product) return line;
     const image = product.images[0] ?? line.image;
-    if (product.name === line.name && product.slug === line.slug && image === line.image) {
+    const hoverImage = productHoverImage(product.images);
+    if (
+      product.name === line.name &&
+      product.slug === line.slug &&
+      image === line.image &&
+      hoverImage === line.hoverImage
+    ) {
       return line;
     }
     changed = true;
-    return { ...line, name: product.name, slug: product.slug, image };
+    return { ...line, name: product.name, slug: product.slug, image, hoverImage };
   });
   if (changed) commit({ lines });
 }

@@ -8,7 +8,7 @@ import { SizeGuideModal } from "@/components/SizeGuideModal";
 import { useStore } from "@/components/StoreProvider";
 import { useFitProfile } from "@/components/useFitProfile";
 import { formatPrice } from "@/lib/format";
-import { effectivePrice, isComingSoon, isSoldOut } from "@/lib/products";
+import { effectivePrice, isComingSoon, isSoldOut, productHoverImage } from "@/lib/products";
 import { chartSupportsFinder, recommendSize, type SizeChart } from "@/lib/sizeCharts";
 import type { Product } from "@/lib/types";
 
@@ -64,6 +64,7 @@ export function ProductPurchasePanel({
     unitPrice: price,
     compareAtPrice: onSale ? product.price : null,
     image: product.images[0],
+    hoverImage: productHoverImage(product.images),
     size,
     colorway: product.colorway,
     quantity,

@@ -1,7 +1,7 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
+import { OrderLineThumb } from "@/components/OrderLineThumb";
 import { useStore } from "@/components/StoreProvider";
 import { shippingCost } from "@/lib/cart";
 import { formatPrice } from "@/lib/format";
@@ -41,16 +41,13 @@ export function CartView() {
             key={`${line.productId}-${line.size}`}
             className="flex gap-3 border-b border-line py-3 sm:gap-4"
           >
-            <Link
-              href={`/collection/${line.slug}`}
-              className="media-frame h-32 w-26 shrink-0 border border-line sm:h-40 sm:w-32"
-            >
-              <Image
-                src={line.image}
+            <Link href={`/collection/${line.slug}`} className="shrink-0">
+              <OrderLineThumb
+                image={line.image}
+                hoverImage={line.hoverImage}
                 alt={line.name}
-                width={320}
-                height={400}
-                className="h-full w-full object-contain p-1"
+                className="track-thumb cart-thumb cart-thumb--page"
+                sizes="(min-width: 640px) 128px, 104px"
               />
             </Link>
 

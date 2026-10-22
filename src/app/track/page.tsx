@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import { CopyValue } from "@/components/CopyValue";
+import { OrderLineThumb } from "@/components/OrderLineThumb";
 import { TrackSearchForm } from "@/components/TrackSearchForm";
 import { formatDate, formatPrice } from "@/lib/format";
 import {
@@ -148,17 +148,7 @@ export default async function TrackPage({
                 key={`${line.productId}-${line.size}`}
                 className="flex items-center gap-3 border-b border-line px-4 py-3 last:border-b-0 sm:px-5"
               >
-                <div className="media-frame h-16 w-13 shrink-0 border border-line">
-                  {line.image ? (
-                    <Image
-                      src={line.image}
-                      alt=""
-                      width={130}
-                      height={160}
-                      className="h-full w-full object-contain p-1"
-                    />
-                  ) : null}
-                </div>
+                <OrderLineThumb image={line.image} hoverImage={line.hoverImage} alt="" />
                 <div className="min-w-0 flex-1">
                   <p className="ui">{line.name}</p>
                   <p className="ui-sm mt-1 text-muted">

@@ -28,6 +28,13 @@ export function effectivePrice(product: Product): number {
   return product.salePrice && product.salePrice < product.price ? product.salePrice : product.price;
 }
 
+/** Second catalog frame for the product-card hover swap. */
+export function productHoverImage(images: readonly string[] | undefined): string | undefined {
+  const first = images?.[0];
+  const second = images?.[1];
+  return second && second !== first ? second : undefined;
+}
+
 export function totalStock(product: Product): number {
   return product.sizes.reduce((sum, entry) => sum + entry.stock, 0);
 }

@@ -702,6 +702,75 @@ html.dashboard-light select option {
   }
 }
 
+.track-thumb {
+  position: relative;
+  width: 5rem;
+  height: 5rem;
+  flex-shrink: 0;
+  overflow: visible;
+  background: transparent;
+  content-visibility: visible;
+  contain: none;
+}
+
+.media-frame.track-thumb {
+  overflow: visible;
+}
+
+.track-thumb .media-primary,
+.track-thumb .media-secondary {
+  position: absolute;
+  inset: 0;
+  height: 100%;
+  width: 100%;
+  object-fit: contain;
+  filter:
+    drop-shadow(0 0 4px rgb(255 255 255 / 0.55))
+    drop-shadow(0 0 10px rgb(255 255 255 / 0.35))
+    drop-shadow(0 0 18px rgb(255 255 255 / 0.18));
+  transition: opacity 160ms linear;
+  pointer-events: none;
+}
+
+.track-thumb--swap:hover .media-primary,
+.track-thumb--swap:focus-within .media-primary {
+  opacity: 0;
+}
+
+.track-thumb--swap:hover .media-secondary,
+.track-thumb--swap:focus-within .media-secondary {
+  opacity: 1;
+}
+
+@media (min-width: 640px) {
+  .track-thumb {
+    width: 6rem;
+    height: 6rem;
+  }
+}
+
+.cart-thumb {
+  width: 6rem;
+  height: 8rem;
+}
+
+.cart-thumb--page {
+  width: 6.5rem;
+  height: 8rem;
+}
+
+@media (min-width: 640px) {
+  .cart-thumb {
+    width: 7rem;
+    height: 9rem;
+  }
+
+  .cart-thumb--page {
+    width: 8rem;
+    height: 10rem;
+  }
+}
+
 /* Archive / about — sit under the desktop header with the shared spacer. */
 @media (min-width: 1024px) {
   .about-page {
@@ -2123,10 +2192,14 @@ textarea.checkout-field {
   display: block;
   width: 64px;
   height: 64px;
-  border-radius: 10px;
-  border: 2.5px solid #ffffff;
-  background: #0a0a0a;
-  overflow: hidden;
+  overflow: visible;
+  background: transparent;
+  content-visibility: visible;
+  contain: none;
+}
+
+.media-frame.checkout-summary__thumb-frame {
+  overflow: visible;
 }
 
 .checkout-summary__qty {
@@ -5649,7 +5722,9 @@ html[data-theme="day"] .product-gallery__main img {
     drop-shadow(0 0 28px rgb(0 0 0 / 0.18));
 }
 
-html[data-theme="day"] .product-colour-variants__img {
+html[data-theme="day"] .product-colour-variants__img,
+html[data-theme="day"] .track-thumb .media-primary,
+html[data-theme="day"] .track-thumb .media-secondary {
   filter:
     drop-shadow(0 0 4px rgb(0 0 0 / 0.55))
     drop-shadow(0 0 10px rgb(0 0 0 / 0.35))
@@ -5748,8 +5823,8 @@ html[data-theme="day"] .checkout-summary.border-l {
 
 html[data-theme="day"] .checkout-summary__thumb-frame,
 html[data-theme="day"] .checkout-summary .media-frame {
-  border-color: #e5e5e5;
-  background: #ffffff;
+  border-color: transparent;
+  background: transparent;
 }
 
 html[data-theme="day"] .checkout-summary__coupon {

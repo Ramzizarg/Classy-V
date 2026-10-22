@@ -1,7 +1,7 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
+import { OrderLineThumb } from "@/components/OrderLineThumb";
 import { BagGlyph, CloseGlyph } from "@/components/SocialGlyphs";
 import { useStore } from "@/components/StoreProvider";
 import { cartCount, shippingCost } from "@/lib/cart";
@@ -67,14 +67,14 @@ export function CartDrawer() {
                   <Link
                     href={`/collection/${line.slug}`}
                     onClick={closeCart}
-                    className="media-frame h-32 w-24 shrink-0 border border-line sm:h-36 sm:w-28"
+                    className="shrink-0"
                   >
-                    <Image
-                      src={line.image}
+                    <OrderLineThumb
+                      image={line.image}
+                      hoverImage={line.hoverImage}
                       alt={line.name}
-                      width={240}
-                      height={300}
-                      className="h-full w-full object-contain p-1"
+                      className="track-thumb cart-thumb"
+                      sizes="(min-width: 640px) 112px, 96px"
                     />
                   </Link>
 

@@ -1,11 +1,11 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { BrandMark } from "@/components/BrandMark";
 import { GovernorateSelect } from "@/components/GovernorateSelect";
+import { OrderLineThumb } from "@/components/OrderLineThumb";
 import { OrderPlacedModal } from "@/components/OrderPlacedModal";
 import { useStore } from "@/components/StoreProvider";
 import { shippingCost } from "@/lib/cart";
@@ -428,15 +428,13 @@ export function CheckoutForm() {
               {lines.map((line) => (
                 <li key={`${line.productId}-${line.size}`} className="checkout-summary__line">
                   <span className="checkout-summary__thumb">
-                    <span className="media-frame checkout-summary__thumb-frame">
-                      <Image
-                        src={line.image}
-                        alt={line.name}
-                        fill
-                        sizes="64px"
-                        className="h-full w-full object-contain p-1"
-                      />
-                    </span>
+                    <OrderLineThumb
+                      image={line.image}
+                      hoverImage={line.hoverImage}
+                      alt={line.name}
+                      className="track-thumb checkout-summary__thumb-frame"
+                      sizes="64px"
+                    />
                     <span className="checkout-summary__qty">{line.quantity}</span>
                   </span>
                   <span className="checkout-summary__line-copy">

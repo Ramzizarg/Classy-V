@@ -1,4 +1,4 @@
-import { getProductById } from "@/lib/products";
+import { getProductById, productHoverImage } from "@/lib/products";
 import { neonQuery, resolveDatabaseUrl } from "@/lib/neon-db";
 import { getCatalog } from "@/lib/storefrontCatalog";
 import type { CartLine, Order, Product } from "@/lib/types";
@@ -86,6 +86,7 @@ function mapLine(row: OrderItemRow, catalog: Product[]): CartLine {
     name: row.product_name,
     unitPrice: Number(row.price),
     image: product?.images[0] ?? "",
+    hoverImage: productHoverImage(product?.images),
     size: row.size ?? "",
     colorway: row.color ?? product?.colorway ?? "",
     quantity: Number(row.quantity),

@@ -8,7 +8,7 @@ import { ProductCountdown } from "@/components/ProductCountdown";
 import { useStore } from "@/components/StoreProvider";
 import { formatPrice } from "@/lib/format";
 import { getSizeOptionsForProduct, isProductOutOfStock } from "@/lib/productSizesDisplay";
-import { effectivePrice, isComingSoon } from "@/lib/products";
+import { effectivePrice, isComingSoon, productHoverImage } from "@/lib/products";
 import type { Product } from "@/lib/types";
 
 const SWIPE_PX = 28;
@@ -61,6 +61,7 @@ export function LookbookCard({
       unitPrice: price,
       compareAtPrice: onSale ? product.price : null,
       image: images[0] ?? "/images/logo.png",
+      hoverImage: productHoverImage(images),
       size,
       colorway: product.colorway,
       quantity: 1,

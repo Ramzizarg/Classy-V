@@ -68,6 +68,8 @@ export type CartLine = {
   unitPrice: number;
   compareAtPrice?: number | null;
   image: string;
+  /** Second catalog frame, used for the product-card hover swap. */
+  hoverImage?: string;
   size: string;
   colorway: string;
   quantity: number;

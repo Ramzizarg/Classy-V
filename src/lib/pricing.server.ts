@@ -1,4 +1,4 @@
-import { getProductById } from "@/lib/products";
+import { getProductById, productHoverImage } from "@/lib/products";
 import { getCatalog } from "@/lib/storefrontCatalog";
 import type { CartLine } from "@/lib/types";
 
@@ -39,6 +39,7 @@ export async function priceCart(requested: CartLine[]): Promise<PricedCart> {
       unitPrice,
       compareAtPrice: unitPrice < product.price ? product.price : null,
       image: product.images[0],
+      hoverImage: productHoverImage(product.images),
       size: line.size,
       colorway: product.colorway,
       quantity: Math.max(1, Math.min(10, Math.trunc(line.quantity))),
