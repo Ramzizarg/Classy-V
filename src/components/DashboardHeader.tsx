@@ -154,20 +154,22 @@ export function DashboardHeader() {
     <header className="sticky top-0 z-50 bg-black text-white border-b border-white/10">
       {/* Mobile: hamburger · logo · live visitors */}
       <div className="md:hidden">
-        <div className="grid grid-cols-[2.75rem_minmax(0,1fr)_auto] items-center gap-2 px-3 py-2">
-          <button
-            type="button"
-            onClick={() => setMenuOpen(true)}
-            className="inline-flex h-11 w-11 items-center justify-center rounded-lg text-white hover:bg-white/10"
-            aria-label="Open menu"
-            aria-expanded={menuOpen}
-          >
-            <Menu className="h-6 w-6" />
-          </button>
-          <div className="flex min-w-0 justify-center">
+        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 px-3 py-2">
+          <div className="flex min-w-0 items-center justify-start">
+            <button
+              type="button"
+              onClick={() => setMenuOpen(true)}
+              className="inline-flex h-11 w-11 items-center justify-center rounded-lg text-white hover:bg-white/10"
+              aria-label="Open menu"
+              aria-expanded={menuOpen}
+            >
+              <Menu className="h-6 w-6" />
+            </button>
+          </div>
+          <div className="flex justify-center">
             {renderLogo("h-10 w-auto max-w-[7.5rem] object-contain brightness-0 invert")}
           </div>
-          <div className="flex items-center justify-end gap-1.5">
+          <div className="flex min-w-0 items-center justify-end gap-1.5">
             <DashboardXDeliveryStatus compact />
             <DashboardOnlineVisitors compact />
           </div>
