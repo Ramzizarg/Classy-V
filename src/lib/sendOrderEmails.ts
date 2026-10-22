@@ -16,7 +16,7 @@ import { getResend } from "@/lib/resendClient";
 import { SITE } from "@/lib/site";
 import { getSiteUrl } from "@/lib/siteUrl";
 
-type InlineImage = { filename: string; content: Buffer; contentType: string; contentId: string };
+type InlineImage = { filename: string; content: string; contentType: string; contentId: string };
 
 let logoCache: InlineImage[] | null = null;
 
@@ -36,8 +36,8 @@ async function loadLogos(): Promise<InlineImage[]> {
       .toBuffer();
     const light = await sharp(original).negate({ alpha: false }).png({ compressionLevel: 9 }).toBuffer();
     logoCache = [
-      { filename: "classy-v-logo.png", content: light, contentType: "image/png", contentId: LOGO_CID },
-      { filename: "classy-v-logo-dark.png", content: original, contentType: "image/png", contentId: LOGO_DARK_CID },
+      { filename: "classy-v-logo.png", content: light.toString("base64"), contentType: "image/png", contentId: LOGO_CID },
+      { filename: "classy-v-logo-dark.png", content: original.toString("base64"), contentType: "image/png", contentId: LOGO_DARK_CID },
     ];
     return logoCache;
   } catch (err) {
@@ -46,10 +46,17 @@ async function loadLogos(): Promise<InlineImage[]> {
   }
 }
 
-export const ADMIN_EMAIL = process.env.RESEND_ADMIN_EMAIL?.trim() || "";
-
 const TEST_FROM_EMAIL = `${SITE.name} <onboarding@resend.dev>`;
-const FROM_EMAIL = process.env.RESEND_FROM_EMAIL?.trim() || TEST_FROM_EMAIL;
+
+function adminEmail() {
+  return process.env.RESEND_ADMIN_EMAIL?.trim() || "";
+}
+
+function fromEmail() {
+  return process.env.RESEND_FROM_EMAIL?.trim() || TEST_FROM_EMAIL;
+}
+
+export const ADMIN_EMAIL = adminEmail();
 
 function isUnverifiedSender(error: { message?: string } | null | undefined): boolean {
   return Boolean(error?.message && /not verified|testing emails|verify a domain/i.test(error.message));
@@ -128,16 +135,23 @@ async function deliver(
     ...(payload.attachments?.length ? { attachments: payload.attachments } : {}),
   };
   try {
-    const first = await resend.emails.send(mail);
-    if (!first.error) return first;
+    let result = await resend.emails.send(mail);
+    if (!result.error) return result;
 
-    if (allowTestSender && isUnverifiedSender(first.error)) {
-      console.warn(`[Resend] ${payload.from} not verified — retrying admin mail from ${TEST_FROM_EMAIL}.`);
-      return resend.emails.send({ ...mail, from: TEST_FROM_EMAIL });
+    if (mail.attachments?.length) {
+      console.warn("[Resend] send with logo failed — retrying without attachments:", result.error);
+      const { attachments: _ignored, ...withoutLogos } = mail;
+      result = await resend.emails.send(withoutLogos);
+      if (!result.error) return result;
     }
 
-    console.error("[Resend] send failed:", first.error);
-    return first;
+    if (allowTestSender && isUnverifiedSender(result.error)) {
+      console.warn(`[Resend] ${payload.from} not verified — retrying from ${TEST_FROM_EMAIL}.`);
+      return resend.emails.send({ ...mail, from: TEST_FROM_EMAIL, attachments: undefined });
+    }
+
+    console.error("[Resend] send failed:", result.error);
+    return result;
   } catch (err) {
     const message = err instanceof Error ? err.message : "Send failed";
     console.error("[Resend] send threw:", message);
@@ -147,11 +161,13 @@ async function deliver(
 
 export async function sendOrderEmails(body: OrderEmailPayload): Promise<OrderEmailResult> {
   const resend = getResend();
+  const shopEmail = adminEmail();
+  const sender = fromEmail();
   if (!resend) {
     console.error("[Resend] RESEND_API_KEY is missing.");
     return { ok: false, adminSent: false, clientSent: false, error: "RESEND_API_KEY is missing." };
   }
-  if (!ADMIN_EMAIL) {
+  if (!shopEmail) {
     console.error("[Resend] RESEND_ADMIN_EMAIL is missing.");
     return { ok: false, adminSent: false, clientSent: false, error: "RESEND_ADMIN_EMAIL is missing." };
   }
@@ -189,8 +205,8 @@ export async function sendOrderEmails(body: OrderEmailPayload): Promise<OrderEma
   const adminPromise = deliver(
     resend,
     {
-      from: FROM_EMAIL,
-      to: ADMIN_EMAIL,
+      from: sender,
+      to: shopEmail,
       replyTo: sendClient ? clientEmail : undefined,
       subject: `Nouvelle commande #${body.orderId} (${body.reference}) — ${body.fullName}`,
       html: templateNewOrderAdmin(order, items),
@@ -213,9 +229,9 @@ export async function sendOrderEmails(body: OrderEmailPayload): Promise<OrderEma
     ? deliver(
         resend,
         {
-          from: FROM_EMAIL,
+          from: sender,
           to: clientEmail,
-          replyTo: ADMIN_EMAIL,
+          replyTo: shopEmail,
           subject: `Commande ${body.reference} confirmée`,
           html: templateOrderReceivedClient(order, items),
           text: textOrderReceivedClient(order, items),
