@@ -18,3 +18,5 @@ yarn-error.log*
 next-env.d.ts
 
 data/orders.json
+
+.vercel

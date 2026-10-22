@@ -1,10 +1,18 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
+import { CopyValue } from "@/components/CopyValue";
+import { TrackSearchForm } from "@/components/TrackSearchForm";
 import { formatDate, formatPrice } from "@/lib/format";
+import {
+  TRACK_STEPS,
+  isTrackReturn,
+  trackDestination,
+  trackHeadline,
+  trackStepIndex,
+} from "@/lib/orderTracking";
 import { SITE } from "@/lib/site";
 import { findTrackedOrder } from "@/lib/store.server";
-import type { Order } from "@/lib/types";
-import { isXDeliveryReturnStatus, xdeliveryCustomerLabel } from "@/lib/xdeliveryLocations";
 
 export const metadata: Metadata = {
   title: "Track order",
@@ -13,97 +21,11 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
-const TRACK_STEPS = [
-  { key: "received", label: "Order received" },
-  { key: "confirmed", label: "Confirmed" },
-  { key: "in_transit", label: "In transit" },
-  { key: "out_for_delivery", label: "Out for delivery" },
-  { key: "delivered", label: "Delivered" },
+const HOW_IT_WORKS = [
+  "We call to confirm the order.",
+  "X-Delivery collects the parcel.",
+  "Every courier step shows here.",
 ] as const;
-
-function courierCode(order: Order) {
-  return (order.xdeliveryStatus || "").toUpperCase();
-}
-
-function isReturn(order: Order) {
-  return isXDeliveryReturnStatus(order.xdeliveryStatus);
-}
-
-function activeStep(order: Order): number {
-  const code = courierCode(order);
-  if (order.status === "delivered" || code === "DELIVERED" || code === "DELIVERED_PAID") return 4;
-  if (code === "OUT_FOR_DELIVERY") return 3;
-  if (code === "COLLECTED" || code === "ARRIVED_AT_DEPOT") return 2;
-  if (code === "CREATED" || code === "PENDING" || order.status === "confirmed") return 1;
-  if (order.status === "shipped") return 3;
-  return 0;
-}
-
-function headline(order: Order): { title: string; detail: string } {
-  if (order.status === "cancelled") {
-    return {
-      title: "This order was cancelled.",
-      detail: "If you did not ask to cancel, email us with your reference.",
-    };
-  }
-  if (isReturn(order)) {
-    return {
-      title: xdeliveryCustomerLabel(order.xdeliveryStatus) || "Return in progress",
-      detail: order.xdeliveryMotif
-        ? order.xdeliveryMotif
-        : "The courier could not complete delivery. The parcel is returning to us.",
-    };
-  }
-
-  const code = courierCode(order);
-  if (code === "DELIVERED" || code === "DELIVERED_PAID" || order.status === "delivered") {
-    return { title: "Delivered", detail: "Your parcel was handed over. Thank you for the order." };
-  }
-  if (code === "OUT_FOR_DELIVERY") {
-    return {
-      title: "Out for delivery",
-      detail: "A courier is on the way. Pay cash on delivery.",
-    };
-  }
-  if (code === "ARRIVED_AT_DEPOT") {
-    return {
-      title: "At the X-Delivery depot",
-      detail: "Your parcel is at the local depot and will go out with a courier next.",
-    };
-  }
-  if (code === "COLLECTED") {
-    return {
-      title: "Collected by X-Delivery",
-      detail: "The parcel is moving through the X-Delivery network.",
-    };
-  }
-  if (code === "CREATED" || code === "PENDING") {
-    return {
-      title: xdeliveryCustomerLabel(code),
-      detail: "X-Delivery will collect your parcel shortly.",
-    };
-  }
-  if (order.status === "shipped") {
-    return {
-      title: "Out for delivery",
-      detail: "Your order is with the courier.",
-    };
-  }
-  if (order.status === "confirmed") {
-    return {
-      title: "Confirmed",
-      detail: "We will hand the parcel to X-Delivery after packing.",
-    };
-  }
-  return {
-    title: "Order received",
-    detail: "We will call to confirm, then send the parcel with X-Delivery.",
-  };
-}
-
-function destination(order: Order) {
-  return [order.customer.city, order.customer.governorate].filter((part) => part?.trim()).join(", ");
-}
 
 export default async function TrackPage({
   searchParams,
@@ -111,117 +33,157 @@ export default async function TrackPage({
   searchParams: Promise<{ ref?: string }>;
 }) {
   const { ref } = await searchParams;
-  const order = ref ? await findTrackedOrder(ref) : undefined;
-  const searched = Boolean(ref?.trim());
-  const copy = order ? headline(order) : null;
-  const step = order && order.status !== "cancelled" && !isReturn(order) ? activeStep(order) : -1;
-  const place = order ? destination(order) : "";
+  const query = ref?.trim() ?? "";
+  const order = query ? await findTrackedOrder(query) : undefined;
+  const searched = Boolean(query);
+  const copy = order ? trackHeadline(order) : null;
+  const showSteps = Boolean(order && order.status !== "cancelled" && !isTrackReturn(order));
+  const step = order && showSteps ? trackStepIndex(order) : -1;
+  const place = order ? trackDestination(order) : "";
 
   return (
-    <section className="px-3 pb-10 sm:px-4">
+    <section className="track-page px-3 pb-14 sm:px-4">
       <h1 className="page-title">Track order</h1>
       <p className="prose-raw mt-3 max-w-xl">
-        Enter your CV- reference from the confirmation email, or the X-Delivery barcode from your
-        courier SMS.
+        Follow the parcel from confirmation to the door. Use the CV- reference from your email, or the
+        X-Delivery barcode from the courier SMS.
       </p>
 
-      <form method="get" className="mt-4 flex max-w-md items-end gap-2">
-        <label className="flex-1">
-          <span className="ui-sm text-muted">Reference</span>
-          <input
-            name="ref"
-            defaultValue={ref ?? ""}
-            placeholder="CV-XXXXXXX"
-            autoComplete="off"
-            spellCheck={false}
-            className="field mt-1 uppercase"
-          />
-        </label>
-        <button type="submit" className="btn btn--solid">
-          Track
-        </button>
-      </form>
+      <TrackSearchForm defaultValue={query} autoFocus={!searched} />
+
+      {!searched ? (
+        <ol className="track-guide mt-10 max-w-xl">
+          {HOW_IT_WORKS.map((line, index) => (
+            <li key={line} className="track-guide__item">
+              <span className="track-guide__num">{String(index + 1).padStart(2, "0")}</span>
+              <span>{line}</span>
+            </li>
+          ))}
+        </ol>
+      ) : null}
 
       {searched && !order ? (
-        <div className="prose-raw mt-6 max-w-md border border-line p-3">
-          <p className="ui">No order found for that reference.</p>
-          <p className="mt-2 text-muted">
-            Check for typos, or email{" "}
+        <div className="fade-in mt-8 max-w-xl border border-line px-4 py-5 sm:px-5">
+          <p className="product-title">No order found</p>
+          <p className="prose-raw mt-3 max-w-md text-muted">
+            Check the reference for typos. If it still does not match, write to{" "}
             <a href={`mailto:${SITE.email}`} className="u text-foreground">
               {SITE.email}
-            </a>
-            .
+            </a>{" "}
+            with what you have.
           </p>
         </div>
       ) : null}
 
       {order && copy ? (
-        <div className="mt-6 max-w-2xl">
-          <div className="border border-line p-3">
-            <div className="ui flex flex-wrap justify-between gap-2">
-              <span className="font-bold">{order.reference}</span>
-              <span className="text-muted">Placed {formatDate(order.createdAt)}</span>
+        <div className="fade-in mt-8 max-w-xl">
+          <article className="border border-line">
+            <div className="px-4 py-5 sm:px-5 sm:py-6">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p className="ui-sm text-muted">Reference</p>
+                  <p className="ui mt-1 font-bold tracking-[0.14em]">{order.reference}</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <CopyValue value={order.reference} />
+                  <p className="ui-sm text-muted">Placed {formatDate(order.createdAt)}</p>
+                </div>
+              </div>
+
+              <p
+                className={`product-title mt-6 ${order.status === "cancelled" ? "text-danger" : ""}`}
+              >
+                {copy.title}
+              </p>
+              <p className="prose-raw mt-2 max-w-md text-muted">{copy.detail}</p>
+
+              {showSteps ? (
+                <ol className="track-steps mt-7">
+                  {TRACK_STEPS.map((item, index) => {
+                    const reached = index <= step;
+                    const current = index === step;
+                    return (
+                      <li
+                        key={item.key}
+                        className={`track-step${reached ? " is-done" : ""}${current ? " is-now" : ""}`}
+                        aria-current={current ? "step" : undefined}
+                      >
+                        <span className="track-step__rail" aria-hidden>
+                          <span className="track-step__dot" />
+                          {index < TRACK_STEPS.length - 1 ? <span className="track-step__line" /> : null}
+                        </span>
+                        <span className="track-step__copy">
+                          <span className="track-step__label">{item.label}</span>
+                          {current ? <span className="track-step__now">Now</span> : null}
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ol>
+              ) : null}
             </div>
 
-            <p className="ui mt-4 font-bold">{copy.title}</p>
-            <p className="ui-sm mt-1 text-muted">{copy.detail}</p>
-
-            {order.xdeliveryBarcode ? (
-              <p className="ui-sm mt-3 text-muted">
-                X-Delivery barcode{" "}
-                <span className="font-bold text-foreground">{order.xdeliveryBarcode}</span>
-              </p>
-            ) : (
-              <p className="ui-sm mt-3 text-muted">
-                Tracking updates here once the parcel is handed to X-Delivery.
-              </p>
-            )}
-
-            {place ? <p className="ui-sm mt-1 text-muted">Delivering to {place}</p> : null}
-
-            {order.status !== "cancelled" && !isReturn(order) ? (
-              <ol className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-5">
-                {TRACK_STEPS.map((item, index) => {
-                  const reached = index <= step;
-                  return (
-                    <li key={item.key}>
-                      <div className={`h-1 w-full ${reached ? "bg-foreground" : "bg-line"}`} />
-                      <p className={`ui-sm mt-2 ${reached ? "font-bold" : "text-muted"}`}>
-                        {item.label}
-                      </p>
-                    </li>
-                  );
-                })}
-              </ol>
-            ) : null}
-          </div>
+            <div className="grid border-t border-line sm:grid-cols-2">
+              <div className="border-b border-line px-4 py-4 sm:border-r sm:border-b-0 sm:px-5">
+                <p className="section-title">X-Delivery</p>
+                {order.xdeliveryBarcode ? (
+                  <div className="mt-2 flex items-end justify-between gap-3">
+                    <p className="ui font-bold tracking-[0.12em]">{order.xdeliveryBarcode}</p>
+                    <CopyValue value={order.xdeliveryBarcode} />
+                  </div>
+                ) : (
+                  <p className="ui-sm mt-2 text-muted">Barcode appears once the parcel is handed over.</p>
+                )}
+              </div>
+              <div className="px-4 py-4 sm:px-5">
+                <p className="section-title">Delivering to</p>
+                <p className="ui mt-2">{place || "—"}</p>
+              </div>
+            </div>
+          </article>
 
           <div className="mt-3 border border-line">
             {order.lines.map((line) => (
               <div
                 key={`${line.productId}-${line.size}`}
-                className="flex justify-between gap-3 border-b border-line px-3 py-2 last:border-b-0"
+                className="flex items-center gap-3 border-b border-line px-4 py-3 last:border-b-0 sm:px-5"
               >
-                <span>
-                  <span className="ui">{line.name}</span>
-                  <span className="ui-sm mt-1 block text-muted">
+                <div className="media-frame h-16 w-13 shrink-0 border border-line">
+                  {line.image ? (
+                    <Image
+                      src={line.image}
+                      alt=""
+                      width={130}
+                      height={160}
+                      className="h-full w-full object-contain p-1"
+                    />
+                  ) : null}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="ui">{line.name}</p>
+                  <p className="ui-sm mt-1 text-muted">
                     Size {line.size} · Qty {line.quantity}
-                  </span>
-                </span>
-                <span className="ui tabular-nums">
-                  {formatPrice(line.unitPrice * line.quantity)}
-                </span>
+                  </p>
+                </div>
+                <p className="ui shrink-0 tabular-nums">{formatPrice(line.unitPrice * line.quantity)}</p>
               </div>
             ))}
-            <div className="ui flex justify-between border-t border-line px-3 py-2 font-bold">
-              <span>Total</span>
-              <span className="tabular-nums">{formatPrice(order.total)}</span>
+            <div className="flex items-center justify-between border-t border-line px-4 py-3 sm:px-5">
+              <span className="ui text-muted">
+                {order.paymentMethod === "bank-transfer" ? "Bank transfer" : "Cash on delivery"}
+              </span>
+              <span className="checkout-amount tabular-nums">{formatPrice(order.total)}</span>
             </div>
           </div>
 
-          <Link href="/collection" className="btn mt-4">
-            Keep shopping
-          </Link>
+          <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-3">
+            <Link href="/collection" className="btn btn--solid">
+              Keep shopping
+            </Link>
+            <a href={`mailto:${SITE.email}?subject=${encodeURIComponent(`Order ${order.reference}`)}`} className="ui-sm hover-underline text-muted">
+              Need help? {SITE.email}
+            </a>
+          </div>
         </div>
       ) : null}
     </section>
