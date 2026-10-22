@@ -76,7 +76,7 @@ const EMAIL_HEAD = `
     .cv-rule { border-color: #ffffff !important; }
     .cv-a { color: #ffffff !important; }
     .cv-chip { background-color: #ffffff !important; color: #111111 !important; }
-    .cv-thumb, .cv-thumb img { background-color: #ffffff !important; }
+    .cv-product { background-color: #ffffff !important; }
     .cv-logo-light { display: none !important; }
     .cv-logo-dark { display: block !important; max-height: none !important; overflow: visible !important; }
   }
@@ -176,13 +176,10 @@ function locality(order: OrderForEmail): string {
 }
 
 function productThumbHtml(src: string, initial: string, size: number): string {
-  const box = `width:${size}px; height:${size}px; background-color:#ffffff; border:1px solid #eeeeee; border-radius:4px;`;
   if (src) {
-    return `<div class="cv-thumb" style="${box} overflow:hidden;">
-      <img src="${escapeHtml(src)}" alt="" width="${size}" height="${size}" style="display:block; width:${size}px; height:${size}px; object-fit:contain; background-color:#ffffff;" />
-    </div>`;
+    return `<img class="cv-product" src="${escapeHtml(src)}" alt="" width="${size}" height="${size}" style="display:block; width:${size}px; height:${size}px; object-fit:contain; background-color:#ffffff;" />`;
   }
-  return `<div class="cv-thumb" style="${box} text-align:center; line-height:${size}px; font-size:${Math.round(size * 0.32)}px; font-weight:900; color:#111111; font-family:Arial,sans-serif;">${escapeHtml(initial)}</div>`;
+  return `<div class="cv-chip" style="width:${size}px; height:${size}px; background-color:#ffffff; text-align:center; line-height:${size}px; font-size:${Math.round(size * 0.32)}px; font-weight:900; color:#111111; font-family:Arial,sans-serif;">${escapeHtml(initial)}</div>`;
 }
 
 // ---------------------------------------------------------------------------
