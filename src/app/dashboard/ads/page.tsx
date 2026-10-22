@@ -570,7 +570,7 @@ function ConnectCard({ onPreview }: { onPreview: () => void }) {
             <li>
               Add these to your environment variables (Vercel → Settings → Environment Variables), then redeploy:
               <pre className="mt-2 overflow-x-auto rounded bg-zinc-950 px-3 py-2 text-xs text-zinc-100">
-                {"META_ACCESS_TOKEN=EAAB...\nMETA_AD_ACCOUNT_ID=1234567890"}
+                {"META_ACCESS_TOKEN=EAAB...\nMETA_AD_ACCOUNT_ID=1344593787395557"}
               </pre>
             </li>
           </ol>

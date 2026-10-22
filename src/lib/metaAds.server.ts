@@ -74,7 +74,8 @@ export class MetaAdsError extends Error {}
 
 export function metaAdsConfig() {
   const token = process.env.META_ACCESS_TOKEN?.trim();
-  const account = process.env.META_AD_ACCOUNT_ID?.trim().replace(/^act_/, "");
+  const account =
+    process.env.META_AD_ACCOUNT_ID?.trim().replace(/^act_/, "") || "1344593787395557";
   return token && account ? { token, accountId: `act_${account}` } : null;
 }
 
@@ -90,6 +91,11 @@ async function graph<T>(pathOrUrl: string, params: Record<string, string>, token
   if (!res.ok || !data || data.error) {
     const message = data?.error?.message || `Meta API error (${res.status}).`;
     if (data?.error?.code === 190) throw new MetaAdsError("The Meta access token is invalid or expired. Generate a new one.");
+    if (data?.error?.code === 200) {
+      throw new MetaAdsError(
+        "This Meta token cannot read the ClassyV ad account. Generate a system user token with ads_read and assign it to ad account 1344593787395557."
+      );
+    }
     throw new MetaAdsError(message);
   }
   return data;
