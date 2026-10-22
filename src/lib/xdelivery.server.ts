@@ -2,6 +2,8 @@ import { neonQuery } from "@/lib/neon-db";
 import { matchDelegation, matchGovernorate } from "@/lib/xdeliveryLocations";
 
 const API_BASE = (process.env.XDELIVERY_API_URL || "https://app.x-delivery.io").replace(/\/+$/, "");
+/** Keep under Vercel's hobby limit so we return JSON instead of a blank 502. */
+const FETCH_TIMEOUT_MS = 8_000;
 
 type ParcelOrder = {
   id: number;
@@ -71,6 +73,7 @@ async function signInXDelivery() {
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ email, password }),
     cache: "no-store",
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
   });
   const json = (await response.json().catch(() => null)) as { accessToken?: string; message?: string } | null;
   const token = json?.accessToken?.trim() || "";
@@ -100,6 +103,7 @@ async function pingParcelApi() {
     },
     body: JSON.stringify([]),
     cache: "no-store",
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
   });
   return response.status !== 401 && response.status !== 403;
 }
@@ -175,17 +179,46 @@ function money(value: string | number) {
   return String(Math.round(n * 1000) / 1000);
 }
 
-async function xdeliveryFetch(path: string, init: RequestInit) {
+async function xdeliveryAuthHeaders(initHeaders?: HeadersInit): Promise<Record<string, string>> {
+  const headers: Record<string, string> = {
+    "content-type": "application/json",
+  };
   const key = apiKey();
-  if (!key) throw new Error("X-Delivery API key is missing.");
-  const response = await fetch(`${API_BASE}${path}`, {
-    ...init,
-    headers: {
-      "content-type": "application/json",
-      "x-api-key": key,
-      ...(init.headers ?? {}),
-    },
-  });
+  if (key) headers["x-api-key"] = key;
+  try {
+    const token = await ensureXDeliverySession();
+    if (token) headers.Authorization = `Bearer ${token}`;
+  } catch {
+    /* Parcel API can still work with the company key alone. */
+  }
+  if (initHeaders) {
+    const extra = new Headers(initHeaders);
+    extra.forEach((value, name) => {
+      headers[name] = value;
+    });
+  }
+  if (!headers["x-api-key"] && !headers.Authorization) {
+    throw new Error("X-Delivery API key is missing.");
+  }
+  return headers;
+}
+
+async function xdeliveryFetch(path: string, init: RequestInit) {
+  const headers = await xdeliveryAuthHeaders(init.headers);
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE}${path}`, {
+      ...init,
+      headers,
+      cache: "no-store",
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    });
+  } catch (err) {
+    if (err instanceof Error && (err.name === "TimeoutError" || err.name === "AbortError")) {
+      throw new Error("X-Delivery timed out. Try again in a moment.");
+    }
+    throw new Error(err instanceof Error ? err.message : "X-Delivery is unreachable.");
+  }
   const text = await response.text();
   let json: unknown = null;
   try {
@@ -267,10 +300,17 @@ export async function addXDeliveryParcel(orderId: number): Promise<{ barcode: st
 
   const commentParts = [order.reference ? `Ref ${order.reference}` : null, order.note?.trim() || null].filter(Boolean);
 
+  const pickupId = uniqueIdentifier();
+  if (!pickupId) {
+    throw new Error("XDELIVERY_UNIQUE_IDENTIFIER is missing.");
+  }
+
+  console.info("[xdelivery] add-parcel", { orderId, governorate, delegation });
+
   const json = (await xdeliveryFetch("/api/company/add-parcel", {
     method: "POST",
     body: JSON.stringify({
-      uniqueIdentifier: uniqueIdentifier(),
+      uniqueIdentifier: pickupId,
       address,
       customerName,
       customerPhone1,

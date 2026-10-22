@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState, Fragment, useMemo } from "react";
+import { useCallback, useEffect, useState, Fragment, useMemo, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { supabaseBrowserClient } from "@/lib/supabaseClient";
 import {
@@ -22,7 +22,13 @@ import {
   Pencil,
   Search,
   RefreshCw,
+  Phone,
+  MapPin,
+  Mail,
+  Banknote,
+  StickyNote,
 } from "lucide-react";
+import { telHref } from "@/lib/phoneValidation";
 import {
   XDELIVERY_STATUS_FILTERS,
   XDELIVERY_STATUS_LABELS,
@@ -36,11 +42,18 @@ function isLostSale(order: Pick<OrderRow, "status" | "xdelivery_barcode" | "xdel
   return order.status?.toLowerCase() === "rejected";
 }
 
-/** Gross sales: what customers were charged, returns and rejected orders excluded. */
-function sumOrderRevenue(orders: Pick<OrderRow, "total_price" | "status" | "xdelivery_barcode" | "xdelivery_status">[]) {
-  return orders
-    .filter((order) => !isLostSale(order))
-    .reduce((sum, order) => sum + (Number(order.total_price) || 0), 0);
+const REVENUE_FEE = 0.03;
+
+/** Merchandise only (delivery removed), then −3% per order. Returns and rejected orders excluded. */
+function orderNetRevenue(order: { total_price?: number | null; shipping_price?: number | null }) {
+  const merchandise = Math.max(0, Number(order.total_price) - Number(order.shipping_price || 0));
+  return merchandise * (1 - REVENUE_FEE);
+}
+
+function sumOrderRevenue(
+  orders: Pick<OrderRow, "total_price" | "shipping_price" | "status" | "xdelivery_barcode" | "xdelivery_status">[],
+) {
+  return orders.filter((order) => !isLostSale(order)).reduce((sum, order) => sum + orderNetRevenue(order), 0);
 }
 
 type OrderRow = {
@@ -87,6 +100,110 @@ function xdeliveryLabel(status: string | null | undefined) {
 function paymentLabel(method: string | null) {
   if (method === "bank-transfer") return "Bank transfer";
   return "Cash on delivery";
+}
+
+function DetailRow({
+  icon: Icon,
+  label,
+  children,
+}: {
+  icon: typeof Phone;
+  label: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="flex gap-3 px-3 py-2.5">
+      <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-zinc-100 text-zinc-500">
+        <Icon className="h-3.5 w-3.5" />
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-400">{label}</p>
+        <div className="mt-0.5 text-sm font-medium leading-snug text-black">{children}</div>
+      </div>
+    </div>
+  );
+}
+
+function OrderDetailMeta({ order }: { order: OrderRow }) {
+  const street = order.address?.trim() || "";
+  const locality = [order.city, order.governorate].filter(Boolean).join(", ");
+  const region = [order.postal_code, order.country].filter(Boolean).join(", ");
+  const hasAddress = Boolean(street || locality || region);
+  const phoneHref = telHref(order.phone_number);
+  const phone2Href = telHref(order.phone_number_2);
+  const xStatus = order.xdelivery_barcode
+    ? [order.xdelivery_barcode, xdeliveryLabel(order.xdelivery_status), order.xdelivery_motif]
+        .filter(Boolean)
+        .join(" · ")
+    : null;
+
+  return (
+    <div className="divide-y divide-zinc-100 overflow-hidden rounded-xl border border-zinc-200 bg-white">
+      {order.phone_number ? (
+        <DetailRow icon={Phone} label="Phone">
+          {phoneHref ? (
+            <a
+              href={phoneHref}
+              onClick={(e) => e.stopPropagation()}
+              className="text-emerald-700 hover:underline"
+            >
+              {order.phone_number}
+            </a>
+          ) : (
+            order.phone_number
+          )}
+        </DetailRow>
+      ) : null}
+      {order.phone_number_2 ? (
+        <DetailRow icon={Phone} label="Phone 2">
+          {phone2Href ? (
+            <a
+              href={phone2Href}
+              onClick={(e) => e.stopPropagation()}
+              className="text-emerald-700 hover:underline"
+            >
+              {order.phone_number_2}
+            </a>
+          ) : (
+            order.phone_number_2
+          )}
+        </DetailRow>
+      ) : null}
+      {hasAddress ? (
+        <DetailRow icon={MapPin} label="Address">
+          <p>{street || "—"}</p>
+          {locality ? <p className="font-normal text-zinc-600">{locality}</p> : null}
+          {region ? <p className="font-normal text-zinc-500">{region}</p> : null}
+        </DetailRow>
+      ) : null}
+      {order.email ? (
+        <DetailRow icon={Mail} label="Email">
+          <a
+            href={`mailto:${order.email}`}
+            onClick={(e) => e.stopPropagation()}
+            className="break-all hover:underline"
+          >
+            {order.email}
+          </a>
+        </DetailRow>
+      ) : null}
+      <DetailRow icon={Banknote} label="Payment">
+        {paymentLabel(order.payment_method)}
+      </DetailRow>
+      <DetailRow icon={Truck} label="X-Delivery">
+        {xStatus ? (
+          <span>{xStatus}</span>
+        ) : (
+          <span className="font-medium text-zinc-500">Not sent yet</span>
+        )}
+      </DetailRow>
+      {order.note ? (
+        <DetailRow icon={StickyNote} label="Note">
+          <span className="font-normal italic text-zinc-600">“{order.note}”</span>
+        </DetailRow>
+      ) : null}
+    </div>
+  );
 }
 
 type StatusFilter = (typeof XDELIVERY_STATUS_FILTERS)[number]["value"];
@@ -252,22 +369,22 @@ export default function DashboardAnalytiquesPage() {
     setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, ...patch } : o)));
   };
 
-  const handlePhoneConfirm = async (order: OrderRow, e: React.MouseEvent) => {
+  const handlePhoneConfirm = async (order: OrderRow, e: React.MouseEvent, confirmed: boolean) => {
     e.stopPropagation();
-    if (order.confirmed_by_phone || savingPhoneId === order.id) return;
+    if (Boolean(order.confirmed_by_phone) === confirmed || savingPhoneId === order.id) return;
 
     setSavingPhoneId(order.id);
     setError(null);
     const previous = order.confirmed_by_phone;
-    patchOrder(order.id, { confirmed_by_phone: true });
+    patchOrder(order.id, { confirmed_by_phone: confirmed });
 
     try {
       const supabase = supabaseBrowserClient();
-      const { error: updateErr } = await supabase.from("shop_orders").update({ confirmed_by_phone: true }).eq("id", order.id);
+      const { error: updateErr } = await supabase.from("shop_orders").update({ confirmed_by_phone: confirmed }).eq("id", order.id);
       if (updateErr) throw updateErr;
     } catch (err) {
       patchOrder(order.id, { confirmed_by_phone: previous });
-      setError(err instanceof Error ? err.message : "Unable to confirm by phone.");
+      setError(err instanceof Error ? err.message : "Unable to update phone confirmation.");
     } finally {
       setSavingPhoneId(null);
     }
@@ -416,35 +533,71 @@ export default function DashboardAnalytiquesPage() {
     );
   };
 
+  const renderCallButton = (order: OrderRow, compact = false) => {
+    const raw = order.phone_number?.trim() ?? "";
+    const href = telHref(raw);
+    if (!raw || !href) return null;
+    return (
+      <a
+        href={href}
+        onClick={(e) => e.stopPropagation()}
+        title={`Call ${raw}`}
+        aria-label={`Call ${raw}`}
+        className={`inline-flex items-center justify-center rounded-full bg-emerald-600 text-white transition hover:bg-emerald-700 ${
+          compact ? "h-7 w-7" : "h-8 w-8"
+        }`}
+      >
+        <Phone className="h-3.5 w-3.5" />
+      </a>
+    );
+  };
+
+  const renderCallLink = (phone: string | null | undefined) => {
+    const raw = phone?.trim() ?? "";
+    const href = telHref(raw);
+    if (!raw || !href) return null;
+    return (
+      <a href={href} onClick={(e) => e.stopPropagation()} title={`Call ${raw}`} className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 hover:underline">
+        <Phone className="h-3.5 w-3.5" />
+        {raw}
+      </a>
+    );
+  };
+
   const renderPhoneConfirm = (order: OrderRow, compact = false) => {
     const confirmed = Boolean(order.confirmed_by_phone);
     const saving = savingPhoneId === order.id;
-
-    if (confirmed) {
-      return (
-        <span
-          className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-800 ${
-            compact ? "text-[10px] px-2 py-0.5" : ""
-          }`}
-        >
-          Yes
-        </span>
-      );
-    }
+    const pill = compact ? "px-2 py-0.5 text-[10px]" : "px-2.5 py-1 text-xs";
 
     return (
-      <button
-        type="button"
-        onClick={(e) => handlePhoneConfirm(order, e)}
-        disabled={saving}
-        title="Click to confirm by phone"
-        className={`inline-flex items-center gap-1 rounded-full bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-700 transition hover:bg-red-100 disabled:opacity-60 ${
-          compact ? "text-[10px] px-2 py-0.5" : ""
-        }`}
-      >
-        {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
-        No
-      </button>
+      <div className="inline-flex items-center rounded-full border border-zinc-200 bg-zinc-50 p-0.5" role="group" aria-label="Phone confirmation">
+        <button
+          type="button"
+          onClick={(e) => handlePhoneConfirm(order, e, true)}
+          disabled={saving}
+          title="Mark as confirmed by phone"
+          aria-pressed={confirmed}
+          className={`inline-flex items-center rounded-full font-semibold transition disabled:opacity-60 ${pill} ${
+            confirmed ? "bg-emerald-50 text-emerald-800 shadow-sm" : "text-zinc-400 hover:text-zinc-700"
+          }`}
+        >
+          {saving && confirmed ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : null}
+          Yes
+        </button>
+        <button
+          type="button"
+          onClick={(e) => handlePhoneConfirm(order, e, false)}
+          disabled={saving}
+          title="Mark as not confirmed by phone"
+          aria-pressed={!confirmed}
+          className={`inline-flex items-center rounded-full font-semibold transition disabled:opacity-60 ${pill} ${
+            !confirmed ? "bg-red-50 text-red-700 shadow-sm" : "text-zinc-400 hover:text-zinc-700"
+          }`}
+        >
+          {saving && !confirmed ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : null}
+          No
+        </button>
+      </div>
     );
   };
 
@@ -630,7 +783,7 @@ export default function DashboardAnalytiquesPage() {
     {
       label: "Total revenue",
       value: formatPrice(totalRevenue),
-      hint: "Gross sales, returns excluded",
+      hint: "Excl. delivery · −3%",
       icon: PiggyBank,
       bg: "bg-black",
       border: "border-black",
@@ -1049,6 +1202,7 @@ export default function DashboardAnalytiquesPage() {
                         {renderPhoneConfirm(o, true)}
                         {renderDeliveryStatus(o, true)}
                         <span className="ml-auto flex items-center gap-0.5">
+                          {renderCallButton(o, true)}
                           {renderEditButton(o, true)}
                           {renderDeleteButton(o, true)}
                         </span>
@@ -1075,24 +1229,21 @@ export default function DashboardAnalytiquesPage() {
                             );
                           })}
                         </div>
-                        <div className="mt-2.5 space-y-0.5 text-[11px] text-zinc-500">
-                          {o.phone_number ? <p>Phone: {o.phone_number}</p> : null}
-                          {o.phone_number_2 ? <p>Phone 2: {o.phone_number_2}</p> : null}
-                          {formatDestination(o) ? <p>{formatDestination(o)}</p> : null}
-                          {o.email ? <p className="truncate">{o.email}</p> : null}
-                          {o.payment_method ? <p>Payment: {paymentLabel(o.payment_method)}</p> : null}
-                          {o.xdelivery_barcode ? (
-                            <p>
-                              X-Delivery {o.xdelivery_barcode}
-                              {o.xdelivery_status ? ` · ${xdeliveryLabel(o.xdelivery_status)}` : ""}
-                              {o.xdelivery_motif ? ` · ${o.xdelivery_motif}` : ""}
-                            </p>
-                          ) : (
-                            <p>Not sent to X-Delivery yet.</p>
-                          )}
-                          {o.note ? <p className="italic">“{o.note}”</p> : null}
+                        <div className="mt-3">
+                          <OrderDetailMeta order={o} />
                         </div>
-                        <div className="mt-2 grid grid-cols-2 gap-2" onClick={(e) => e.stopPropagation()}>
+                        <div className="mt-2 grid grid-cols-3 gap-2" onClick={(e) => e.stopPropagation()}>
+                          {o.phone_number ? (
+                            <a
+                              href={telHref(o.phone_number)}
+                              className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-2.5 text-xs font-semibold text-white hover:bg-emerald-700"
+                            >
+                              <Phone className="h-3.5 w-3.5" />
+                              Call
+                            </a>
+                          ) : (
+                            <span />
+                          )}
                           <button
                             type="button"
                             onClick={(e) => openEditOrder(o, e)}
@@ -1166,8 +1317,8 @@ export default function DashboardAnalytiquesPage() {
                           {formatDestination(o) ? (
                             <span className="block text-xs text-zinc-500">{formatDestination(o)}</span>
                           ) : null}
-                          {o.phone_number && <span className="block text-xs text-zinc-500 mt-0.5">{o.phone_number}</span>}
-                          {o.phone_number_2 && <span className="block text-xs text-zinc-500">{o.phone_number_2}</span>}
+                          {o.phone_number ? <span className="mt-0.5 block">{renderCallLink(o.phone_number)}</span> : null}
+                          {o.phone_number_2 ? <span className="block">{renderCallLink(o.phone_number_2)}</span> : null}
                         </td>
                         <td className="px-4 py-3 text-zinc-600">{formatDate(o.created_at)}</td>
                         <td className="px-4 py-3 hidden md:table-cell" onClick={(e) => e.stopPropagation()}>
@@ -1181,6 +1332,7 @@ export default function DashboardAnalytiquesPage() {
                         </td>
                         <td className="px-2 py-3 text-center" onClick={(e) => e.stopPropagation()}>
                           <div className="inline-flex items-center gap-0.5">
+                            {renderCallButton(o)}
                             {renderEditButton(o)}
                             {renderDeleteButton(o)}
                           </div>
@@ -1213,25 +1365,13 @@ export default function DashboardAnalytiquesPage() {
                                     </div>
                                   );
                                 })}
-                                {formatDestination(o) ? (
-                                  <p className="mt-2 text-zinc-500">Address: {formatDestination(o)}</p>
-                                ) : null}
-                                {o.xdelivery_barcode ? (
-                                  <p className="mt-1 text-zinc-500">
-                                    X-Delivery {o.xdelivery_barcode}
-                                    {o.xdelivery_status ? ` · ${xdeliveryLabel(o.xdelivery_status)}` : ""}
-                                    {o.xdelivery_motif ? ` · ${o.xdelivery_motif}` : ""}
-                                  </p>
-                                ) : (
-                                  <p className="mt-1 text-zinc-400">Not sent to X-Delivery yet. Use Send to create the parcel.</p>
-                                )}
-                                {o.email && <p className="mt-1 text-zinc-500">Email: {o.email}</p>}
-                                <p className="mt-1 text-zinc-500">
+                                <div className="mt-3">
+                                  <OrderDetailMeta order={o} />
+                                </div>
+                                <p className="mt-2 px-0.5 text-xs text-zinc-500">
                                   Subtotal {formatPrice(Number(o.subtotal) || 0)} · Shipping{" "}
-                                  {formatPrice(Number(o.shipping_price) || 0)} · Payment{" "}
-                                  {paymentLabel(o.payment_method)}
+                                  {formatPrice(Number(o.shipping_price) || 0)}
                                 </p>
-                                {o.note ? <p className="mt-1 italic text-zinc-500">“{o.note}”</p> : null}
                                 <button
                                   type="button"
                                   onClick={(e) => openEditOrder(o, e)}

@@ -68,10 +68,7 @@ export function LoginFormPanel({ hasError }: LoginFormPanelProps) {
           </div>
         </div>
 
-        <button
-          type="submit"
-          className="btn mt-2 h-12 w-full !border-black !bg-black !text-white hover:!bg-zinc-800 hover:!text-white sm:h-auto sm:py-[11px]"
-        >
+        <button type="submit" className="btn btn--solid mt-2 h-12 w-full sm:h-auto sm:py-[11px]">
           Sign in
         </button>
       </form>

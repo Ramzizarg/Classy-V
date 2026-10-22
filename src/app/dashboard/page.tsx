@@ -20,10 +20,11 @@ async function getDashboardData() {
       phone_number: string;
       email: string | null;
       total_price: number;
+      shipping_price: number;
       status: string;
       created_at: string;
     }>(
-      "SELECT id, reference, full_name, city, country, phone_number, email, total_price, status, created_at FROM shop_orders ORDER BY created_at DESC"
+      "SELECT id, reference, full_name, city, country, phone_number, email, total_price, shipping_price, status, created_at FROM shop_orders ORDER BY created_at DESC"
     );
     const productsRes = await neonQuery<{ total: string; in_stock: string }>(
       `SELECT
@@ -56,13 +57,17 @@ async function getDashboardData() {
       const s = String(o.status ?? "").toLowerCase();
       return s === "delivered";
     }).length;
-    const totalRevenue = ordersList.reduce((s, o) => s + Number(o.total_price ?? 0), 0);
+    const netRevenue = (o: { total_price?: number; shipping_price?: number }) => {
+      const merchandise = Math.max(0, Number(o.total_price ?? 0) - Number(o.shipping_price ?? 0));
+      return merchandise * 0.97;
+    };
+    const totalRevenue = ordersList.reduce((s, o) => s + netRevenue(o), 0);
 
     const startOfToday = new Date();
     startOfToday.setHours(0, 0, 0, 0);
     const revenueToday = ordersList
       .filter((o) => new Date(o.created_at) >= startOfToday)
-      .reduce((s, o) => s + Number(o.total_price ?? 0), 0);
+      .reduce((s, o) => s + netRevenue(o), 0);
 
     return {
       totalOrders,
@@ -168,7 +173,7 @@ export default async function DashboardPage() {
           </div>
           <span className="text-xl sm:text-2xl font-bold tabular-nums leading-tight">{formatPrice(data.totalRevenue)}</span>
           <p className="mt-1 text-[11px] text-white/75">Today {formatPrice(data.revenueToday)}</p>
-          <p className="pt-1 text-[10px] text-white/50">Gross sales</p>
+          <p className="pt-1 text-[10px] text-white/50">Excl. delivery · −3%</p>
           <Link
             href="/dashboard/analytiques"
             className="mt-auto pt-3 inline-flex items-center justify-center gap-1.5 rounded-lg border border-white/25 bg-white/10 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-white transition hover:bg-white/15"

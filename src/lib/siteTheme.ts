@@ -8,7 +8,7 @@ export type SiteTheme = "night" | "day";
 export const SITE_THEME_STORAGE_KEY = "classyv-theme";
 
 const THEME_EVENT = "classyv-theme-change";
-const UNTHEMED_PATH = /^\/(dashboard|admin|api|backoffice|login)(\/|$)/i;
+const UNTHEMED_PATH = /^\/(dashboard|admin|api|backoffice)(\/|$)/i;
 const BROWSER_BAR: Record<SiteTheme, string> = { night: "#000000", day: "#ffffff" };
 
 export function readSiteTheme(): SiteTheme {

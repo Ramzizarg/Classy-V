@@ -1,273 +1,32 @@
 /**
  * Governorates & delegations for X-Delivery.
- * Names must match the courier Excel (spelling, accents, spaces).
+ * Names are the official spellings from GET /api/governorates and /api/delegations.
  */
 export const XDELIVERY_DELEGATIONS: Record<string, readonly string[]> = {
-  Ariana: ["Ariana Ville", "Ettadhamen", "Kalâat Andalous", "La Soukra", "Mnihla", "Raoued", "Sidi Thabet"],
-  Béja: ["Amdoun", "Béja Nord", "Béja Sud", "Goubellat", "Medjez El Bab", "Nefza", "Teboursouk", "Testour", "Thibar"],
-  "Ben Arous": [
-    "Ben Arous",
-    "Bou Mhel",
-    "El Mourouj",
-    "Ezzahra",
-    "Fouchana",
-    "Hammam Chott",
-    "Hammam Lif",
-    "Mohamedia",
-    "Nouvelle Médina",
-    "Mégrine",
-    "Mornag",
-    "Radès",
-  ],
-  Bizerte: [
-    "Bizerte Nord",
-    "Bizerte Sud",
-    "El Alia",
-    "Ghar El Melh",
-    "Ghezala",
-    "Jarzouna",
-    "Joumine",
-    "Mateur",
-    "Menzel Bourguiba",
-    "Menzel Jemil",
-    "Ras Jebel",
-    "Sejnane",
-    "Tinja",
-    "Utique",
-  ],
-  Gabès: [
-    "El Hamma",
-    "Gabès Médina",
-    "Gabès Ouest",
-    "Gabès Sud",
-    "Ghannouch",
-    "Mareth",
-    "Matmata",
-    "Nouvelle Matmata",
-    "Menzel El Habib",
-    "Métouia",
-  ],
-  Gafsa: [
-    "Belkhir",
-    "El Guettar",
-    "El Ksar",
-    "Gafsa Nord",
-    "Gafsa Sud",
-    "Mdhila",
-    "Métlaoui",
-    "Oum El Araies",
-    "Redeyef",
-    "Sidi Aïch",
-    "Sned",
-  ],
-  Jendouba: [
-    "Aïn Draham",
-    "Balta Bou Aouane",
-    "Bou Salem",
-    "Fernana",
-    "Ghardimaou",
-    "Jendouba",
-    "Jendouba Nord",
-    "Oued Meliz",
-    "Tabarka",
-  ],
-  Kairouan: [
-    "Bouhajla",
-    "Chebika",
-    "Echrarda",
-    "El Alâa",
-    "Oueslatia",
-    "Haffouz",
-    "Hajeb El Ayoun",
-    "Kairouan Nord",
-    "Kairouan Sud",
-    "Nasrallah",
-    "Sbikha",
-  ],
-  Kasserine: [
-    "Djedeliane",
-    "El Ayoun",
-    "Ezzouhour",
-    "Fériana",
-    "Foussana",
-    "Hassi El Ferid",
-    "Haïdra",
-    "Kasserine Nord",
-    "Kasserine Sud",
-    "Majel Bel Abbès",
-    "Sbeïtla",
-    "Sbiba",
-    "Thala",
-  ],
-  Kébili: ["Douz Nord", "Douz Sud", "Faouar", "Kébili Nord", "Kébili Sud", "Souk Lahad"],
-  Manouba: [
-    "Borj El Amri",
-    "Jedaida",
-    "Douar Hicher",
-    "El Battan",
-    "Manouba",
-    "Mornaguia",
-    "Oued Ellil",
-    "Tébourba",
-  ],
-  "Le Kef": [
-    "Dahmani",
-    "Jérissa",
-    "El Ksour",
-    "Sers",
-    "Kalâat Khasba",
-    "Kalâat Senan",
-    "Kef Est",
-    "Kef Ouest",
-    "Nebeur",
-    "Sakiet Sidi Youssef",
-    "Tajerouine",
-  ],
-  Mahdia: [
-    "Bou Merdes",
-    "Chebba",
-    "Chorbane",
-    "El Jem",
-    "Souassi",
-    "Hebira",
-    "Ksour Essef",
-    "Mahdia",
-    "Melloulèche",
-    "Ouled Chamekh",
-    "Sidi Alouane",
-  ],
-  Médenine: [
-    "Ben Gardane",
-    "Beni Khedache",
-    "Djerba Ajim",
-    "Djerba Houmt Souk",
-    "Djerba Midoun",
-    "Médenine Nord",
-    "Médenine Sud",
-    "Sidi Makhlouf",
-    "Zarzis",
-  ],
-  Monastir: [
-    "Bekalta",
-    "Bembla",
-    "Béni Hassen",
-    "Jemmal",
-    "Ksar Hellal",
-    "Ksibet El Mediouni",
-    "Moknine",
-    "Monastir",
-    "Ouerdanine",
-    "Sahline",
-    "Sayada Lamta Bouhjar",
-    "Téboulba",
-    "Zéramdine",
-  ],
-  Nabeul: [
-    "Béni Khalled",
-    "Béni Khiar",
-    "Bou Argoub",
-    "Dar Chaâbane El Fehri",
-    "El Haouaria",
-    "El Mida",
-    "Grombalia",
-    "Hammam Ghezèze",
-    "Hammamet",
-    "Kélibia",
-    "Korba",
-    "Menzel Bouzelfa",
-    "Menzel Temime",
-    "Nabeul",
-    "Soliman",
-    "Takelsa",
-  ],
-  Sfax: [
-    "Agareb",
-    "Bir Ali Ben Khalifa",
-    "El Amra",
-    "El Hencha",
-    "Ghraiba",
-    "Jebiniana",
-    "Kerkennah",
-    "Mahrès",
-    "Menzel Chaker",
-    "Sakiet Eddaïer",
-    "Sakiet Ezzit",
-    "Sfax Ouest",
-    "Sfax Sud",
-    "Sfax Ville",
-    "Skhira",
-    "Thyna",
-  ],
-  "Sidi Bouzid": [
-    "Bir El Hafey",
-    "Cebbala Ouled Asker",
-    "Jilma",
-    "Meknassy",
-    "Menzel Bouzaiane",
-    "Mezzouna",
-    "Ouled Haffouz",
-    "Regueb",
-    "Sidi Ali Ben Aoun",
-    "Sidi Bouzid Est",
-    "Sidi Bouzid Ouest",
-    "Souk Jedid",
-  ],
-  Siliana: [
-    "Bargou",
-    "Bou Arada",
-    "Bourouis",
-    "El Aroussa",
-    "El Krib",
-    "Rouhia",
-    "Gaâfour",
-    "Kesra",
-    "Makthar",
-    "Siliana Nord",
-    "Siliana Sud",
-  ],
-  Sousse: [
-    "Akouda",
-    "Bouficha",
-    "Enfidha",
-    "Hammam Sousse",
-    "Hergla",
-    "Kalâa Kebira",
-    "Kalâa Seghira",
-    "Kondar",
-    "Msaken",
-    "Sidi Bou Ali",
-    "Sidi El Hani",
-    "Sousse Jawhara",
-    "Sousse Médina",
-    "Sousse Riadh",
-    "Sousse Sidi Abdelhamid",
-  ],
-  Tataouine: ["Bir Lahmar", "Dehiba", "Ghomrassen", "Remada", "Smâr", "Tataouine Nord", "Tataouine Sud"],
-  Tozeur: ["Degache", "Hazoua", "Nefta", "Tameghza", "Tozeur"],
-  Tunis: [
-    "Bab Bhar",
-    "Bab Souika",
-    "Carthage",
-    "Cité El Khadra",
-    "Jebel Jelloud",
-    "El Hraïria",
-    "Kabaria",
-    "El Menzah",
-    "El Omrane",
-    "El Omrane Supérieur",
-    "El Ouardia",
-    "Ettahrir",
-    "Ezzouhour",
-    "La Goulette",
-    "La Marsa",
-    "Le Bardo",
-    "Le Kram",
-    "Médina",
-    "Séjoumi",
-    "Sidi El Béchir",
-    "Sidi Hassine",
-  ],
-  Zaghouan: ["Bir Mchergua", "El Fahs", "Nadhour", "Saouaf", "Zaghouan", "Zriba"],
+  "Ariana": ["Ariana Ville", "Ennasr", "Ettadhamen", "Kalaat Landlous", "La Soukra", "Mnihla", "Raoued", "Sidi Thabet"],
+  "Beja": ["Amdoun", "Beja Nord", "Beja Sud", "Goubellat", "Mejez El Bab", "Nefza", "Teboursouk", "Testour", "Thibar"],
+  "Ben Arous": ["Ben Arous", "Bou Mhel El Bassatine", "El Mourouj", "Ezzahra", "Fouchana", "Hammam Chatt", "Hammam Lif", "Megrine", "Mohamadia", "Mornag", "Nouvelle Medina", "Rades"],
+  "Bizerte": ["Bizerte Nord", "Bizerte Sud", "El Alia", "Ghar El Melh", "Ghezala", "Jarzouna", "Joumine", "Mateur", "Menzel Bourguiba", "Menzel Jemil", "Ras Jebel", "Sejnane", "Tinja", "Utique"],
+  "Gabes": ["El Hamma", "El Metouia", "Gabes Medina", "Gabes Ouest", "Gabes Sud", "Ghannouche", "Mareth", "Matmata", "Menzel Habib", "Nouvelle Matmat"],
+  "Gafsa": ["Belkhir", "El Guettar", "El Ksar", "El Mdhilla", "Gafsa Nord", "Gafsa Sud", "Metlaoui", "Moulares", "Redeyef", "Sidi Aich", "Sned"],
+  "Jendouba": ["Ain Draham", "Balta Bou Aouene", "Bou Salem", "Fernana", "Ghardimaou", "Jendouba", "Jendouba Nord", "Oued Mliz", "Tabarka"],
+  "Kairouan": ["Bou Hajla", "Chebika", "Cherarda", "El Ala", "Haffouz", "Hajeb El Ayoun", "Kairouan Nord", "Kairouan Sud", "Nasrallah", "Oueslatia", "Sbikha"],
+  "Kasserine": ["El Ayoun", "Feriana", "Foussana", "Haidra", "Hassi El Frid", "Jediliane", "Kasserine Nord", "Kasserine Sud", "Mejel Bel Abbes", "Sbeitla", "Sbiba", "Thala"],
+  "Kebili": ["Douz", "El Faouar", "Kebili Nord", "Kebili Sud", "Souk El Ahad"],
+  "Kef": ["Dahmani", "El Ksour", "Jerissa", "Kalaa El Khasba", "Kalaat Sinane", "Le Kef Est", "Le Kef Ouest", "Le Sers", "Nebeur", "Sakiet Sidi Youssef", "Tajerouine", "Touiref"],
+  "Mahdia": ["Bou Merdes", "Chorbane", "El Jem", "Hbira", "Ksour Essaf", "La Chebba", "Mahdia", "Melloulech", "Ouled Chamakh", "Sidi Alouene", "Souassi"],
+  "Mannouba": ["Borj El Amri", "Douar Hicher", "El Battan", "Jedaida", "Mannouba", "Mornaguia", "Oued Ellil", "Tebourba"],
+  "Medenine": ["Ajim", "Ben Guerdane", "Beni Khedache", "Houmet Essouk", "Medenine Nord", "Medenine Sud", "Midoun", "Sidi Makhlouf", "Zarzis"],
+  "Monastir": ["Bekalta", "Bembla", "Beni Hassen", "Jemmal", "Ksar Helal", "Ksibet El Medioun", "Moknine", "Monastir", "Ouerdanine", "Sahline", "Sayada Lamta Bou Hjar", "Teboulba", "Zeramdine"],
+  "Nabeul": ["Beni Khalled", "Beni Khiar", "Bou Argoub", "Dar Chaabane Elfehri", "El Haouaria", "El Mida", "Grombalia", "Hammam El Ghez", "Hammamet", "Kelibia", "Korba", "Menzel Bouzelfa", "Menzel Temime", "Nabeul", "Soliman", "Takelsa"],
+  "Sfax": ["Agareb", "Bir Ali Ben Khelifa", "El Amra", "El Hencha", "Esskhira", "Ghraiba", "Jebeniana", "Kerkenah", "Mahras", "Menzel Chaker", "Sakiet Eddaier", "Sakiet Ezzit", "Sfax Est", "Sfax Sud", "Sfax Ville"],
+  "Sidi Bouzid": ["Ben Oun", "Bir El Haffey", "Cebbala", "Jilma", "Maknassy", "Menzel Bouzaiene", "Mezzouna", "Ouled Haffouz", "Regueb", "Sidi Bouzid Est", "Sidi Bouzid Ouest", "Souk Jedid"],
+  "Siliana": ["Bargou", "Bou Arada", "El Aroussa", "Gaafour", "Kesra", "Le Krib", "Makthar", "Rohia", "Sidi Bou Rouis", "Siliana Nord", "Siliana Sud"],
+  "Sousse": ["Akouda", "Bou Ficha", "Enfidha", "Hammam Sousse", "Hergla", "Kalaa El Kebira", "Kalaa Essghira", "Kondar", "Msaken", "Sidi Bou Ali", "Sidi El Heni", "Sousse Jaouhara", "Sousse Riadh", "Sousse Ville"],
+  "Tataouine": ["Bir Lahmar", "Dhehiba", "Ghomrassen", "Remada", "Smar", "Tataouine Nord", "Tataouine Sud"],
+  "Tozeur": ["Degueche", "Hezoua", "Nefta", "Tameghza", "Tozeur"],
+  "Tunis": ["Aouina", "Bab Bhar", "Bab Souika", "Carthage", "Cite El Khadra", "El Hrairia", "El Kabbaria", "El Kram", "El Menzah", "El Omrane", "El Omrane Superieur", "El Ouerdia", "Essijoumi", "Ettahrir", "Ezzouhour", "Jebel Jelloud", "La Goulette", "La Marsa", "La Medina", "Lac", "Le Bardo", "Sidi El Bechir", "Sidi Hassine", "Tunis Centre", "Tunis Ville"],
+  "Zaghouan": ["Bir Mcherga", "El Fahs", "Ennadhour", "Hammam Zriba", "Saouef", "Zaghouan"],
 };
 
 export const XDELIVERY_GOVERNORATES = Object.keys(XDELIVERY_DELEGATIONS) as (keyof typeof XDELIVERY_DELEGATIONS)[];
@@ -351,18 +110,65 @@ function fold(value: string) {
     .toLowerCase();
 }
 
+const GOVERNORATE_ALIASES: Record<string, string> = {
+  "le kef": "Kef",
+  manouba: "Mannouba",
+};
+
+function levenshtein(a: string, b: string) {
+  if (a === b) return 0;
+  const rows = a.length + 1;
+  const cols = b.length + 1;
+  const dp = new Array<number>(cols).fill(0).map((_, i) => i);
+  for (let i = 1; i < rows; i += 1) {
+    let prev = dp[0];
+    dp[0] = i;
+    for (let j = 1; j < cols; j += 1) {
+      const cur = dp[j];
+      dp[j] = a[i - 1] === b[j - 1] ? prev : 1 + Math.min(prev, dp[j], dp[j - 1]);
+      prev = cur;
+    }
+  }
+  return dp[b.length];
+}
+
 export function matchGovernorate(raw: string | null | undefined): string | null {
   const needle = fold(raw ?? "");
   if (!needle) return null;
+  if (GOVERNORATE_ALIASES[needle]) return GOVERNORATE_ALIASES[needle];
   return XDELIVERY_GOVERNORATES.find((name) => fold(name) === needle) ?? null;
 }
 
 export function matchDelegation(governorate: string, raw: string | null | undefined): string | null {
-  const list = XDELIVERY_DELEGATIONS[governorate];
+  const key = matchGovernorate(governorate) ?? governorate;
+  const list = XDELIVERY_DELEGATIONS[key];
   if (!list) return null;
   const needle = fold(raw ?? "");
   if (!needle) return null;
-  return list.find((name) => fold(name) === needle) ?? list.find((name) => fold(name).includes(needle)) ?? null;
+  const exact = list.find((name) => fold(name) === needle);
+  if (exact) return exact;
+  if (needle.endsWith(" medina")) {
+    const ville = list.find((name) => fold(name) === needle.replace(/ medina$/, " ville"));
+    if (ville) return ville;
+  }
+  const contained = list
+    .filter((name) => {
+      const n = fold(name);
+      return n.includes(needle) || needle.includes(n);
+    })
+    .sort((a, b) => fold(a).length - fold(b).length)[0];
+  if (contained) return contained;
+  let best: string | null = null;
+  let bestDist = Infinity;
+  for (const name of list) {
+    const dist = levenshtein(fold(name), needle);
+    if (dist < bestDist) {
+      bestDist = dist;
+      best = name;
+    }
+  }
+  const allowed = Math.max(2, Math.floor(needle.length * 0.3));
+  return best && bestDist <= allowed ? best : null;
 }
 
 export function delegationsFor(governorate: string): readonly string[] {

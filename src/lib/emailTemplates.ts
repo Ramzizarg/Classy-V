@@ -75,7 +75,8 @@ const EMAIL_HEAD = `
     .cv-line { border-color: #262626 !important; }
     .cv-rule { border-color: #ffffff !important; }
     .cv-a { color: #ffffff !important; }
-    .cv-chip { background-color: #ffffff !important; color: #000000 !important; }
+    .cv-chip { background-color: #ffffff !important; color: #111111 !important; }
+    .cv-thumb, .cv-thumb img { background-color: #ffffff !important; }
     .cv-logo-light { display: none !important; }
     .cv-logo-dark { display: block !important; max-height: none !important; overflow: visible !important; }
   }
@@ -174,6 +175,16 @@ function locality(order: OrderForEmail): string {
   return [order.city, order.governorate].filter((part) => part && part.trim()).join(", ");
 }
 
+function productThumbHtml(src: string, initial: string, size: number): string {
+  const box = `width:${size}px; height:${size}px; background-color:#ffffff; border:1px solid #eeeeee; border-radius:4px;`;
+  if (src) {
+    return `<div class="cv-thumb" style="${box} overflow:hidden;">
+      <img src="${escapeHtml(src)}" alt="" width="${size}" height="${size}" style="display:block; width:${size}px; height:${size}px; object-fit:contain; background-color:#ffffff;" />
+    </div>`;
+  }
+  return `<div class="cv-thumb" style="${box} text-align:center; line-height:${size}px; font-size:${Math.round(size * 0.32)}px; font-weight:900; color:#111111; font-family:Arial,sans-serif;">${escapeHtml(initial)}</div>`;
+}
+
 // ---------------------------------------------------------------------------
 // Client: order received
 // ---------------------------------------------------------------------------
@@ -186,9 +197,7 @@ export function templateOrderReceivedClient(
     .map((i) => {
       const imgSrc = resolveImageUrl(i.image_url);
       const initial = i.product_name.charAt(0).toUpperCase();
-      const imgCell = imgSrc
-        ? `<img src="${escapeHtml(imgSrc)}" alt="" width="80" height="80" style="display:block; width:80px; height:80px; object-fit:cover; background:#f0f0f0; border-radius:4px;" />`
-        : `<div class="cv-chip" style="width:80px; height:80px; background:#000; border-radius:4px; text-align:center; line-height:80px; font-size:28px; font-weight:900; color:#fff; font-family:Arial,sans-serif;">${initial}</div>`;
+      const imgCell = productThumbHtml(imgSrc, initial, 80);
       return `
     <tr>
       <td class="cv-line" style="padding: 14px 14px 14px 0; border-bottom: 1px solid #eee; vertical-align: top; width: 80px;">${imgCell}</td>
@@ -313,9 +322,7 @@ export function templateNewOrderAdmin(
       const imgSrc = resolveImageUrl(i.image_url);
       const meta = [i.size, i.color].filter(Boolean).join(" / ");
       const adminInitial = i.product_name.charAt(0).toUpperCase();
-      const imgHtml = imgSrc
-        ? `<img src="${escapeHtml(imgSrc)}" alt="" width="72" height="72" style="display:block; width:72px; height:72px; object-fit:cover; background:#f0f0f0; border-radius:6px;" />`
-        : `<div class="cv-chip" style="width:72px; height:72px; background:#000; border-radius:6px; text-align:center; line-height:72px; font-size:24px; font-weight:900; color:#fff; font-family:Arial,sans-serif;">${adminInitial}</div>`;
+      const imgHtml = productThumbHtml(imgSrc, adminInitial, 72);
       return `
         <tr>
           <td class="cv-line" style="padding: 12px 0; border-bottom: 1px solid #eee; vertical-align: top;">

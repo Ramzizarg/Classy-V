@@ -9,7 +9,7 @@ import { isValidPhone, normalizePhoneInput, PHONE_ERROR } from "@/lib/phoneValid
 import { getSizeOptionsForProduct } from "@/lib/productSizesDisplay";
 import { stockForSize, parseSizeStocks } from "@/lib/productSizeStock";
 import { SHIPPING_COUNTRIES } from "@/lib/site";
-import { XDELIVERY_GOVERNORATES, delegationsFor, matchDelegation } from "@/lib/xdeliveryLocations";
+import { XDELIVERY_GOVERNORATES, delegationsFor, matchDelegation, matchGovernorate } from "@/lib/xdeliveryLocations";
 import type { Product } from "@/lib/shop-db-types";
 
 type DraftLine = {
@@ -151,8 +151,8 @@ export default function DashboardCreateOrderModal({ open, onClose, onCreated, ed
       setPhone(normalizePhoneInput(editOrder.phone_number || ""));
       setPhone2(normalizePhoneInput(editOrder.phone_number_2 || ""));
       setAddress(editOrder.address || "");
-      setCity(editOrder.city || "");
-      setGovernorate(editOrder.governorate || "");
+      setGovernorate(matchGovernorate(editOrder.governorate) || editOrder.governorate || "");
+      setCity(matchDelegation(editOrder.governorate || "", editOrder.city) || editOrder.city || "");
       setPostalCode(editOrder.postal_code || "");
       setCountry(editOrder.country || "Tunisia");
       setNote(editOrder.note || "");
