@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { BrandMark } from "@/components/BrandMark";
 import { GovernorateSelect } from "@/components/GovernorateSelect";
 import { OrderLineThumb } from "@/components/OrderLineThumb";
@@ -10,6 +10,7 @@ import { OrderPlacedModal } from "@/components/OrderPlacedModal";
 import { useStore } from "@/components/StoreProvider";
 import { shippingCost } from "@/lib/cart";
 import { formatPrice } from "@/lib/format";
+import { metaPurchaseEventId, trackMeta } from "@/lib/metaPixel";
 import { XDELIVERY_GOVERNORATES, delegationsFor, matchDelegation, matchGovernorate } from "@/lib/xdeliveryLocations";
 
 const EMPTY = {
@@ -49,6 +50,23 @@ export function CheckoutForm() {
   const shipping = shippingCost(subtotal, shippingRate);
   const discount = coupon?.discount ?? 0;
   const total = Math.max(0, subtotal + shipping - discount);
+  const checkoutTracked = useRef(false);
+
+  useEffect(() => {
+    if (checkoutTracked.current || !hydrated || lines.length === 0) return;
+    checkoutTracked.current = true;
+    trackMeta("InitiateCheckout", {
+      content_ids: lines.map((line) => String(line.productId)),
+      content_type: "product",
+      contents: lines.map((line) => ({
+        id: String(line.productId),
+        quantity: line.quantity,
+        item_price: line.unitPrice,
+      })),
+      value: total,
+      num_items: lines.reduce((sum, line) => sum + line.quantity, 0),
+    });
+  }, [hydrated, lines, total]);
 
   const update = (key: keyof typeof EMPTY, value: string) =>
     setForm((current) => ({ ...current, [key]: value }));
@@ -138,13 +156,29 @@ export function CheckoutForm() {
         }),
       });
 
-      const payload = (await response.json()) as { reference?: string; error?: string };
+      const payload = (await response.json()) as { reference?: string; eventId?: string; error?: string };
       if (!response.ok || !payload.reference) {
         setError(payload.error ?? "We could not place the order. Try again.");
         setSubmitting(false);
         return;
       }
 
+      trackMeta(
+        "Purchase",
+        {
+          content_ids: lines.map((line) => String(line.productId)),
+          content_type: "product",
+          contents: lines.map((line) => ({
+            id: String(line.productId),
+            quantity: line.quantity,
+            item_price: line.unitPrice,
+          })),
+          value: total,
+          num_items: lines.reduce((sum, line) => sum + line.quantity, 0),
+          order_id: payload.reference,
+        },
+        payload.eventId || metaPurchaseEventId(payload.reference)
+      );
       setPlaced({
         reference: payload.reference,
         firstName: form.fullName.trim().split(/\s+/)[0] ?? "",

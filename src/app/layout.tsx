@@ -9,6 +9,7 @@ import { SiteLoadSplash } from "@/components/SiteLoadSplash";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import { ProductPageThemeSync } from "@/components/ProductPageThemeSync";
 import { SiteThemeSync } from "@/components/SiteThemeSync";
+import { MetaPixel } from "@/components/MetaPixel";
 import { getShippingRate } from "@/lib/shipping.server";
 import { SITE } from "@/lib/site";
 import { SITE_THEME_BOOT_SCRIPT } from "@/lib/siteTheme";
@@ -115,6 +116,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
           <ScrollToTop />
           <ProductPageThemeSync />
           <SiteThemeSync />
+          <MetaPixel />
           <StoreShell>{children}</StoreShell>
           <DeferredChrome />
           <SiteLoadSplash />

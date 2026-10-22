@@ -8,6 +8,7 @@ import { SizeGuideModal } from "@/components/SizeGuideModal";
 import { useStore } from "@/components/StoreProvider";
 import { useFitProfile } from "@/components/useFitProfile";
 import { formatPrice } from "@/lib/format";
+import { trackMeta } from "@/lib/metaPixel";
 import { effectivePrice, isComingSoon, isSoldOut, productHoverImage } from "@/lib/products";
 import { chartSupportsFinder, recommendSize, type SizeChart } from "@/lib/sizeCharts";
 import type { Product } from "@/lib/types";
@@ -44,6 +45,18 @@ export function ProductPurchasePanel({
     setQuantity(1);
     setNeedSize(false);
   };
+
+  useEffect(() => {
+    const viewedPrice = effectivePrice(product);
+    trackMeta("ViewContent", {
+      content_ids: [String(product.id)],
+      content_name: product.name,
+      content_type: "product",
+      content_category: product.categorySlug,
+      contents: [{ id: String(product.id), quantity: 1, item_price: viewedPrice }],
+      value: viewedPrice,
+    });
+  }, [product.id, product.name, product.categorySlug, product.price, product.salePrice]);
 
   const comingSoon = isComingSoon(product);
   const soldOut = !comingSoon && isSoldOut(product);

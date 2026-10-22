@@ -5,6 +5,8 @@ import { applyCoupon } from "@/lib/coupons.server";
 import { priceCart } from "@/lib/pricing.server";
 import { buildOrderReference, saveOrder } from "@/lib/store.server";
 import { getShippingRate } from "@/lib/shipping.server";
+import { sendMetaPurchase } from "@/lib/metaCapi.server";
+import { metaPurchaseEventId } from "@/lib/metaPixel";
 import { matchDelegation, matchGovernorate } from "@/lib/xdeliveryLocations";
 import type { OrderCustomer } from "@/lib/types";
 
@@ -103,6 +105,24 @@ export async function POST(request: Request) {
   });
 
   try {
+    await sendMetaPurchase({
+      request,
+      reference: order.reference,
+      total: order.total,
+      lines: pricedLines,
+      customer: {
+        email: order.customer.email,
+        phone: order.customer.phone,
+        fullName: order.customer.fullName,
+        city: order.customer.city,
+        governorate: order.customer.governorate,
+      },
+    });
+  } catch (err) {
+    console.error("[orders] meta capi threw", err);
+  }
+
+  try {
     const emailResult = await sendOrderEmails({
       orderId: order.id,
       reference: order.reference,
@@ -138,5 +158,8 @@ export async function POST(request: Request) {
     console.error("[orders] email threw", err);
   }
 
-  return NextResponse.json({ reference: order.reference, total: order.total }, { status: 201 });
+  return NextResponse.json(
+    { reference: order.reference, total: order.total, eventId: metaPurchaseEventId(order.reference) },
+    { status: 201 }
+  );
 }
