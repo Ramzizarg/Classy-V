@@ -13,7 +13,8 @@ function resolveImageUrl(url: string | null | undefined): string {
   if (!url) return "";
   const trimmed = url.trim();
   if (!trimmed) return "";
-  if (/^(https?:\/\/|cid:)/.test(trimmed)) return trimmed;
+  if (/^(https?:\/\/|cid:)/i.test(trimmed)) return trimmed;
+  if (trimmed.startsWith("/")) return `${getSiteUrl()}${trimmed}`;
   return "";
 }
 
@@ -85,11 +86,11 @@ const EMAIL_HEAD = `
 </style>
 `;
 
-/** Content-IDs of the logos attached inline by sendOrderEmails. */
+/** Content-IDs of public/images/loogo.png, attached inline by sendOrderEmails. */
 export const LOGO_CID = "brand-logo";
 export const LOGO_DARK_CID = "brand-logo-dark";
 export const LOGO_HEIGHT = 80;
-/** Matches the 1593×987 aspect ratio of public/images/looogo.png. */
+/** Matches the aspect ratio of public/images/loogo.png. */
 export const LOGO_WIDTH = 129;
 
 function getHeaderHtml(): string {
@@ -258,6 +259,7 @@ ${getHeaderHtml()}
     </td></tr>
     <tr><td style="padding: 16px 0 0;">
       <p class="cv-m" style="margin:0; font-size: 13px; color: #888; line-height: 1.5;">Paiement à la livraison (espèces).</p>
+      <p class="cv-m" style="margin:12px 0 0; font-size: 13px; color: #888; line-height: 1.5;">Suivi X-Delivery&nbsp;: <a href="${escapeHtml(`${getSiteUrl()}/track?ref=${encodeURIComponent(order.reference)}`)}" style="color:#000; text-decoration:underline;">${escapeHtml(`${getSiteUrl()}/track?ref=${order.reference}`)}</a></p>
     </td></tr>
   </table>
 ${getFooterHtml()}
@@ -289,6 +291,8 @@ export function textOrderReceivedClient(
     ),
     "",
     `Total: ${formatPrice(order.total_price)}`,
+    "",
+    `Suivi: ${base}/track?ref=${encodeURIComponent(order.reference)}`,
     "",
     `— ${SITE.name}`,
     `${base}/collection | ${base}/shipping-returns`,

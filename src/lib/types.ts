@@ -75,7 +75,6 @@ export type CartLine = {
 
 export type OrderCustomer = {
   fullName: string;
-  /** Optional at checkout — an empty string when the customer skipped it. */
   email: string;
   phone: string;
   /** Optional second number, sent to X-Delivery as customerPhone2. */
@@ -103,4 +102,10 @@ export type Order = {
   total: number;
   paymentMethod: "cash-on-delivery" | "bank-transfer";
   status: "pending" | "confirmed" | "shipped" | "delivered" | "cancelled";
+  /** X-Delivery parcel barcode, set once the order is confirmed in the back office. */
+  xdeliveryBarcode?: string | null;
+  /** Live courier status from X-Delivery (CREATED, OUT_FOR_DELIVERY, DELIVERED, …). */
+  xdeliveryStatus?: string | null;
+  /** Courier note, usually set on failed delivery / return. */
+  xdeliveryMotif?: string | null;
 };

@@ -37,6 +37,13 @@ export function useXDeliveryConnection() {
 
   useEffect(() => {
     void refresh();
+    const id = window.setInterval(() => void refresh(), 45_000);
+    const onFocus = () => void refresh();
+    window.addEventListener("focus", onFocus);
+    return () => {
+      window.clearInterval(id);
+      window.removeEventListener("focus", onFocus);
+    };
   }, [refresh]);
 
   return { link, detail, refresh };

@@ -287,6 +287,22 @@ export const XDELIVERY_STATUS_LABELS: Record<string, string> = {
   RETURNED_TO_SENDER: "Retour reçu par l'expéditeur",
 };
 
+/** English labels for the storefront track page. */
+export const XDELIVERY_CUSTOMER_LABELS: Record<string, string> = {
+  CREATED: "Waiting for pickup",
+  PENDING: "Awaiting pickup",
+  COLLECTED: "Collected",
+  ARRIVED_AT_DEPOT: "At the depot",
+  RETURNED_AT_DEPOT: "Returned to depot",
+  OUT_FOR_DELIVERY: "Out for delivery",
+  DELIVERED: "Delivered",
+  DELIVERED_PAID: "Delivered",
+  RETURNED_TO_DEPOT_CLIENT: "Returning to the agency",
+  RETURNED_TO_DEPOT_SENDER: "Returning to us",
+  PENDING_RETURNS: "Return in progress",
+  RETURNED_TO_SENDER: "Returned to us",
+};
+
 export const XDELIVERY_STATUS_FILTERS = [
   { value: "all", label: "All" },
   { value: "not_sent", label: "Non envoyée" },
@@ -306,6 +322,16 @@ const RETURN_STATUSES = new Set([
   "PENDING_RETURNS",
   "RETURNED_TO_SENDER",
 ]);
+
+export function isXDeliveryReturnStatus(status: string | null | undefined) {
+  return RETURN_STATUSES.has((status || "").toUpperCase());
+}
+
+export function xdeliveryCustomerLabel(status: string | null | undefined) {
+  if (!status) return "";
+  const code = status.toUpperCase();
+  return XDELIVERY_CUSTOMER_LABELS[code] ?? XDELIVERY_STATUS_LABELS[code] ?? status;
+}
 
 export function xdeliveryFilterKey(barcode: string | null | undefined, status: string | null | undefined) {
   if (!barcode) return "not_sent";

@@ -17,8 +17,7 @@ type Payload = {
   couponCode?: string;
 };
 
-/** Email is optional: most Tunisian orders are placed with a phone number only. */
-const REQUIRED_FIELDS: (keyof OrderCustomer)[] = ["fullName", "phone", "address", "governorate", "city"];
+const REQUIRED_FIELDS: (keyof OrderCustomer)[] = ["fullName", "email", "phone", "address", "governorate", "city"];
 
 export async function POST(request: Request) {
   let payload: Payload;
@@ -37,8 +36,8 @@ export async function POST(request: Request) {
     );
   }
 
-  const email = customer.email?.toString().trim() ?? "";
-  if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+  const email = customer.email?.toString().trim().toLowerCase() ?? "";
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
     return NextResponse.json({ error: "Enter a valid email address." }, { status: 400 });
   }
 

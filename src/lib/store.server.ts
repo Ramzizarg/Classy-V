@@ -2,6 +2,11 @@ import { getProductById } from "@/lib/products";
 import { neonQuery, resolveDatabaseUrl } from "@/lib/neon-db";
 import { getCatalog } from "@/lib/storefrontCatalog";
 import type { CartLine, Order, Product } from "@/lib/types";
+import {
+  ensureXDeliveryColumns,
+  refreshXDeliveryStatus,
+  xdeliveryConfigured,
+} from "@/lib/xdelivery.server";
 
 /**
  * Storefront orders live in the same tables as the back office (`shop_orders` +
@@ -30,6 +35,9 @@ type ShopOrderRow = {
   total_price: string | number;
   payment_method: string | null;
   status: string;
+  xdelivery_barcode: string | null;
+  xdelivery_status: string | null;
+  xdelivery_motif: string | null;
 };
 
 type OrderItemRow = {
@@ -44,7 +52,8 @@ type OrderItemRow = {
 
 const ORDER_COLUMNS = `id, reference, created_at, full_name, email, phone_number, address,
   governorate, city, postal_code, country, note, subtotal, shipping_price, discount_amount,
-  coupon_code, total_price, payment_method, status`;
+  coupon_code, total_price, payment_method, status, xdelivery_barcode, xdelivery_status,
+  xdelivery_motif`;
 
 function assertDb() {
   if (!resolveDatabaseUrl()) {
@@ -107,6 +116,9 @@ function mapOrder(row: ShopOrderRow, lines: CartLine[]): Order {
     total: Number(row.total_price),
     paymentMethod: row.payment_method === "bank-transfer" ? "bank-transfer" : "cash-on-delivery",
     status: mapStatus(row.status),
+    xdeliveryBarcode: row.xdelivery_barcode?.trim() || null,
+    xdeliveryStatus: row.xdelivery_status?.trim() || null,
+    xdeliveryMotif: row.xdelivery_motif?.trim() || null,
   };
 }
 
@@ -133,6 +145,7 @@ async function linesByOrder(orderIds: number[], catalog: Product[]): Promise<Map
 
 export async function listOrders(): Promise<Order[]> {
   assertDb();
+  await ensureXDeliveryColumns();
   const catalog = await getCatalog();
   const { rows } = await neonQuery<ShopOrderRow>(
     `SELECT ${ORDER_COLUMNS} FROM shop_orders ORDER BY created_at DESC`,
@@ -146,19 +159,38 @@ export async function listOrders(): Promise<Order[]> {
 
 export async function findOrder(reference: string): Promise<Order | undefined> {
   assertDb();
+  await ensureXDeliveryColumns();
   const catalog = await getCatalog();
-  const needle = reference.trim().toUpperCase();
+  const raw = reference.trim();
+  if (!raw) return undefined;
+  const needle = raw.toUpperCase();
+  const idNeedle = needle.replace(/^#/, "");
   const { rows } = await neonQuery<ShopOrderRow>(
     `SELECT ${ORDER_COLUMNS}
      FROM shop_orders
-     WHERE upper(reference) = $1 OR id::text = $2
+     WHERE upper(reference) = $1
+        OR id::text = $2
+        OR (xdelivery_barcode IS NOT NULL AND xdelivery_barcode <> '' AND upper(xdelivery_barcode) = $1)
      LIMIT 1`,
-    [needle, needle.replace(/^#/, "")],
+    [needle, idNeedle],
   );
   const row = rows[0];
   if (!row) return undefined;
   const lines = await linesByOrder([row.id], catalog);
   return mapOrder(row, lines.get(row.id) ?? []);
+}
+
+/** Storefront tracking: load the order, then refresh its X-Delivery parcel if one exists. */
+export async function findTrackedOrder(reference: string): Promise<Order | undefined> {
+  const order = await findOrder(reference);
+  if (!order?.xdeliveryBarcode || !xdeliveryConfigured()) return order;
+  try {
+    const updated = await refreshXDeliveryStatus(order.xdeliveryBarcode);
+    if (updated) return (await findOrder(reference)) ?? order;
+  } catch (err) {
+    console.error("[track] X-Delivery refresh failed:", err);
+  }
+  return order;
 }
 
 export function buildOrderReference(): string {

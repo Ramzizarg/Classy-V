@@ -39,6 +39,10 @@ const GROUPS = [
         q: "How much is delivery?",
         a: "A flat delivery fee is shown in your cart and at checkout before you place the order.",
       },
+      {
+        q: "How do I track my order?",
+        a: "Open Track order and enter your CV- reference. After we confirm, the parcel goes out with X-Delivery and that page shows live courier status (pickup, depot, out for delivery, delivered).",
+      },
     ],
   },
   {

@@ -125,7 +125,7 @@ export function CheckoutForm() {
         body: JSON.stringify({
           customer: {
             fullName: form.fullName.trim().replace(/\s+/g, " "),
-            email: form.email,
+            email: form.email.trim(),
             phone: form.phone,
             phone2: form.phone2.trim() || undefined,
             address: form.address,
@@ -206,18 +206,19 @@ export function CheckoutForm() {
             <h2 className="ui font-bold">Contact</h2>
             <div className="mt-3">
               <label htmlFor="co-email" className="sr-only">
-                Email (optional)
+                Email
               </label>
               <input
                 id="co-email"
                 type="email"
+                required
                 autoComplete="email"
-                placeholder="Email (for your confirmation)"
+                placeholder="Email"
                 value={form.email}
                 onChange={(event) => update("email", event.target.value)}
                 className="checkout-field"
               />
-              <p className="ui-sm mt-1.5 text-muted">We send the order confirmation to this address.</p>
+              <p className="ui-sm mt-1.5 text-muted">Required. We send your order confirmation here.</p>
             </div>
 
             <h2 className="ui mt-7 font-bold">Delivery address</h2>

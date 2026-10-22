@@ -25,8 +25,83 @@ type ParcelItem = {
 
 let schemaReady = false;
 
+type SessionCache = { token: string; expMs: number };
+let sessionCache: SessionCache | null = null;
+
+function apiKey() {
+  return process.env.XDELIVERY_API_KEY?.trim() || "";
+}
+
+function uniqueIdentifier() {
+  return process.env.XDELIVERY_UNIQUE_IDENTIFIER?.trim() || "";
+}
+
+function accountEmail() {
+  return process.env.XDELIVERY_EMAIL?.trim() || "";
+}
+
+function accountPassword() {
+  return process.env.XDELIVERY_PASSWORD ?? "";
+}
+
 export function xdeliveryConfigured() {
-  return Boolean(process.env.XDELIVERY_API_KEY?.trim() && process.env.XDELIVERY_UNIQUE_IDENTIFIER?.trim());
+  const hasParcelApi = Boolean(apiKey() && uniqueIdentifier());
+  const hasAccount = Boolean(accountEmail() && accountPassword());
+  return hasParcelApi || hasAccount;
+}
+
+function jwtExpMs(token: string) {
+  try {
+    const payload = JSON.parse(Buffer.from(token.split(".")[1] ?? "", "base64url").toString("utf8")) as {
+      exp?: number;
+    };
+    if (typeof payload.exp === "number") return payload.exp * 1000;
+  } catch {
+    /* use fallback below */
+  }
+  return Date.now() + 30 * 60 * 1000;
+}
+
+async function signInXDelivery() {
+  const email = accountEmail();
+  const password = accountPassword();
+  if (!email || !password) return null;
+  const response = await fetch(`${API_BASE}/api/auth/signin`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ email, password }),
+    cache: "no-store",
+  });
+  const json = (await response.json().catch(() => null)) as { accessToken?: string; message?: string } | null;
+  const token = json?.accessToken?.trim() || "";
+  if (!response.ok || !token) {
+    throw new Error(json?.message || "X-Delivery login failed.");
+  }
+  sessionCache = { token, expMs: jwtExpMs(token) };
+  return token;
+}
+
+/** Reuses the cached dashboard session, or signs in again before it expires. */
+export async function ensureXDeliverySession() {
+  if (sessionCache && sessionCache.expMs - 60_000 > Date.now()) {
+    return sessionCache.token;
+  }
+  return signInXDelivery();
+}
+
+async function pingParcelApi() {
+  const key = apiKey();
+  if (!key) return false;
+  const response = await fetch(`${API_BASE}/api/company/parcels/status`, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-api-key": key,
+    },
+    body: JSON.stringify([]),
+    cache: "no-store",
+  });
+  return response.status !== 401 && response.status !== 403;
 }
 
 export async function pingXDelivery(): Promise<{
@@ -35,34 +110,30 @@ export async function pingXDelivery(): Promise<{
   error?: string;
 }> {
   if (!xdeliveryConfigured()) {
-    return { configured: false, connected: false, error: "API key or unique identifier missing." };
+    return { configured: false, connected: false, error: "X-Delivery account or API key is missing." };
   }
-  const key = apiKey();
+
   try {
-    const response = await fetch(`${API_BASE}/api/company/parcels/status`, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        "x-api-key": key,
-      },
-      body: JSON.stringify([]),
-      cache: "no-store",
-    });
-    if (response.status === 401 || response.status === 403) {
-      return { configured: true, connected: false, error: "X-Delivery rejected the API key." };
+    const token = await ensureXDeliverySession();
+    if (token) {
+      return { configured: true, connected: true };
     }
-    return { configured: true, connected: true };
+  } catch (err) {
+    const loginError = err instanceof Error ? err.message : "X-Delivery login failed.";
+    try {
+      if (await pingParcelApi()) return { configured: true, connected: true };
+    } catch {
+      /* fall through */
+    }
+    return { configured: true, connected: false, error: loginError };
+  }
+
+  try {
+    if (await pingParcelApi()) return { configured: true, connected: true };
+    return { configured: true, connected: false, error: "X-Delivery rejected the API key." };
   } catch {
     return { configured: true, connected: false, error: "X-Delivery is unreachable." };
   }
-}
-
-function apiKey() {
-  return process.env.XDELIVERY_API_KEY?.trim() || "";
-}
-
-function uniqueIdentifier() {
-  return process.env.XDELIVERY_UNIQUE_IDENTIFIER?.trim() || "";
 }
 
 export function xdeliveryWebhookAuthorized(header: string | null) {
@@ -149,6 +220,11 @@ export function mapXDeliveryToShopStatus(status: string): string | null {
 
 export async function addXDeliveryParcel(orderId: number): Promise<{ barcode: string }> {
   await ensureXDeliveryColumns();
+  try {
+    await ensureXDeliverySession();
+  } catch {
+    /* Parcel create still uses the company API key. */
+  }
   const { rows } = await neonQuery<ParcelOrder>(
     `SELECT id, reference, full_name, phone_number, phone_number_2, address, governorate, city, note, total_price, xdelivery_barcode
      FROM shop_orders WHERE id = $1 LIMIT 1`,
@@ -244,6 +320,17 @@ export async function fetchXDeliveryStatuses(barcodes: string[]) {
     body: JSON.stringify(codes),
   });
   return Array.isArray(json) ? (json as { barcode: string | number; status: string; motif?: string }[]) : [];
+}
+
+/** Pull the latest courier status for one parcel and write it back to the order. */
+export async function refreshXDeliveryStatus(barcode: string) {
+  const code = barcode.trim();
+  if (!code || !xdeliveryConfigured()) return null;
+  const statuses = await fetchXDeliveryStatuses([code]);
+  const row =
+    statuses.find((item) => String(item.barcode).trim() === code) ?? statuses[0];
+  if (!row) return null;
+  return applyXDeliveryStatus(String(row.barcode), row.status, row.motif ?? "");
 }
 
 export async function applyXDeliveryStatus(barcode: string, status: string, motif = "") {

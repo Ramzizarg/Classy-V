@@ -14,51 +14,30 @@ import {
 } from "@/lib/emailTemplates";
 import { getResend } from "@/lib/resendClient";
 import { SITE } from "@/lib/site";
-
-export const ADMIN_EMAIL = process.env.RESEND_ADMIN_EMAIL?.trim() || "";
-
-const TEST_FROM_EMAIL = `${SITE.name} <onboarding@resend.dev>`;
-const FROM_EMAIL = process.env.RESEND_FROM_EMAIL?.trim() || TEST_FROM_EMAIL;
-const hasCustomSender = FROM_EMAIL !== TEST_FROM_EMAIL;
-
-/**
- * Resend rejects a sender whose domain is not verified yet, and the test sender can only
- * reach the account owner. Either way the order must still reach the admin inbox.
- */
-function isUnverifiedSender(error: { message?: string } | null | undefined): boolean {
-  return Boolean(error?.message && /not verified|testing emails|verify a domain/i.test(error.message));
-}
-
-/** 2× the 80px cell in the template, so photos stay sharp on retina screens. */
-const THUMB_PX = 160;
+import { getSiteUrl } from "@/lib/siteUrl";
 
 type InlineImage = { filename: string; content: Buffer; contentType: string; contentId: string };
-
-const thumbCache = new Map<string, Buffer>();
 
 let logoCache: InlineImage[] | null = null;
 
 /**
- * looogo.png is white with a black outline: used as-is in dark mode, and colour-inverted
- * (black with a white outline) in light mode. The outline keeps the light version readable
- * in Gmail, which ignores the dark-mode CSS and only darkens the background.
+ * Site mark at public/images/loogo.png is a white lockup (same file as the header).
+ * Invert it for the white email background; keep the original for dark-mode clients.
  */
 async function loadLogos(): Promise<InlineImage[]> {
   if (logoCache) return logoCache;
   try {
-    const bytes = await fs.readFile(path.join(process.cwd(), "public", "images", "looogo.png"));
+    const bytes = await fs.readFile(path.join(process.cwd(), "public", "images", "loogo.png"));
     const transparent = { r: 0, g: 0, b: 0, alpha: 0 };
-
-    const dark = await sharp(bytes)
+    const original = await sharp(bytes)
       .resize(LOGO_WIDTH * 2, LOGO_HEIGHT * 2, { fit: "contain", background: transparent })
       .ensureAlpha()
       .png({ compressionLevel: 9 })
       .toBuffer();
-    const light = await sharp(dark).negate({ alpha: false }).png({ compressionLevel: 9 }).toBuffer();
-
+    const light = await sharp(original).negate({ alpha: false }).png({ compressionLevel: 9 }).toBuffer();
     logoCache = [
       { filename: "classy-v-logo.png", content: light, contentType: "image/png", contentId: LOGO_CID },
-      { filename: "classy-v-logo-dark.png", content: dark, contentType: "image/png", contentId: LOGO_DARK_CID },
+      { filename: "classy-v-logo-dark.png", content: original, contentType: "image/png", contentId: LOGO_DARK_CID },
     ];
     return logoCache;
   } catch (err) {
@@ -67,81 +46,21 @@ async function loadLogos(): Promise<InlineImage[]> {
   }
 }
 
-async function readImageBytes(src: string): Promise<Buffer | null> {
-  if (src.startsWith("http://") || src.startsWith("https://")) {
-    const res = await fetch(src, { signal: AbortSignal.timeout(2500) });
-    if (!res.ok) return null;
-    return Buffer.from(await res.arrayBuffer());
-  }
-  if (!src.startsWith("/")) return null;
-  const publicDir = path.join(process.cwd(), "public");
-  const filePath = path.join(publicDir, src.split("?")[0]);
-  if (!filePath.startsWith(publicDir)) return null;
-  return fs.readFile(filePath).catch(() => null);
+export const ADMIN_EMAIL = process.env.RESEND_ADMIN_EMAIL?.trim() || "";
+
+const TEST_FROM_EMAIL = `${SITE.name} <onboarding@resend.dev>`;
+const FROM_EMAIL = process.env.RESEND_FROM_EMAIL?.trim() || TEST_FROM_EMAIL;
+
+function isUnverifiedSender(error: { message?: string } | null | undefined): boolean {
+  return Boolean(error?.message && /not verified|testing emails|verify a domain/i.test(error.message));
 }
 
-/**
- * Photos are embedded in the email (cid:) instead of linked, so they show even when the
- * site is not publicly reachable. JPEG because Outlook and older clients reject WebP.
- */
-async function loadThumb(src: string | null | undefined): Promise<Buffer | null> {
-  const trimmed = src?.trim();
-  if (!trimmed) return null;
-  const cached = thumbCache.get(trimmed);
-  if (cached) return cached;
-  try {
-    const bytes = await readImageBytes(trimmed);
-    if (!bytes) return null;
-    const thumb = await sharp(bytes)
-      .resize(THUMB_PX, THUMB_PX, { fit: "contain", background: "#f0f0f0" })
-      .flatten({ background: "#f0f0f0" })
-      .jpeg({ quality: 85, mozjpeg: true })
-      .toBuffer();
-    thumbCache.set(trimmed, thumb);
-    return thumb;
-  } catch (err) {
-    console.error("[sendOrderEmails] product image failed:", trimmed, err);
-    return null;
-  }
-}
-
-async function embedItemImages(
-  items: OrderEmailItem[]
-): Promise<{ items: OrderItemForEmail[]; attachments: InlineImage[] }> {
-  const attachments: InlineImage[] = [];
-  const cidBySrc = new Map<string, string>();
-
-  const mapped = await Promise.all(
-    items.map(async (i) => {
-      const src = i.image_url?.trim() || "";
-      const thumb = await loadThumb(src);
-      return { item: i, src, thumb };
-    })
-  );
-
-  return {
-    items: mapped.map(({ item, src, thumb }) => {
-      let imageUrl = "";
-      if (thumb) {
-        let cid = cidBySrc.get(src);
-        if (!cid) {
-          cid = `product-${attachments.length + 1}`;
-          cidBySrc.set(src, cid);
-          attachments.push({ filename: `${cid}.jpg`, content: thumb, contentType: "image/jpeg", contentId: cid });
-        }
-        imageUrl = `cid:${cid}`;
-      }
-      return {
-        product_name: item.product_name,
-        quantity: item.quantity,
-        price: item.price,
-        size: item.size,
-        color: item.color,
-        image_url: imageUrl,
-      };
-    }),
-    attachments,
-  };
+function publicImageUrl(src: string | null | undefined): string {
+  const trimmed = src?.trim() ?? "";
+  if (!trimmed) return "";
+  if (/^(https?:\/\/|cid:)/i.test(trimmed)) return trimmed;
+  if (trimmed.startsWith("/")) return `${getSiteUrl()}${trimmed}`;
+  return "";
 }
 
 export type OrderEmailItem = {
@@ -154,12 +73,9 @@ export type OrderEmailItem = {
 };
 
 export type OrderEmailPayload = {
-  /** Order number (database id), as shown in the dashboard. */
   orderId: number | string;
-  /** Order reference used on the track page (e.g. CV-ABC123). */
   reference: string;
   createdAt?: string;
-  /** Customer email; empty when the customer checked out with a phone number only. */
   to: string;
   fullName: string;
   phone: string;
@@ -184,33 +100,70 @@ export type OrderEmailResult = {
   clientId?: string;
 };
 
-async function sendWithRetry<T>(fn: () => Promise<T>): Promise<T> {
+type SendResult = {
+  data: { id: string } | null;
+  error: { message?: string } | null;
+};
+
+async function deliver(
+  resend: NonNullable<ReturnType<typeof getResend>>,
+  payload: {
+    from: string;
+    to: string;
+    subject: string;
+    html: string;
+    text?: string;
+    replyTo?: string;
+    attachments?: InlineImage[];
+  },
+  allowTestSender: boolean
+): Promise<SendResult> {
+  const mail = {
+    from: payload.from,
+    to: payload.to,
+    subject: payload.subject,
+    html: payload.html,
+    ...(payload.text ? { text: payload.text } : {}),
+    ...(payload.replyTo ? { replyTo: payload.replyTo } : {}),
+    ...(payload.attachments?.length ? { attachments: payload.attachments } : {}),
+  };
   try {
-    return await fn();
-  } catch {
-    await new Promise((r) => setTimeout(r, 600));
-    return await fn();
+    const first = await resend.emails.send(mail);
+    if (!first.error) return first;
+
+    if (allowTestSender && isUnverifiedSender(first.error)) {
+      console.warn(`[Resend] ${payload.from} not verified — retrying admin mail from ${TEST_FROM_EMAIL}.`);
+      return resend.emails.send({ ...mail, from: TEST_FROM_EMAIL });
+    }
+
+    console.error("[Resend] send failed:", first.error);
+    return first;
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Send failed";
+    console.error("[Resend] send threw:", message);
+    return { data: null, error: { message } };
   }
 }
 
 export async function sendOrderEmails(body: OrderEmailPayload): Promise<OrderEmailResult> {
   const resend = getResend();
   if (!resend) {
-    return {
-      ok: false,
-      adminSent: false,
-      clientSent: false,
-      error: "Configuration email manquante (RESEND_API_KEY).",
-    };
+    console.error("[Resend] RESEND_API_KEY is missing.");
+    return { ok: false, adminSent: false, clientSent: false, error: "RESEND_API_KEY is missing." };
   }
   if (!ADMIN_EMAIL) {
-    return {
-      ok: false,
-      adminSent: false,
-      clientSent: false,
-      error: "Configuration email manquante (RESEND_ADMIN_EMAIL).",
-    };
+    console.error("[Resend] RESEND_ADMIN_EMAIL is missing.");
+    return { ok: false, adminSent: false, clientSent: false, error: "RESEND_ADMIN_EMAIL is missing." };
   }
+
+  const items: OrderItemForEmail[] = body.items.map((item) => ({
+    product_name: item.product_name,
+    quantity: item.quantity,
+    price: item.price,
+    size: item.size,
+    color: item.color,
+    image_url: publicImageUrl(item.image_url),
+  }));
 
   const order: OrderForEmail = {
     id: String(body.orderId),
@@ -229,108 +182,75 @@ export async function sendOrderEmails(body: OrderEmailPayload): Promise<OrderEma
     created_at: body.createdAt || new Date().toISOString(),
   };
 
-  const [{ items, attachments: productImages }, logos] = await Promise.all([
-    embedItemImages(body.items),
-    loadLogos(),
-  ]);
-  const attachments = [...logos, ...productImages];
+  const clientEmail = body.to?.trim().toLowerCase() ?? "";
+  const sendClient = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(clientEmail);
+  const logos = await loadLogos();
 
-  const clientEmail = body.to?.trim() ?? "";
-  const sendClient = Boolean(clientEmail);
+  const adminPromise = deliver(
+    resend,
+    {
+      from: FROM_EMAIL,
+      to: ADMIN_EMAIL,
+      replyTo: sendClient ? clientEmail : undefined,
+      subject: `Nouvelle commande #${body.orderId} (${body.reference}) — ${body.fullName}`,
+      html: templateNewOrderAdmin(order, items),
+      attachments: logos,
+      text: [
+        `Nouvelle commande ${body.reference}`,
+        body.fullName,
+        body.phone,
+        clientEmail,
+        `${body.address}, ${body.city}, ${body.governorate}`,
+        `Total: ${body.total}`,
+      ]
+        .filter(Boolean)
+        .join("\n"),
+    },
+    true
+  );
 
-  const mailHeaders = {
-    "X-Entity-Ref-ID": body.reference,
-  };
-
-  const adminMessage = {
-    to: ADMIN_EMAIL,
-    ...(clientEmail ? { replyTo: clientEmail } : {}),
-    subject: `Nouvelle commande #${body.orderId} (${body.reference}) — ${body.fullName}`,
-    html: templateNewOrderAdmin(order, items),
-    headers: mailHeaders,
-    tags: [
-      { name: "category", value: "order_admin" },
-      { name: "reference", value: body.reference.slice(0, 50) },
-    ],
-    attachments,
-  };
-
-  const clientSubject = `Commande ${body.reference} confirmée`;
-  const clientBody = {
-    html: templateOrderReceivedClient(order, items),
-    text: textOrderReceivedClient(order, items),
-    headers: mailHeaders,
-    tags: [
-      { name: "category", value: "order_confirmation" },
-      { name: "reference", value: body.reference.slice(0, 50) },
-    ],
-    attachments,
-  };
+  const clientPromise = sendClient
+    ? deliver(
+        resend,
+        {
+          from: FROM_EMAIL,
+          to: clientEmail,
+          replyTo: ADMIN_EMAIL,
+          subject: `Commande ${body.reference} confirmée`,
+          html: templateOrderReceivedClient(order, items),
+          text: textOrderReceivedClient(order, items),
+          attachments: logos,
+        },
+        false
+      )
+    : Promise.resolve({ data: null, error: { message: "No customer email." } });
 
   if (!sendClient) {
-    console.info(`[Resend] no customer email on ${body.reference} — admin notice only.`);
+    console.info(`[Resend] ${body.reference}: no customer email — admin notice only.`);
   }
-
-  const adminPromise = (async () => {
-    const first = await sendWithRetry(() => resend.emails.send({ from: FROM_EMAIL, ...adminMessage }));
-    if (hasCustomSender && isUnverifiedSender(first.error)) {
-      console.warn(`[Resend] ${FROM_EMAIL} is not verified yet — using ${TEST_FROM_EMAIL} for admin.`);
-      return sendWithRetry(() => resend.emails.send({ from: TEST_FROM_EMAIL, ...adminMessage }));
-    }
-    return first;
-  })();
-
-  const clientPromise = !sendClient
-    ? Promise.resolve({ data: null, error: null })
-    : (async () => {
-        const first = await sendWithRetry(() =>
-          resend.emails.send({
-            from: FROM_EMAIL,
-            to: clientEmail,
-            replyTo: SITE.email,
-            subject: clientSubject,
-            ...clientBody,
-          })
-        );
-        if (first.error) {
-          console.error("[Resend] customer email failed:", first.error);
-        } else {
-          console.info(`[Resend] customer email sent for ${body.reference}`, first.data?.id);
-        }
-        return first;
-      })();
 
   const [adminResult, clientResult] = await Promise.all([adminPromise, clientPromise]);
 
   const adminSent = !adminResult.error;
-  const clientSent = sendClient ? !clientResult.error : true;
+  const clientSent = sendClient ? !clientResult.error : false;
 
-  if (adminResult.error) console.error("[Resend] admin email error:", adminResult.error);
-  if (sendClient && clientResult.error) console.error("[Resend] client email error:", clientResult.error);
-
-  if (!adminSent && !(sendClient && clientSent)) {
-    return {
-      ok: false,
-      adminSent: false,
-      clientSent: false,
-      error: "Erreur lors de l'envoi des emails.",
-      adminError: adminResult.error?.message,
-      clientError: clientResult.error?.message,
-    };
-  }
+  if (!adminSent) console.error("[Resend] admin email error:", adminResult.error);
+  if (sendClient && !clientSent) console.error("[Resend] customer email error:", clientResult.error);
+  if (adminSent) console.info(`[Resend] admin email sent for ${body.reference}`, adminResult.data?.id);
+  if (clientSent) console.info(`[Resend] customer email sent for ${body.reference}`, clientResult.data?.id);
 
   return {
-    ok: true,
+    ok: adminSent && (!sendClient || clientSent),
     adminSent,
-    clientSent: sendClient ? clientSent : false,
+    clientSent,
     adminId: adminResult.data?.id ?? undefined,
-    clientId: sendClient ? clientResult.data?.id ?? undefined : undefined,
-    error: sendClient && !clientSent
-      ? "Email client non envoyé."
-      : !adminSent
-        ? "Email admin non envoyé."
+    clientId: clientSent ? clientResult.data?.id ?? undefined : undefined,
+    error: !adminSent
+      ? "Admin email was not sent."
+      : sendClient && !clientSent
+        ? "Customer email was not sent."
         : undefined,
     adminError: adminResult.error?.message,
-    clientError: clientResult.error?.message,
+    clientError: sendClient ? clientResult.error?.message : undefined,
   };
 }
