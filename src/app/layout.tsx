@@ -10,6 +10,7 @@ import { ScrollToTop } from "@/components/ScrollToTop";
 import { ProductPageThemeSync } from "@/components/ProductPageThemeSync";
 import { SiteThemeSync } from "@/components/SiteThemeSync";
 import { MetaPixel } from "@/components/MetaPixel";
+import { META_PIXEL_BOOT_SCRIPT, META_PIXEL_ID } from "@/lib/metaPixel";
 import { getShippingRate } from "@/lib/shipping.server";
 import { SITE } from "@/lib/site";
 import { SITE_THEME_BOOT_SCRIPT } from "@/lib/siteTheme";
@@ -98,6 +99,16 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: SITE_THEME_BOOT_SCRIPT }} />
+        <script dangerouslySetInnerHTML={{ __html: META_PIXEL_BOOT_SCRIPT }} />
+        <noscript>
+          <img
+            height={1}
+            width={1}
+            style={{ display: "none" }}
+            src={`https://www.facebook.com/tr?id=${META_PIXEL_ID}&ev=PageView&noscript=1`}
+            alt=""
+          />
+        </noscript>
         <script
           dangerouslySetInnerHTML={{
             __html: `(function(){try{if("scrollRestoration"in history)history.scrollRestoration="manual";}catch(e){}window.scrollTo(0,0);var p=location.pathname;var skip=/^\\/(dashboard|admin|api|backoffice|login)(\\/|$)/i.test(p);if(skip){document.documentElement.setAttribute("data-entry-ok","1");return;}var K="classyv-entry-gate";var passed=false;try{if(localStorage.getItem(K)==="yes"||sessionStorage.getItem(K)==="yes")passed=true;}catch(e){}if(p!=="/"||passed){document.documentElement.setAttribute("data-entry-ok","1");document.documentElement.setAttribute("data-boot-splash","1");var vv=window.visualViewport;var viewH=vv?vv.height:(window.innerHeight||document.documentElement.clientHeight||0);var off=vv?vv.offsetTop||0:0;var h=Math.ceil(Math.max(window.innerHeight||0,document.documentElement.clientHeight||0,viewH+Math.abs(off))+240);document.documentElement.style.setProperty("--splash-cover-h",h+"px");document.documentElement.style.setProperty("--splash-mark-y",Math.round(off+viewH/2)+"px");if(!document.getElementById("boot-splash")){var s=document.createElement("div");s.id="boot-splash";s.setAttribute("data-source","boot");s.setAttribute("aria-hidden","true");s.innerHTML='<span class="boot-splash-mark"></span>';document.documentElement.appendChild(s);}}else{document.documentElement.setAttribute("data-entry-gate","1");}})();`,
