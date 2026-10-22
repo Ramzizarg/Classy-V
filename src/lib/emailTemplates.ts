@@ -117,11 +117,13 @@ function getFooterHtml(): string {
   <table role="presentation" class="cv-line" width="100%" cellpadding="0" cellspacing="0" style="margin-top: 40px; padding-top: 24px; border-top: 1px solid #e5e5e5;">
     <tr>
       <td class="cv-m" style="padding: 24px 40px 32px 40px; font-size: 11px; color: #888888; text-align: center;">
-        <p style="margin: 0 0 12px;">${escapeHtml(SITE.name)} — ${escapeHtml(SITE.description)}</p>
+        <p style="margin: 0 0 8px;">${escapeHtml(SITE.name)} · ${escapeHtml(SITE.city)}</p>
+        <p style="margin: 0 0 12px;">
+          <a class="cv-a" href="mailto:${escapeHtml(SITE.email)}" style="color:#888888; text-decoration:underline;">${escapeHtml(SITE.email)}</a>
+        </p>
         <p style="margin: 0;">
-          <a class="cv-a" href="${escapeHtml(base + "/collection")}" style="color:#000; text-decoration:underline;">Collection</a> &nbsp;&middot;&nbsp;
-          <a class="cv-a" href="${escapeHtml(base + "/shipping-returns")}" style="color:#000; text-decoration:underline;">Livraison</a> &nbsp;&middot;&nbsp;
-          <a class="cv-a" href="${escapeHtml(base)}" style="color:#000; text-decoration:underline;">Accueil</a>
+          <a class="cv-a" href="${escapeHtml(base)}" style="color:#000; text-decoration:underline;">classy-v.com</a> &nbsp;&middot;&nbsp;
+          <a class="cv-a" href="${escapeHtml(base + "/shipping-returns")}" style="color:#000; text-decoration:underline;">Livraison</a>
         </p>
       </td>
     </tr>
@@ -212,12 +214,12 @@ ${WRAPPER}
 ${getHeaderHtml()}
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
     <tr><td style="padding: 32px 0 24px;">
-      <h1 class="cv-h" style="margin:0 0 8px; font-size: 20px; font-weight: 700; color: #000;">MERCI POUR VOTRE COMMANDE</h1>
-      <p class="cv-m" style="margin:0; font-size: 13px; color: #666;">${formatDate(order.created_at)}</p>
+      <h1 class="cv-h" style="margin:0 0 8px; font-size: 20px; font-weight: 700; color: #000;">Votre commande est confirmée</h1>
+      <p class="cv-m" style="margin:0; font-size: 13px; color: #666;">Réf. ${escapeHtml(order.reference)} · ${formatDate(order.created_at)}</p>
     </td></tr>
     <tr><td style="padding: 0 0 24px;">
       <p class="cv-h" style="margin:0 0 16px;">Bonjour ${escapeHtml(order.full_name)},</p>
-      <p class="cv-t" style="margin:0; color: #333;">Nous avons bien reçu votre commande. Nous allons vous contacter par téléphone pour la confirmer.</p>
+      <p class="cv-t" style="margin:0; color: #333;">Nous avons bien reçu votre commande. Nous vous appellerons pour confirmer la livraison. Paiement en espèces à la réception.</p>
     </td></tr>
     <tr><td style="padding: 0 0 8px;">
       <p class="cv-m" style="margin:0; font-size: 11px; font-weight: 600; letter-spacing: 0.1em; color: #888;">ADRESSE DE LIVRAISON</p>
@@ -270,11 +272,11 @@ export function textOrderReceivedClient(
 ): string {
   const base = getSiteUrl();
   const lines = [
-    "MERCI POUR VOTRE COMMANDE",
-    formatDate(order.created_at),
+    "Votre commande est confirmée",
+    `Réf. ${order.reference} · ${formatDate(order.created_at)}`,
     "",
     `Bonjour ${order.full_name},`,
-    "Nous avons bien reçu votre commande. Nous allons vous contacter par téléphone pour la confirmer.",
+    "Nous avons bien reçu votre commande. Nous vous appellerons pour confirmer la livraison. Paiement en espèces à la réception.",
     "",
     "ADRESSE DE LIVRAISON",
     order.address,
@@ -338,7 +340,7 @@ ${WRAPPER}
 ${getHeaderHtml()}
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
     <tr><td style="padding: 32px 0 24px;">
-      <h1 class="cv-h" style="margin:0 0 8px; font-size: 20px; font-weight: 700; color: #000;">NOUVELLE COMMANDE #${escapeHtml(order.id)}</h1>
+      <h1 class="cv-h" style="margin:0 0 8px; font-size: 20px; font-weight: 700; color: #000;">Nouvelle commande #${escapeHtml(order.id)}</h1>
       <p class="cv-m" style="margin:0; font-size: 13px; color: #666;">Réf. ${escapeHtml(order.reference)} &middot; ${formatDate(order.created_at)}</p>
     </td></tr>
     <tr><td style="padding: 0 0 16px;">

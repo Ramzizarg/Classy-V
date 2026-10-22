@@ -69,7 +69,7 @@ async function loadLogos(): Promise<InlineImage[]> {
 
 async function readImageBytes(src: string): Promise<Buffer | null> {
   if (src.startsWith("http://") || src.startsWith("https://")) {
-    const res = await fetch(src);
+    const res = await fetch(src, { signal: AbortSignal.timeout(2500) });
     if (!res.ok) return null;
     return Buffer.from(await res.arrayBuffer());
   }
@@ -238,36 +238,43 @@ export async function sendOrderEmails(body: OrderEmailPayload): Promise<OrderEma
   const clientEmail = body.to?.trim() ?? "";
   const sendClient = Boolean(clientEmail);
 
+  const mailHeaders = {
+    "X-Entity-Ref-ID": body.reference,
+  };
+
   const adminMessage = {
     to: ADMIN_EMAIL,
     ...(clientEmail ? { replyTo: clientEmail } : {}),
     subject: `Nouvelle commande #${body.orderId} (${body.reference}) — ${body.fullName}`,
     html: templateNewOrderAdmin(order, items),
+    headers: mailHeaders,
+    tags: [
+      { name: "category", value: "order_admin" },
+      { name: "reference", value: body.reference.slice(0, 50) },
+    ],
     attachments,
   };
 
-  const clientSubject = `Votre commande est confirmée — ${SITE.name}`;
+  const clientSubject = `Commande ${body.reference} confirmée`;
   const clientBody = {
     html: templateOrderReceivedClient(order, items),
     text: textOrderReceivedClient(order, items),
+    headers: mailHeaders,
+    tags: [
+      { name: "category", value: "order_confirmation" },
+      { name: "reference", value: body.reference.slice(0, 50) },
+    ],
     attachments,
   };
-  /** Copy of the customer email delivered to the admin while no domain is verified. */
-  const clientCopyToAdmin = () =>
-    sendWithRetry(() =>
-      resend.emails.send({
-        from: TEST_FROM_EMAIL,
-        to: ADMIN_EMAIL,
-        replyTo: clientEmail,
-        subject: `[Client: ${clientEmail}] ${clientSubject}`,
-        ...clientBody,
-      })
-    );
+
+  if (!sendClient) {
+    console.info(`[Resend] no customer email on ${body.reference} — admin notice only.`);
+  }
 
   const adminPromise = (async () => {
     const first = await sendWithRetry(() => resend.emails.send({ from: FROM_EMAIL, ...adminMessage }));
     if (hasCustomSender && isUnverifiedSender(first.error)) {
-      console.warn(`[Resend] ${FROM_EMAIL} is not verified yet — using ${TEST_FROM_EMAIL}.`);
+      console.warn(`[Resend] ${FROM_EMAIL} is not verified yet — using ${TEST_FROM_EMAIL} for admin.`);
       return sendWithRetry(() => resend.emails.send({ from: TEST_FROM_EMAIL, ...adminMessage }));
     }
     return first;
@@ -275,20 +282,23 @@ export async function sendOrderEmails(body: OrderEmailPayload): Promise<OrderEma
 
   const clientPromise = !sendClient
     ? Promise.resolve({ data: null, error: null })
-    : !hasCustomSender
-      ? clientCopyToAdmin()
-      : (async () => {
-          const first = await sendWithRetry(() =>
-            resend.emails.send({
-              from: FROM_EMAIL,
-              to: clientEmail,
-              ...(ADMIN_EMAIL ? { replyTo: ADMIN_EMAIL } : {}),
-              subject: clientSubject,
-              ...clientBody,
-            })
-          );
-          return isUnverifiedSender(first.error) ? clientCopyToAdmin() : first;
-        })();
+    : (async () => {
+        const first = await sendWithRetry(() =>
+          resend.emails.send({
+            from: FROM_EMAIL,
+            to: clientEmail,
+            replyTo: SITE.email,
+            subject: clientSubject,
+            ...clientBody,
+          })
+        );
+        if (first.error) {
+          console.error("[Resend] customer email failed:", first.error);
+        } else {
+          console.info(`[Resend] customer email sent for ${body.reference}`, first.data?.id);
+        }
+        return first;
+      })();
 
   const [adminResult, clientResult] = await Promise.all([adminPromise, clientPromise]);
 

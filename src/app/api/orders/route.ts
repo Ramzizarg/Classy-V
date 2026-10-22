@@ -1,4 +1,4 @@
-import { after, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { isCartLine, shippingCost } from "@/lib/cart";
 import { sendOrderEmails } from "@/lib/sendOrderEmails";
 import { applyCoupon } from "@/lib/coupons.server";
@@ -9,6 +9,7 @@ import { matchDelegation, matchGovernorate } from "@/lib/xdeliveryLocations";
 import type { OrderCustomer } from "@/lib/types";
 
 export const runtime = "nodejs";
+export const maxDuration = 60;
 
 type Payload = {
   customer?: Partial<OrderCustomer>;
@@ -102,8 +103,8 @@ export async function POST(request: Request) {
     status: "pending",
   });
 
-  after(() =>
-    sendOrderEmails({
+  try {
+    const emailResult = await sendOrderEmails({
       orderId: order.id,
       reference: order.reference,
       createdAt: order.createdAt,
@@ -125,8 +126,18 @@ export async function POST(request: Request) {
       shipping: order.shipping,
       discount: order.discount,
       total: order.total,
-    }),
-  );
+    });
+    if (emailResult.error) {
+      console.error("[orders] email warning", {
+        reference: order.reference,
+        error: emailResult.error,
+        adminError: emailResult.adminError,
+        clientError: emailResult.clientError,
+      });
+    }
+  } catch (err) {
+    console.error("[orders] email threw", err);
+  }
 
   return NextResponse.json({ reference: order.reference, total: order.total }, { status: 201 });
 }

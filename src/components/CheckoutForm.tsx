@@ -212,11 +212,12 @@ export function CheckoutForm() {
                 id="co-email"
                 type="email"
                 autoComplete="email"
-                placeholder="Email (optional)"
+                placeholder="Email (for your confirmation)"
                 value={form.email}
                 onChange={(event) => update("email", event.target.value)}
                 className="checkout-field"
               />
+              <p className="ui-sm mt-1.5 text-muted">We send the order confirmation to this address.</p>
             </div>
 
             <h2 className="ui mt-7 font-bold">Delivery address</h2>
