@@ -6,6 +6,7 @@ import {
   ChevronLeft,
   ChevronRight,
   CircleX,
+  Download,
   ExternalLink,
   Hourglass,
   ImageOff,
@@ -345,6 +346,32 @@ export default function DashboardAdsPage() {
               Exit preview
             </button>
           )}
+        </div>
+      </div>
+
+      <div className="mb-6 rounded-lg border border-zinc-200 bg-white px-4 py-3 sm:px-5">
+        <p className="text-sm font-semibold text-black">Facebook catalog — 2 joggers</p>
+        <p className="mt-1 text-sm text-zinc-500">
+          One feed for both upload methods: download the file, or paste the URL in Commerce Manager.
+        </p>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <a
+            href="/feeds/classy-v-joggers-facebook.csv"
+            download
+            className="inline-flex items-center gap-1.5 rounded bg-black px-4 py-2 text-xs font-bold uppercase tracking-wider text-white hover:bg-zinc-800"
+          >
+            <Download className="h-3.5 w-3.5" />
+            Download CSV
+          </a>
+          <a
+            href="https://classy-v.com/feeds/facebook-catalog.csv"
+            target="_blank"
+            rel="noreferrer"
+            className={`${sizeGhostButton} py-2`}
+          >
+            <ExternalLink className="h-3.5 w-3.5" />
+            Feed URL
+          </a>
         </div>
       </div>
 
