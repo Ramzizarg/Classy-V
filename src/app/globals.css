@@ -3015,11 +3015,7 @@ textarea.checkout-field {
   color: #8a8580;
 }
 
-.cv-look__pin.is-sold .cv-look__pin-dot::after {
-  animation: none;
-  border-color: rgb(180 35 24 / 0.45);
-}
-
+.cv-look__pin.is-sold .cv-look__pin-dot::after,
 .cv-look__pin.is-soon .cv-look__pin-dot::after {
   animation: none;
   border-color: rgb(90 88 84 / 0.45);
@@ -3044,7 +3040,7 @@ textarea.checkout-field {
   transform: translateX(-50%);
   padding: 3px 6px;
   border-radius: 4px;
-  background: #e11d48;
+  background: #1c1b19;
   color: #ffffff;
   font-size: 8px;
   font-weight: 800;
@@ -3054,10 +3050,6 @@ textarea.checkout-field {
   white-space: nowrap;
   pointer-events: none;
   box-shadow: 0 4px 10px -4px rgb(0 0 0 / 0.35);
-}
-
-.cv-look__pin-stock.is-soon {
-  background: #1c1b19;
 }
 
 @keyframes cv-look-ring {
