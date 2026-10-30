@@ -7,6 +7,10 @@ export const PRESENCE_ONLINE_WINDOW_MS = 5 * 60 * 1000;
 export const PRESENCE_RETENTION_MS = 30 * 60 * 1000;
 
 let presenceTableReady = false;
+let presenceUnavailableUntil = 0;
+let presenceFailureLogged = false;
+
+const PRESENCE_RETRY_MS = 60_000;
 
 /** One-line summary; the full Neon error dumps ~40 lines per heartbeat. */
 export function describeDbError(err: unknown): string {
@@ -18,6 +22,7 @@ export function describeDbError(err: unknown): string {
 export async function ensurePresenceTable(): Promise<boolean> {
   if (!resolveDatabaseUrl()) return false;
   if (presenceTableReady) return true;
+  if (Date.now() < presenceUnavailableUntil) return false;
   try {
     await neonQuery(`
       CREATE TABLE IF NOT EXISTS site_presence (
@@ -33,9 +38,14 @@ export async function ensurePresenceTable(): Promise<boolean> {
       ON site_presence (last_seen DESC)
     `);
     presenceTableReady = true;
+    presenceFailureLogged = false;
     return true;
   } catch (err) {
-    console.warn("[presence] database unreachable, heartbeat skipped:", describeDbError(err));
+    presenceUnavailableUntil = Date.now() + PRESENCE_RETRY_MS;
+    if (!presenceFailureLogged) {
+      presenceFailureLogged = true;
+      console.warn("[presence] database unreachable, heartbeat skipped:", describeDbError(err));
+    }
     return false;
   }
 }

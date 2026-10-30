@@ -50,7 +50,7 @@ function currentPath(fallback: string | null): string {
   }
 }
 
-function sendHeartbeat(path: string, opts?: { beacon?: boolean }) {
+function sendHeartbeat(path: string, opts?: { beacon?: boolean }): Promise<boolean> {
   const visitorId = getOrCreateVisitorId();
   const payload = JSON.stringify({ visitorId, path });
 
@@ -58,21 +58,22 @@ function sendHeartbeat(path: string, opts?: { beacon?: boolean }) {
     try {
       const blob = new Blob([payload], { type: "application/json" });
       const ok = navigator.sendBeacon("/api/presence", blob);
-      if (ok) return;
+      if (ok) return Promise.resolve(true);
     } catch {
       // fall through to fetch
     }
   }
 
-  void fetch("/api/presence", {
+  return fetch("/api/presence", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: payload,
     cache: "no-store",
     keepalive: true,
-  }).catch(() => {
-    // never block UX
-  });
+  })
+    .then((res) => res.json().catch(() => null) as Promise<{ skipped?: boolean } | null>)
+    .then((json) => json?.skipped !== true)
+    .catch(() => false);
 }
 
 /**
@@ -96,7 +97,12 @@ export function PresenceBeacon() {
       const path = currentPath(pathRef.current);
       if (!isStorefrontPath(path)) return;
       if (!beacon && document.visibilityState === "hidden") return;
-      sendHeartbeat(path, { beacon });
+      void sendHeartbeat(path, { beacon }).then((keepGoing) => {
+        if (!keepGoing && intervalId) {
+          window.clearInterval(intervalId);
+          intervalId = 0;
+        }
+      });
     };
 
     const startId = window.setTimeout(() => tick(false), 400);

@@ -2,6 +2,11 @@ import { neon, neonConfig } from "@neondatabase/serverless";
 import type { QueryResultRow } from "@neondatabase/serverless";
 import { Agent, fetch as undiciFetch } from "undici";
 
+/** True for the `.env.example` placeholder, which would otherwise hang on DNS. */
+function isPlaceholderDatabaseUrl(url: string): boolean {
+  return /:\/\/USER:PASSWORD@HOST(?:\/|$)/i.test(url) || /@HOST(?:[:/?]|$)/i.test(url);
+}
+
 /** Neon / Postgres URL: primary env + common alternates; strips wrapping quotes from `.env`. */
 export function resolveDatabaseUrl(): string | null {
   const raw =
@@ -13,7 +18,8 @@ export function resolveDatabaseUrl(): string | null {
   if ((s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'"))) {
     s = s.slice(1, -1).trim();
   }
-  return s || null;
+  if (!s || isPlaceholderDatabaseUrl(s)) return null;
+  return s;
 }
 
 /**
