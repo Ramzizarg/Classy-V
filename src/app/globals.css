@@ -3005,7 +3005,45 @@ textarea.checkout-field {
 }
 
 .cv-look__pin.is-sold {
-  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.cv-look__pin.is-sold .cv-look__pin-dot {
+  background: #ececec;
+  color: #8a8580;
+}
+
+.cv-look__pin.is-sold .cv-look__pin-dot::after {
+  animation: none;
+  border-color: rgb(180 35 24 / 0.45);
+}
+
+.cv-look__pin.is-sold:hover .cv-look__pin-dot,
+.cv-look__pin.is-sold.is-hot .cv-look__pin-dot,
+.cv-look__pin.is-sold.is-on .cv-look__pin-dot {
+  transform: none;
+  background: #ececec;
+  color: #8a8580;
+}
+
+.cv-look__pin-stock {
+  position: absolute;
+  top: calc(50% + 16px);
+  left: 50%;
+  z-index: 1;
+  transform: translateX(-50%);
+  padding: 3px 6px;
+  border-radius: 4px;
+  background: #e11d48;
+  color: #ffffff;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  line-height: 1.15;
+  text-transform: uppercase;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 4px 10px -4px rgb(0 0 0 / 0.35);
 }
 
 @keyframes cv-look-ring {
@@ -3099,19 +3137,17 @@ textarea.checkout-field {
 }
 
 .cv-look__dock {
-  position: absolute;
-  left: 50%;
-  bottom: 10px;
-  z-index: 2100;
+  position: relative;
+  z-index: 5;
   display: flex;
   width: calc(100% - 24px);
   max-width: 400px;
   flex-direction: column;
   gap: 8px;
+  margin: -80px auto 8px;
   padding: 12px;
   border-radius: 18px;
   background: #ffffff;
-  transform: translateX(-50%);
   box-shadow: 0 14px 40px rgb(0 0 0 / 0.16);
 }
 
@@ -3183,6 +3219,28 @@ textarea.checkout-field {
   font-size: 12px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
+}
+
+.cv-look__dock-x {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  place-items: center;
+  margin-left: 2px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: #e11d48;
+  color: #ffffff;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.cv-look__dock-x:hover {
+  background: #be123c;
 }
 
 .cv-look__dock-sizes {
@@ -3388,6 +3446,7 @@ textarea.checkout-field {
   display: flex;
   flex-direction: column;
   align-items: center;
+  cursor: pointer;
   text-decoration: none;
   color: inherit;
   transform: rotate(var(--cv-sway, 0deg));

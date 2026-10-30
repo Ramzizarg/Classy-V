@@ -326,10 +326,7 @@ export function HomeTryTheLook({ products }: { products: Product[] }) {
 
   const togglePin = (pin: number) => {
     const piece = look?.pieces[pin];
-    if (!piece || piece.soldOut) {
-      setHot(pin);
-      return;
-    }
+    if (!piece || piece.soldOut) return;
     setPicked((prev) => {
       if (prev.includes(pin)) {
         setChosenSize((sizes) => {
@@ -349,6 +346,17 @@ export function HomeTryTheLook({ products }: { products: Product[] }) {
     setNeedSize(false);
     setPlaying(false);
     autoplayAt.current = performance.now() + AUTOPLAY_MS * 4;
+  };
+
+  const dropPin = (pin: number) => {
+    setPicked((prev) => prev.filter((n) => n !== pin));
+    setChosenSize((sizes) => {
+      const next = { ...sizes };
+      delete next[pin];
+      return next;
+    });
+    setHot((current) => (current === pin ? null : current));
+    setNeedSize(false);
   };
 
   const pay = () => {
@@ -492,12 +500,14 @@ export function HomeTryTheLook({ products }: { products: Product[] }) {
                 <button
                   key={piece.slug}
                   type="button"
-                  className={`cv-look__pin${picked.includes(pin) && i === index ? " is-on" : ""}${
-                    hot === pin && i === index ? " is-hot" : ""
+                  className={`cv-look__pin${picked.includes(pin) && i === index && !piece.soldOut ? " is-on" : ""}${
+                    hot === pin && i === index && !piece.soldOut ? " is-hot" : ""
                   }${piece.soldOut ? " is-sold" : ""}`}
                   style={{ left: piece.x, top: piece.y }}
-                  aria-label={`${pin + 1}: ${piece.name}${piece.soldOut ? " sold out" : ""}`}
-                  aria-pressed={picked.includes(pin) && i === index}
+                  aria-label={`${pin + 1}: ${piece.name}${piece.soldOut ? " — out of stock" : ""}`}
+                  aria-pressed={picked.includes(pin) && i === index && !piece.soldOut}
+                  aria-disabled={piece.soldOut}
+                  title={piece.soldOut ? "Out of stock" : undefined}
                   onPointerDown={(event) => event.stopPropagation()}
                   onClick={(event) => {
                     event.stopPropagation();
@@ -509,6 +519,7 @@ export function HomeTryTheLook({ products }: { products: Product[] }) {
                   }}
                 >
                   <span className="cv-look__pin-dot">{pin + 1}</span>
+                  {piece.soldOut ? <span className="cv-look__pin-stock">Out of stock</span> : null}
                 </button>
               ))}
             </div>
@@ -534,68 +545,77 @@ export function HomeTryTheLook({ products }: { products: Product[] }) {
           ›
         </button>
 
-        {picked.length > 0 && look ? (
-          <div className="cv-look__dock" onPointerDown={(event) => event.stopPropagation()}>
-            <p className="cv-look__dock-kicker">
-              {picked.length === 2
-                ? "Set complete"
-                : "1 piece selected · tap the other number to complete the set"}
-            </p>
-            {picked.map((pin) => {
-              const piece = look.pieces[pin];
-              if (!piece) return null;
-              return (
-                <div key={piece.slug} className={`cv-look__dock-row${hot === pin ? " is-focus" : ""}`}>
-                  <span className="cv-look__dock-num">{pin + 1}</span>
-                  <span className="cv-look__dock-media">
-                    <Image src={piece.image} alt="" width={44} height={56} className="cv-look__dock-img" />
-                  </span>
-                  <span className="cv-look__dock-copy">
-                    <span className="cv-look__dock-name">{piece.name}</span>
-                    {piece.soldOut ? (
-                      <span className="cv-look__card-sold">Sold out</span>
-                    ) : (
-                      <span className="cv-look__dock-sizes" role="group" aria-label={`${piece.name} size`}>
-                        {piece.sizes
-                          .filter((option) => option.available || option.label === chosenSize[pin])
-                          .slice(0, 6)
-                          .map((option) => (
-                            <button
-                              key={option.label}
-                              type="button"
-                              className={`cv-look__size${chosenSize[pin] === option.label ? " is-on" : ""}${
-                                needSize && !chosenSize[pin] ? " is-need" : ""
-                              }`}
-                              disabled={!option.available}
-                              onClick={() => {
-                                setChosenSize((sizes) => ({ ...sizes, [pin]: option.label }));
-                                setNeedSize(false);
-                              }}
-                            >
-                              {option.label}
-                            </button>
-                          ))}
-                      </span>
-                    )}
-                  </span>
-                  <span className="cv-look__dock-price">
-                    {piece.soldOut ? "—" : formatPrice(piecePrice(piece))}
-                  </span>
-                </div>
-              );
-            })}
-            <button
-              type="button"
-              className="cv-look__pay"
-              disabled={paying || payable.length === 0}
-              onClick={pay}
-            >
-              {payable.length === 2 ? "Pay the look" : "Pay now"}
-              {payable.length > 0 ? ` · ${formatPrice(payTotal)}` : ""}
-            </button>
-          </div>
-        ) : null}
       </div>
+
+      {picked.length > 0 && look ? (
+        <div className="cv-look__dock">
+          <p className="cv-look__dock-kicker">
+            {picked.length === 2
+              ? "Set complete"
+              : "1 piece selected · tap the other number to complete the set"}
+          </p>
+          {picked.map((pin) => {
+            const piece = look.pieces[pin];
+            if (!piece) return null;
+            return (
+              <div key={piece.slug} className={`cv-look__dock-row${hot === pin ? " is-focus" : ""}`}>
+                <span className="cv-look__dock-num">{pin + 1}</span>
+                <span className="cv-look__dock-media">
+                  <Image src={piece.image} alt="" width={44} height={56} className="cv-look__dock-img" />
+                </span>
+                <span className="cv-look__dock-copy">
+                  <span className="cv-look__dock-name">{piece.name}</span>
+                  {piece.soldOut ? (
+                    <span className="cv-look__card-sold">Sold out</span>
+                  ) : (
+                    <span className="cv-look__dock-sizes" role="group" aria-label={`${piece.name} size`}>
+                      {piece.sizes
+                        .filter((option) => option.available || option.label === chosenSize[pin])
+                        .slice(0, 6)
+                        .map((option) => (
+                          <button
+                            key={option.label}
+                            type="button"
+                            className={`cv-look__size${chosenSize[pin] === option.label ? " is-on" : ""}${
+                              needSize && !chosenSize[pin] ? " is-need" : ""
+                            }`}
+                            disabled={!option.available}
+                            onClick={() => {
+                              setChosenSize((sizes) => ({ ...sizes, [pin]: option.label }));
+                              setNeedSize(false);
+                            }}
+                          >
+                            {option.label}
+                          </button>
+                        ))}
+                    </span>
+                  )}
+                </span>
+                <span className="cv-look__dock-price">
+                  {piece.soldOut ? "—" : formatPrice(piecePrice(piece))}
+                </span>
+                <button
+                  type="button"
+                  className="cv-look__dock-x"
+                  aria-label={`Remove ${piece.name}`}
+                  onClick={() => dropPin(pin)}
+                >
+                  ×
+                </button>
+              </div>
+            );
+          })}
+          <button
+            type="button"
+            className="cv-look__pay"
+            disabled={paying || payable.length === 0}
+            onClick={pay}
+          >
+            {payable.length === 2 ? "Pay the look" : "Pay now"}
+            {payable.length > 0 ? ` · ${formatPrice(payTotal)}` : ""}
+          </button>
+        </div>
+      ) : null}
 
       <div className="cv-look__bar">
         <div className="cv-look__dots" role="tablist" aria-label="Looks">

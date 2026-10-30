@@ -223,7 +223,6 @@ export function HomeClothesline({ products }: { products: Product[] }) {
       t: event.timeStamp,
     };
     setDragging(false);
-    event.currentTarget.setPointerCapture(event.pointerId);
   };
 
   const onPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
@@ -242,6 +241,9 @@ export function HomeClothesline({ products }: { products: Product[] }) {
       }
     }
     if (state.axis !== "x") return;
+    if (!event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.setPointerCapture(event.pointerId);
+    }
     const dt = Math.max(8, event.timeStamp - state.t);
     velocity.current = (dx / dt) * 16.6;
     offset.current += dx;
