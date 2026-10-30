@@ -2936,6 +2936,7 @@ textarea.checkout-field {
 .cv-look__img {
   object-fit: contain;
   object-position: center center;
+  background: transparent;
   pointer-events: none;
   user-select: none;
   filter: drop-shadow(0 22px 18px rgb(20 16 12 / 0.18));
@@ -3004,32 +3005,44 @@ textarea.checkout-field {
   color: #ffffff;
 }
 
-.cv-look__pin.is-sold,
-.cv-look__pin.is-soon {
+.cv-look__pin.is-sold {
   cursor: not-allowed;
 }
 
-.cv-look__pin.is-sold .cv-look__pin-dot,
 .cv-look__pin.is-soon .cv-look__pin-dot {
-  background: #ececec;
-  color: #8a8580;
+  background: #e5e7eb;
+  color: #6b7280;
 }
 
-.cv-look__pin.is-sold .cv-look__pin-dot::after,
+.cv-look__pin.is-sold .cv-look__pin-dot {
+  background: #fde8ea;
+  color: #e11d48;
+}
+
 .cv-look__pin.is-soon .cv-look__pin-dot::after {
   animation: none;
-  border-color: rgb(90 88 84 / 0.45);
+  border-color: rgb(107 114 128 / 0.5);
+}
+
+.cv-look__pin.is-sold .cv-look__pin-dot::after {
+  animation: none;
+  border-color: rgb(225 29 72 / 0.45);
+}
+
+.cv-look__pin.is-soon:hover .cv-look__pin-dot,
+.cv-look__pin.is-soon.is-hot .cv-look__pin-dot,
+.cv-look__pin.is-soon.is-on .cv-look__pin-dot {
+  transform: scale(1.28);
+  background: #6b7280;
+  color: #ffffff;
 }
 
 .cv-look__pin.is-sold:hover .cv-look__pin-dot,
 .cv-look__pin.is-sold.is-hot .cv-look__pin-dot,
-.cv-look__pin.is-sold.is-on .cv-look__pin-dot,
-.cv-look__pin.is-soon:hover .cv-look__pin-dot,
-.cv-look__pin.is-soon.is-hot .cv-look__pin-dot,
-.cv-look__pin.is-soon.is-on .cv-look__pin-dot {
+.cv-look__pin.is-sold.is-on .cv-look__pin-dot {
   transform: none;
-  background: #ececec;
-  color: #8a8580;
+  background: #fde8ea;
+  color: #e11d48;
 }
 
 .cv-look__pin-stock {
@@ -3050,6 +3063,14 @@ textarea.checkout-field {
   white-space: nowrap;
   pointer-events: none;
   box-shadow: 0 4px 10px -4px rgb(0 0 0 / 0.35);
+}
+
+.cv-look__pin-stock.is-soon {
+  background: #6b7280;
+}
+
+.cv-look__pin-stock.is-sold {
+  background: #e11d48;
 }
 
 @keyframes cv-look-ring {
@@ -3302,6 +3323,13 @@ textarea.checkout-field {
 
 .cv-look__pay:disabled {
   opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.cv-look__pay--soon,
+.cv-look__pay--soon:disabled {
+  background: #6b7280;
+  opacity: 1;
   cursor: not-allowed;
 }
 
@@ -3566,16 +3594,20 @@ textarea.checkout-field {
 
 .cv-rail__tag-face.is-sold,
 .cv-rail__tag-face.is-soon {
-  background: #1c1b19;
-  color: #fbf8f1;
   min-width: 58px;
   padding-inline: 6px;
   letter-spacing: 0.08em;
+  color: #ffffff;
 }
 
 .cv-rail__tag-face.is-soon {
   min-width: 72px;
   font-size: 8px;
+  background: #6b7280;
+}
+
+.cv-rail__tag-face.is-sold {
+  background: #e11d48;
 }
 
 .cv-rail__tag-face.is-sold::before,

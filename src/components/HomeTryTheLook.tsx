@@ -32,8 +32,16 @@ function fallbackSizes(locked: boolean): SizeOpt[] {
   return FALLBACK_SIZE_LABELS.map((label) => ({ label, available: !locked }));
 }
 
-function pieceLocked(piece: Pick<Piece, "comingSoon" | "soldOut">) {
+function pieceSoldOut(piece: Pick<Piece, "soldOut">) {
+  return piece.soldOut;
+}
+
+function pieceUnbuyable(piece: Pick<Piece, "comingSoon" | "soldOut">) {
   return piece.comingSoon || piece.soldOut;
+}
+
+function pickSize(piece: Pick<Piece, "sizes">) {
+  return firstAvailableSize(piece.sizes) ?? piece.sizes[0]?.label ?? null;
 }
 
 type Look = {
@@ -113,9 +121,9 @@ const FALLBACK_PIECES: Record<string, Omit<Piece, "x" | "y" | "sizes">> = {
 };
 
 const LOOK_PLAN: { id: string; name: string; image: string; top: string; bottom: string }[] = [
-  { id: "night-walk", name: "Night Walk", image: "/images/looks/night-walk.png", top: "hoodie-cropped-black", bottom: "baggy-jogger-black" },
+  { id: "night-walk", name: "Night Walk", image: "/images/looks/night-walk-v2.png", top: "hoodie-cropped-black", bottom: "baggy-jogger-black" },
   { id: "ash-hour", name: "Ash Hour", image: "/images/looks/ash-hour.png", top: "hoodie-cropped-white", bottom: "baggy-jogger-grey" },
-  { id: "vandal", name: "Vandal", image: "/images/looks/vandal.png", top: "vandal-tee-black", bottom: "baggy-jogger-black" },
+  { id: "vandal", name: "Vandal", image: "/images/looks/vandal-v3.png", top: "vandal-tee-black", bottom: "baggy-jogger-black" },
   { id: "violet", name: "Violet", image: "/images/looks/violet-v2.png", top: "violet-tee-purple", bottom: "baggy-jogger-grey" },
   { id: "crop-black", name: "Crop Black", image: "/images/looks/crop-black-v2.png", top: "hoodie-cropped-black", bottom: "baggy-jogger-grey" },
   { id: "street-grey", name: "Street Grey", image: "/images/looks/street-grey-v2.png", top: "hoodie-cropped-white", bottom: "baggy-jogger-black" },
@@ -130,12 +138,16 @@ function catalogPiece(slug: string, products: Product[]): Omit<Piece, "x" | "y">
   const product = products.find((row) => row.slug === slug);
   const fallback = FALLBACK_PIECES[slug] ?? FALLBACK_PIECES["hoodie-cropped-black"];
   if (!product) {
-    return { ...fallback, sizes: fallbackSizes(pieceLocked(fallback)) };
+    return { ...fallback, sizes: fallbackSizes(pieceSoldOut(fallback)) };
   }
   const image = product.images.find((src) => src && !src.startsWith("/media/")) ?? fallback.image;
   const sale = effectivePrice(product);
   const comingSoon = isComingSoon(product);
   const soldOut = !comingSoon && isSoldOut(product);
+  const sizes = getSizeOptionsForProduct(product).map(({ label, available }) => ({
+    label,
+    available,
+  }));
   return {
     id: product.id,
     slug: product.slug,
@@ -146,9 +158,10 @@ function catalogPiece(slug: string, products: Product[]): Omit<Piece, "x" | "y">
     comingSoon,
     soldOut,
     colorway: product.colorway,
-    sizes: comingSoon
-      ? fallbackSizes(true)
-      : getSizeOptionsForProduct(product).map(({ label, available }) => ({ label, available })),
+    sizes:
+      comingSoon && !sizes.some((option) => option.available)
+        ? sizes.map((option) => ({ ...option, available: true }))
+        : sizes,
   };
 }
 
@@ -234,8 +247,9 @@ export function HomeTryTheLook({ products }: { products: Product[] }) {
   pickedLen.current = picked.length;
 
   const selected = look ? picked.map((pin) => look.pieces[pin]).filter(Boolean) : [];
-  const payable = selected.filter((piece) => !pieceLocked(piece));
+  const payable = selected.filter((piece) => !pieceUnbuyable(piece));
   const payTotal = payable.reduce((sum, piece) => sum + piecePrice(piece), 0);
+  const soonOnly = selected.length > 0 && payable.length === 0 && selected.some((piece) => piece.comingSoon);
 
   const paint = useCallback(() => {
     const width = widthRef.current;
@@ -341,7 +355,7 @@ export function HomeTryTheLook({ products }: { products: Product[] }) {
 
   const togglePin = (pin: number) => {
     const piece = look?.pieces[pin];
-    if (!piece || pieceLocked(piece)) return;
+    if (!piece || pieceSoldOut(piece)) return;
     setPicked((prev) => {
       if (prev.includes(pin)) {
         setChosenSize((sizes) => {
@@ -351,7 +365,7 @@ export function HomeTryTheLook({ products }: { products: Product[] }) {
         });
         return prev.filter((n) => n !== pin);
       }
-      const nextSize = firstAvailableSize(piece.sizes);
+      const nextSize = pickSize(piece);
       if (nextSize) {
         setChosenSize((sizes) => ({ ...sizes, [pin]: nextSize }));
       }
@@ -378,7 +392,7 @@ export function HomeTryTheLook({ products }: { products: Product[] }) {
     if (!look || paying || payable.length === 0) return;
     const missing = picked.find((pin) => {
       const piece = look.pieces[pin];
-      return piece && !pieceLocked(piece) && !chosenSize[pin];
+      return piece && !pieceUnbuyable(piece) && !chosenSize[pin];
     });
     if (missing != null) {
       setHot(missing);
@@ -388,7 +402,7 @@ export function HomeTryTheLook({ products }: { products: Product[] }) {
     setPaying(true);
     for (const pin of picked) {
       const piece = look.pieces[pin];
-      if (!piece || pieceLocked(piece)) continue;
+      if (!piece || pieceUnbuyable(piece)) continue;
       addLine(
         {
           productId: piece.id,
@@ -507,6 +521,7 @@ export function HomeTryTheLook({ products }: { products: Product[] }) {
                 fill
                 sizes="(min-width: 768px) 280px, 42vw"
                 priority={i === 0}
+                placeholder="empty"
                 className="cv-look__img"
               />
             </div>
@@ -515,15 +530,15 @@ export function HomeTryTheLook({ products }: { products: Product[] }) {
                 <button
                   key={piece.slug}
                   type="button"
-                  className={`cv-look__pin${picked.includes(pin) && i === index && !pieceLocked(piece) ? " is-on" : ""}${
-                    hot === pin && i === index && !pieceLocked(piece) ? " is-hot" : ""
+                  className={`cv-look__pin${picked.includes(pin) && i === index && !pieceSoldOut(piece) ? " is-on" : ""}${
+                    hot === pin && i === index && !pieceSoldOut(piece) ? " is-hot" : ""
                   }${piece.comingSoon ? " is-soon" : piece.soldOut ? " is-sold" : ""}`}
                   style={{ left: piece.x, top: piece.y }}
                   aria-label={`${pin + 1}: ${piece.name}${
                     piece.comingSoon ? " — coming soon" : piece.soldOut ? " — out of stock" : ""
                   }`}
-                  aria-pressed={picked.includes(pin) && i === index && !pieceLocked(piece)}
-                  aria-disabled={pieceLocked(piece)}
+                  aria-pressed={picked.includes(pin) && i === index && !pieceSoldOut(piece)}
+                  aria-disabled={pieceSoldOut(piece)}
                   title={piece.comingSoon ? "Coming soon" : piece.soldOut ? "Out of stock" : undefined}
                   onPointerDown={(event) => event.stopPropagation()}
                   onClick={(event) => {
@@ -539,7 +554,7 @@ export function HomeTryTheLook({ products }: { products: Product[] }) {
                   {piece.comingSoon ? (
                     <span className="cv-look__pin-stock is-soon">Coming soon</span>
                   ) : piece.soldOut ? (
-                    <span className="cv-look__pin-stock">Out of stock</span>
+                    <span className="cv-look__pin-stock is-sold">Out of stock</span>
                   ) : null}
                 </button>
               ))}
@@ -586,11 +601,9 @@ export function HomeTryTheLook({ products }: { products: Product[] }) {
                 </span>
                 <span className="cv-look__dock-copy">
                   <span className="cv-look__dock-name">{piece.name}</span>
-                  {piece.comingSoon ? (
-                    <span className="cv-look__card-soon">Coming soon</span>
-                  ) : piece.soldOut ? (
-                    <span className="cv-look__card-sold">Sold out</span>
-                  ) : (
+                  {piece.comingSoon ? <span className="cv-look__card-soon">Coming soon</span> : null}
+                  {piece.soldOut ? <span className="cv-look__card-sold">Sold out</span> : null}
+                  {!piece.soldOut ? (
                     <span className="cv-look__dock-sizes" role="group" aria-label={`${piece.name} size`}>
                       {piece.sizes
                         .filter((option) => option.available || option.label === chosenSize[pin])
@@ -612,10 +625,10 @@ export function HomeTryTheLook({ products }: { products: Product[] }) {
                           </button>
                         ))}
                     </span>
-                  )}
+                  ) : null}
                 </span>
                 <span className="cv-look__dock-price">
-                  {pieceLocked(piece) ? "—" : formatPrice(piecePrice(piece))}
+                  {pieceSoldOut(piece) ? "—" : formatPrice(piecePrice(piece))}
                 </span>
                 <button
                   type="button"
@@ -630,11 +643,15 @@ export function HomeTryTheLook({ products }: { products: Product[] }) {
           })}
           <button
             type="button"
-            className="cv-look__pay"
+            className={`cv-look__pay${soonOnly ? " cv-look__pay--soon" : ""}`}
             disabled={paying || payable.length === 0}
             onClick={pay}
           >
-            {payable.length === 2 ? "Pay the look" : "Pay now"}
+            {soonOnly
+              ? "Coming soon"
+              : payable.length === 2
+                ? "Pay the look"
+                : "Pay now"}
             {payable.length > 0 ? ` · ${formatPrice(payTotal)}` : ""}
           </button>
         </div>
