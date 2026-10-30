@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useStore } from "@/components/StoreProvider";
 import { formatPrice } from "@/lib/format";
-import { firstAvailableSize, getSizeOptionsForProduct } from "@/lib/productSizesDisplay";
+import { getSizeOptionsForProduct } from "@/lib/productSizesDisplay";
 import { effectivePrice, isComingSoon, isSoldOut } from "@/lib/products";
 import type { Product } from "@/lib/types";
 
@@ -38,10 +38,6 @@ function pieceSoldOut(piece: Pick<Piece, "soldOut">) {
 
 function pieceUnbuyable(piece: Pick<Piece, "comingSoon" | "soldOut">) {
   return piece.comingSoon || piece.soldOut;
-}
-
-function pickSize(piece: Pick<Piece, "sizes">) {
-  return firstAvailableSize(piece.sizes) ?? piece.sizes[0]?.label ?? null;
 }
 
 type Look = {
@@ -250,6 +246,17 @@ export function HomeTryTheLook({ products }: { products: Product[] }) {
   const payable = selected.filter((piece) => !pieceUnbuyable(piece));
   const payTotal = payable.reduce((sum, piece) => sum + piecePrice(piece), 0);
   const soonOnly = selected.length > 0 && payable.length === 0 && selected.some((piece) => piece.comingSoon);
+  const dockPins = picked.filter((pin) => {
+    const piece = look?.pieces[pin];
+    if (!piece) return false;
+    if (payable.length > 0 && piece.comingSoon) return false;
+    return true;
+  });
+  const canCompleteSet =
+    dockPins.length === 1 &&
+    Boolean(
+      look?.pieces.some((piece, pin) => !dockPins.includes(pin) && !pieceUnbuyable(piece)),
+    );
 
   const paint = useCallback(() => {
     const width = widthRef.current;
@@ -364,10 +371,6 @@ export function HomeTryTheLook({ products }: { products: Product[] }) {
           return next;
         });
         return prev.filter((n) => n !== pin);
-      }
-      const nextSize = pickSize(piece);
-      if (nextSize) {
-        setChosenSize((sizes) => ({ ...sizes, [pin]: nextSize }));
       }
       return [...prev, pin].sort((a, b) => a - b);
     });
@@ -583,14 +586,16 @@ export function HomeTryTheLook({ products }: { products: Product[] }) {
 
       </div>
 
-      {picked.length > 0 && look ? (
+      {dockPins.length > 0 && look ? (
         <div className="cv-look__dock">
           <p className="cv-look__dock-kicker">
-            {picked.length === 2
+            {dockPins.length === 2
               ? "Set complete"
-              : "1 piece selected · tap the other number to complete the set"}
+              : canCompleteSet
+                ? "1 piece selected · tap the other number to complete the set"
+                : "1 piece selected"}
           </p>
-          {picked.map((pin) => {
+          {dockPins.map((pin) => {
             const piece = look.pieces[pin];
             if (!piece) return null;
             return (
