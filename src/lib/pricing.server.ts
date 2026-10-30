@@ -1,4 +1,4 @@
-import { getProductById, productHoverImage } from "@/lib/products";
+import { getProductById, isComingSoon, productHoverImage } from "@/lib/products";
 import { getCatalog } from "@/lib/storefrontCatalog";
 import type { CartLine } from "@/lib/types";
 
@@ -18,6 +18,13 @@ export async function priceCart(requested: CartLine[]): Promise<PricedCart> {
     const product = getProductById(line.productId, catalog);
     if (!product) {
       return { ok: false, error: "Unknown product in bag.", status: 400 };
+    }
+    if (isComingSoon(product)) {
+      return {
+        ok: false,
+        error: `"${product.name}" is coming soon and cannot be ordered yet.`,
+        status: 409,
+      };
     }
 
     const sizeEntry = product.sizes.find((entry) => entry.size === line.size);

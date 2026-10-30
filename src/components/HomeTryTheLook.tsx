@@ -6,7 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useStore } from "@/components/StoreProvider";
 import { formatPrice } from "@/lib/format";
 import { firstAvailableSize, getSizeOptionsForProduct } from "@/lib/productSizesDisplay";
-import { effectivePrice, isSoldOut } from "@/lib/products";
+import { effectivePrice, isComingSoon, isSoldOut } from "@/lib/products";
 import type { Product } from "@/lib/types";
 
 type SizeOpt = { label: string; available: boolean };
@@ -18,6 +18,7 @@ type Piece = {
   image: string;
   price: number;
   salePrice: number | null;
+  comingSoon: boolean;
   soldOut: boolean;
   colorway: string;
   sizes: SizeOpt[];
@@ -27,8 +28,12 @@ type Piece = {
 
 const FALLBACK_SIZE_LABELS = ["S", "M", "L", "XL"];
 
-function fallbackSizes(soldOut: boolean): SizeOpt[] {
-  return FALLBACK_SIZE_LABELS.map((label) => ({ label, available: !soldOut }));
+function fallbackSizes(locked: boolean): SizeOpt[] {
+  return FALLBACK_SIZE_LABELS.map((label) => ({ label, available: !locked }));
+}
+
+function pieceLocked(piece: Pick<Piece, "comingSoon" | "soldOut">) {
+  return piece.comingSoon || piece.soldOut;
 }
 
 type Look = {
@@ -46,6 +51,7 @@ const FALLBACK_PIECES: Record<string, Omit<Piece, "x" | "y" | "sizes">> = {
     image: "https://8pz9hlket4r72cs1.public.blob.vercel-storage.com/uploads/products/1792418556469-7ho3y9.webp",
     price: 99,
     salePrice: 75,
+    comingSoon: true,
     soldOut: false,
     colorway: "Black",
   },
@@ -56,6 +62,7 @@ const FALLBACK_PIECES: Record<string, Omit<Piece, "x" | "y" | "sizes">> = {
     image: "https://8pz9hlket4r72cs1.public.blob.vercel-storage.com/uploads/products/1792421835881-jfg5sb.webp",
     price: 99,
     salePrice: 75,
+    comingSoon: true,
     soldOut: false,
     colorway: "White",
   },
@@ -66,6 +73,7 @@ const FALLBACK_PIECES: Record<string, Omit<Piece, "x" | "y" | "sizes">> = {
     image: "https://8pz9hlket4r72cs1.public.blob.vercel-storage.com/uploads/products/1792281245989-9xvdj3.webp",
     price: 85,
     salePrice: 65,
+    comingSoon: false,
     soldOut: false,
     colorway: "Black",
   },
@@ -76,6 +84,7 @@ const FALLBACK_PIECES: Record<string, Omit<Piece, "x" | "y" | "sizes">> = {
     image: "https://8pz9hlket4r72cs1.public.blob.vercel-storage.com/uploads/products/1792283525958-sttzrc.webp",
     price: 85,
     salePrice: 65,
+    comingSoon: false,
     soldOut: false,
     colorway: "Grey",
   },
@@ -86,6 +95,7 @@ const FALLBACK_PIECES: Record<string, Omit<Piece, "x" | "y" | "sizes">> = {
     image: "/uploads/products/1786816146722-1zxvsz.webp",
     price: 89.99,
     salePrice: 75,
+    comingSoon: false,
     soldOut: true,
     colorway: "Black",
   },
@@ -96,6 +106,7 @@ const FALLBACK_PIECES: Record<string, Omit<Piece, "x" | "y" | "sizes">> = {
     image: "/uploads/products/1786817522827-yzije4.webp",
     price: 89.99,
     salePrice: 75,
+    comingSoon: false,
     soldOut: true,
     colorway: "Purple",
   },
@@ -119,11 +130,12 @@ function catalogPiece(slug: string, products: Product[]): Omit<Piece, "x" | "y">
   const product = products.find((row) => row.slug === slug);
   const fallback = FALLBACK_PIECES[slug] ?? FALLBACK_PIECES["hoodie-cropped-black"];
   if (!product) {
-    return { ...fallback, sizes: fallbackSizes(fallback.soldOut) };
+    return { ...fallback, sizes: fallbackSizes(pieceLocked(fallback)) };
   }
   const image = product.images.find((src) => src && !src.startsWith("/media/")) ?? fallback.image;
   const sale = effectivePrice(product);
-  const soldOut = isSoldOut(product);
+  const comingSoon = isComingSoon(product);
+  const soldOut = !comingSoon && isSoldOut(product);
   return {
     id: product.id,
     slug: product.slug,
@@ -131,9 +143,12 @@ function catalogPiece(slug: string, products: Product[]): Omit<Piece, "x" | "y">
     image,
     price: product.price,
     salePrice: sale < product.price ? sale : null,
+    comingSoon,
     soldOut,
     colorway: product.colorway,
-    sizes: getSizeOptionsForProduct(product).map(({ label, available }) => ({ label, available })),
+    sizes: comingSoon
+      ? fallbackSizes(true)
+      : getSizeOptionsForProduct(product).map(({ label, available }) => ({ label, available })),
   };
 }
 
@@ -219,7 +234,7 @@ export function HomeTryTheLook({ products }: { products: Product[] }) {
   pickedLen.current = picked.length;
 
   const selected = look ? picked.map((pin) => look.pieces[pin]).filter(Boolean) : [];
-  const payable = selected.filter((piece) => !piece.soldOut);
+  const payable = selected.filter((piece) => !pieceLocked(piece));
   const payTotal = payable.reduce((sum, piece) => sum + piecePrice(piece), 0);
 
   const paint = useCallback(() => {
@@ -326,7 +341,7 @@ export function HomeTryTheLook({ products }: { products: Product[] }) {
 
   const togglePin = (pin: number) => {
     const piece = look?.pieces[pin];
-    if (!piece || piece.soldOut) return;
+    if (!piece || pieceLocked(piece)) return;
     setPicked((prev) => {
       if (prev.includes(pin)) {
         setChosenSize((sizes) => {
@@ -363,7 +378,7 @@ export function HomeTryTheLook({ products }: { products: Product[] }) {
     if (!look || paying || payable.length === 0) return;
     const missing = picked.find((pin) => {
       const piece = look.pieces[pin];
-      return piece && !piece.soldOut && !chosenSize[pin];
+      return piece && !pieceLocked(piece) && !chosenSize[pin];
     });
     if (missing != null) {
       setHot(missing);
@@ -373,7 +388,7 @@ export function HomeTryTheLook({ products }: { products: Product[] }) {
     setPaying(true);
     for (const pin of picked) {
       const piece = look.pieces[pin];
-      if (!piece || piece.soldOut) continue;
+      if (!piece || pieceLocked(piece)) continue;
       addLine(
         {
           productId: piece.id,
@@ -500,14 +515,16 @@ export function HomeTryTheLook({ products }: { products: Product[] }) {
                 <button
                   key={piece.slug}
                   type="button"
-                  className={`cv-look__pin${picked.includes(pin) && i === index && !piece.soldOut ? " is-on" : ""}${
-                    hot === pin && i === index && !piece.soldOut ? " is-hot" : ""
-                  }${piece.soldOut ? " is-sold" : ""}`}
+                  className={`cv-look__pin${picked.includes(pin) && i === index && !pieceLocked(piece) ? " is-on" : ""}${
+                    hot === pin && i === index && !pieceLocked(piece) ? " is-hot" : ""
+                  }${piece.comingSoon ? " is-soon" : piece.soldOut ? " is-sold" : ""}`}
                   style={{ left: piece.x, top: piece.y }}
-                  aria-label={`${pin + 1}: ${piece.name}${piece.soldOut ? " — out of stock" : ""}`}
-                  aria-pressed={picked.includes(pin) && i === index && !piece.soldOut}
-                  aria-disabled={piece.soldOut}
-                  title={piece.soldOut ? "Out of stock" : undefined}
+                  aria-label={`${pin + 1}: ${piece.name}${
+                    piece.comingSoon ? " — coming soon" : piece.soldOut ? " — out of stock" : ""
+                  }`}
+                  aria-pressed={picked.includes(pin) && i === index && !pieceLocked(piece)}
+                  aria-disabled={pieceLocked(piece)}
+                  title={piece.comingSoon ? "Coming soon" : piece.soldOut ? "Out of stock" : undefined}
                   onPointerDown={(event) => event.stopPropagation()}
                   onClick={(event) => {
                     event.stopPropagation();
@@ -519,7 +536,11 @@ export function HomeTryTheLook({ products }: { products: Product[] }) {
                   }}
                 >
                   <span className="cv-look__pin-dot">{pin + 1}</span>
-                  {piece.soldOut ? <span className="cv-look__pin-stock">Out of stock</span> : null}
+                  {piece.comingSoon ? (
+                    <span className="cv-look__pin-stock is-soon">Coming soon</span>
+                  ) : piece.soldOut ? (
+                    <span className="cv-look__pin-stock">Out of stock</span>
+                  ) : null}
                 </button>
               ))}
             </div>
@@ -565,7 +586,9 @@ export function HomeTryTheLook({ products }: { products: Product[] }) {
                 </span>
                 <span className="cv-look__dock-copy">
                   <span className="cv-look__dock-name">{piece.name}</span>
-                  {piece.soldOut ? (
+                  {piece.comingSoon ? (
+                    <span className="cv-look__card-soon">Coming soon</span>
+                  ) : piece.soldOut ? (
                     <span className="cv-look__card-sold">Sold out</span>
                   ) : (
                     <span className="cv-look__dock-sizes" role="group" aria-label={`${piece.name} size`}>
@@ -592,7 +615,7 @@ export function HomeTryTheLook({ products }: { products: Product[] }) {
                   )}
                 </span>
                 <span className="cv-look__dock-price">
-                  {piece.soldOut ? "—" : formatPrice(piecePrice(piece))}
+                  {pieceLocked(piece) ? "—" : formatPrice(piecePrice(piece))}
                 </span>
                 <button
                   type="button"

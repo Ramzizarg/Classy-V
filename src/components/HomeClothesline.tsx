@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BrandMark, BRAND_MARK_FOOTER_SRC } from "@/components/BrandMark";
-import { effectivePrice, isSoldOut } from "@/lib/products";
+import { effectivePrice, isComingSoon, isSoldOut } from "@/lib/products";
 import type { Product } from "@/lib/types";
 
 type RailItem = {
@@ -14,6 +14,7 @@ type RailItem = {
   image: string;
   price: number;
   salePrice: number | null;
+  comingSoon: boolean;
   soldOut: boolean;
 };
 
@@ -28,6 +29,7 @@ const FALLBACK_ITEMS: RailItem[] = [
     image: "https://8pz9hlket4r72cs1.public.blob.vercel-storage.com/uploads/products/1792281245989-9xvdj3.webp",
     price: 85,
     salePrice: 65,
+    comingSoon: false,
     soldOut: false,
   },
   {
@@ -37,6 +39,7 @@ const FALLBACK_ITEMS: RailItem[] = [
     image: "https://8pz9hlket4r72cs1.public.blob.vercel-storage.com/uploads/products/1792283525958-sttzrc.webp",
     price: 85,
     salePrice: 65,
+    comingSoon: false,
     soldOut: false,
   },
   {
@@ -46,6 +49,7 @@ const FALLBACK_ITEMS: RailItem[] = [
     image: "https://8pz9hlket4r72cs1.public.blob.vercel-storage.com/uploads/products/1792418556469-7ho3y9.webp",
     price: 99,
     salePrice: 75,
+    comingSoon: true,
     soldOut: false,
   },
   {
@@ -55,6 +59,7 @@ const FALLBACK_ITEMS: RailItem[] = [
     image: "https://8pz9hlket4r72cs1.public.blob.vercel-storage.com/uploads/products/1792421835881-jfg5sb.webp",
     price: 99,
     salePrice: 75,
+    comingSoon: true,
     soldOut: false,
   },
   {
@@ -64,6 +69,7 @@ const FALLBACK_ITEMS: RailItem[] = [
     image: "/uploads/products/1786816146722-1zxvsz.webp",
     price: 89.99,
     salePrice: 75,
+    comingSoon: false,
     soldOut: true,
   },
   {
@@ -73,6 +79,7 @@ const FALLBACK_ITEMS: RailItem[] = [
     image: "/uploads/products/1786817522827-yzije4.webp",
     price: 89.99,
     salePrice: 75,
+    comingSoon: false,
     soldOut: true,
   },
 ];
@@ -88,12 +95,19 @@ function toRailItem(product: Product): RailItem | null {
     image,
     price: product.price,
     salePrice: sale < product.price ? sale : null,
-    soldOut: isSoldOut(product),
+    comingSoon: isComingSoon(product),
+    soldOut: !isComingSoon(product) && isSoldOut(product),
   };
 }
 
 function tagPrice(value: number): string {
   return `${Number.isInteger(value) ? String(value) : value.toFixed(0)} DT`;
+}
+
+function tagLabel(item: RailItem, amount: number): string {
+  if (item.comingSoon) return "COMING SOON";
+  if (item.soldOut) return "SOLD OUT";
+  return tagPrice(amount);
 }
 
 function uniqueBySlug(items: RailItem[]): RailItem[] {
@@ -343,7 +357,9 @@ export function HomeClothesline({ products }: { products: Product[] }) {
               <Link
                 key={`${item.id}-${index}`}
                 href={`/collection/${item.slug}`}
-                className={`cv-rail__item${live === index ? " is-live" : ""}${item.soldOut ? " is-sold" : ""}`}
+                className={`cv-rail__item${live === index ? " is-live" : ""}${
+                  item.comingSoon ? " is-soon" : item.soldOut ? " is-sold" : ""
+                }`}
                 style={{ ["--cv-sway" as string]: `${sway}deg` }}
                 onMouseEnter={() => {
                   paused.current = true;
@@ -381,8 +397,12 @@ export function HomeClothesline({ products }: { products: Product[] }) {
                   />
                 </span>
                 <span className="cv-rail__tag">
-                  <span className={`cv-rail__tag-face${item.soldOut ? " is-sold" : ""}`}>
-                    {item.soldOut ? "SOLD OUT" : tagPrice(amount)}
+                  <span
+                    className={`cv-rail__tag-face${
+                      item.comingSoon ? " is-soon" : item.soldOut ? " is-sold" : ""
+                    }`}
+                  >
+                    {tagLabel(item, amount)}
                   </span>
                 </span>
               </Link>
@@ -402,11 +422,7 @@ export function HomeClothesline({ products }: { products: Product[] }) {
             <div className="cv-rail__info">
               <p className="cv-rail__name">{hovered?.name ?? ""}</p>
               <p className="cv-rail__price">
-                {hovered
-                  ? hovered.soldOut
-                    ? "SOLD OUT"
-                    : tagPrice(hovered.salePrice ?? hovered.price)
-                  : ""}
+                {hovered ? tagLabel(hovered, hovered.salePrice ?? hovered.price) : ""}
               </p>
             </div>
           </div>

@@ -52,6 +52,11 @@ export function isComingSoon(product: Product, now = Date.now()): boolean {
   return at > now;
 }
 
+/** Coming-soon drops stay unbuyable even when size stock is already loaded. */
+export function isPurchasable(product: Product, now = Date.now()): boolean {
+  return !isComingSoon(product, now) && !isSoldOut(product);
+}
+
 export function getProduct(slug: string, source: Product[] = PRODUCTS): Product | undefined {
   return source.find((product) => product.slug === slug);
 }

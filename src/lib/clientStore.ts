@@ -1,5 +1,5 @@
 import { CART_STORAGE_KEY, WISHLIST_STORAGE_KEY, cartLineKey, isCartLine } from "@/lib/cart";
-import { productHoverImage } from "@/lib/products";
+import { isPurchasable, productHoverImage } from "@/lib/products";
 import type { CartLine, Product } from "@/lib/types";
 
 /**
@@ -144,9 +144,18 @@ export function clearCart(): void {
 export function refreshLinesFromCatalog(products: Product[]): void {
   const byId = new Map(products.map((product) => [product.id, product]));
   let changed = false;
-  const lines = state.lines.map((line) => {
+  const lines = state.lines.flatMap((line) => {
     const product = byId.get(line.productId);
-    if (!product) return line;
+    if (!product) return [line];
+    if (!isPurchasable(product)) {
+      changed = true;
+      return [];
+    }
+    const sizeStock = product.sizes.find((entry) => entry.size === line.size)?.stock ?? 0;
+    if (sizeStock < 1) {
+      changed = true;
+      return [];
+    }
     const image = product.images[0] ?? line.image;
     const hoverImage = productHoverImage(product.images);
     if (
@@ -155,10 +164,10 @@ export function refreshLinesFromCatalog(products: Product[]): void {
       image === line.image &&
       hoverImage === line.hoverImage
     ) {
-      return line;
+      return [line];
     }
     changed = true;
-    return { ...line, name: product.name, slug: product.slug, image, hoverImage };
+    return [{ ...line, name: product.name, slug: product.slug, image, hoverImage }];
   });
   if (changed) commit({ lines });
 }
