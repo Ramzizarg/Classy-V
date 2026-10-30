@@ -105,9 +105,9 @@ const LOOK_PLAN: { id: string; name: string; image: string; top: string; bottom:
   { id: "night-walk", name: "Night Walk", image: "/images/looks/night-walk.png", top: "hoodie-cropped-black", bottom: "baggy-jogger-black" },
   { id: "ash-hour", name: "Ash Hour", image: "/images/looks/ash-hour.png", top: "hoodie-cropped-white", bottom: "baggy-jogger-grey" },
   { id: "vandal", name: "Vandal", image: "/images/looks/vandal.png", top: "vandal-tee-black", bottom: "baggy-jogger-black" },
-  { id: "violet", name: "Violet", image: "/images/looks/violet.png", top: "violet-tee-purple", bottom: "baggy-jogger-grey" },
-  { id: "crop-black", name: "Crop Black", image: "/images/looks/crop-black.png", top: "hoodie-cropped-black", bottom: "baggy-jogger-grey" },
-  { id: "street-grey", name: "Street Grey", image: "/images/looks/street-grey.png", top: "hoodie-cropped-white", bottom: "baggy-jogger-black" },
+  { id: "violet", name: "Violet", image: "/images/looks/violet-v2.png", top: "violet-tee-purple", bottom: "baggy-jogger-grey" },
+  { id: "crop-black", name: "Crop Black", image: "/images/looks/crop-black-v2.png", top: "hoodie-cropped-black", bottom: "baggy-jogger-grey" },
+  { id: "street-grey", name: "Street Grey", image: "/images/looks/street-grey-v2.png", top: "hoodie-cropped-white", bottom: "baggy-jogger-black" },
 ];
 
 const SPRING = 14.5;
