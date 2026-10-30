@@ -129,6 +129,27 @@ export function HomeClothesline({ products }: { products: Product[] }) {
   } | null>(null);
   const [live, setLive] = useState<number | null>(null);
   const [dragging, setDragging] = useState(false);
+  const ready = useRef(new Set<number>());
+  const [, setReadyTick] = useState(0);
+
+  const markReady = useCallback((index: number) => {
+    if (ready.current.has(index)) return;
+    ready.current.add(index);
+    setReadyTick((tick) => tick + 1);
+  }, []);
+
+  const revealImg = useCallback(
+    (index: number, node: HTMLImageElement | null) => {
+      if (!node || ready.current.has(index)) return;
+      const show = () => markReady(index);
+      if (typeof node.decode === "function") {
+        node.decode().then(show).catch(show);
+      } else {
+        show();
+      }
+    },
+    [markReady],
+  );
 
   const baseItems = useMemo(() => {
     const fromCatalog = products.map(toRailItem).filter((row): row is RailItem => row != null);
@@ -344,11 +365,19 @@ export function HomeClothesline({ products }: { products: Product[] }) {
                   <Image
                     src={item.image}
                     alt={item.name}
-                    width={420}
-                    height={520}
+                    fill
+                    sizes="(min-width: 1280px) 234px, (min-width: 768px) 218px, 172px"
                     draggable={false}
                     unoptimized
-                    className="cv-rail__img"
+                    priority={index < baseItems.length}
+                    className={`cv-rail__img${ready.current.has(index) ? " is-ready" : ""}`}
+                    placeholder="empty"
+                    onLoad={(event) => revealImg(index, event.currentTarget)}
+                    ref={(node) => {
+                      if (node && node.complete && node.naturalWidth > 0) {
+                        revealImg(index, node);
+                      }
+                    }}
                   />
                 </span>
                 <span className="cv-rail__tag">

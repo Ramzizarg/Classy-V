@@ -3434,7 +3434,7 @@ textarea.checkout-field {
   transform: translate3d(0, 0, 0);
 }
 
-.cv-rail__item.is-sold .cv-rail__img {
+.cv-rail__item.is-sold .cv-rail__img.is-ready {
   opacity: 0.78;
 }
 
@@ -3480,6 +3480,7 @@ textarea.checkout-field {
 }
 
 .cv-rail__garment {
+  position: relative;
   display: block;
   width: 100%;
   height: var(--cv-h);
@@ -3488,15 +3489,16 @@ textarea.checkout-field {
 }
 
 .cv-rail__img {
-  display: block;
-  width: auto;
-  height: 100%;
-  max-width: 100%;
-  margin-inline: auto;
   object-fit: contain;
   object-position: center top;
+  background: transparent;
   mix-blend-mode: multiply;
   pointer-events: none;
+  opacity: 0;
+}
+
+.cv-rail__img.is-ready {
+  opacity: 1;
   filter: drop-shadow(0 18px 18px rgb(40 32 20 / 0.18));
 }
 
