@@ -3436,6 +3436,45 @@ textarea.checkout-field {
   overflow: hidden;
 }
 
+.cv-rail__nav {
+  position: absolute;
+  top: calc(50% + 6px);
+  z-index: 8;
+  width: 40px;
+  height: 40px;
+  margin-top: -20px;
+  border: 0;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 0.88);
+  color: #111111;
+  font-size: 26px;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgb(0 0 0 / 0.12);
+  transition: transform 160ms ease, background-color 160ms ease;
+}
+
+.cv-rail__nav:hover {
+  background: #ffffff;
+  transform: scale(1.06);
+}
+
+.cv-rail__nav--prev {
+  left: 8px;
+}
+
+.cv-rail__nav--next {
+  right: 8px;
+}
+
+@media (max-width: 639px) {
+  .cv-rail__nav {
+    width: 34px;
+    height: 34px;
+    font-size: 22px;
+  }
+}
+
 .cv-rail__rod {
   position: absolute;
   top: 8px;
@@ -3459,6 +3498,14 @@ textarea.checkout-field {
   cursor: grab;
   user-select: none;
   touch-action: pan-y;
+  overscroll-behavior-x: contain;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 40px, #000 calc(100% - 40px), transparent 100%);
+  mask-image: linear-gradient(90deg, transparent 0, #000 40px, #000 calc(100% - 40px), transparent 100%);
+}
+
+.cv-rail__rack:focus-visible {
+  outline: 2px solid rgb(17 17 17 / 0.28);
+  outline-offset: -2px;
 }
 
 .cv-rail__rack.is-dragging {
@@ -3488,14 +3535,13 @@ textarea.checkout-field {
   text-decoration: none;
   color: inherit;
   transform: rotate(var(--cv-sway, 0deg));
-  transform-origin: 50% 0;
-  animation: cv-rail-sway 7.2s ease-in-out infinite;
-  animation-delay: calc(var(--cv-sway, 0deg) * -0.55s);
+  transform-origin: 50% 6px;
+  animation: cv-rail-sway var(--cv-wind-dur, 5.8s) ease-in-out infinite;
+  animation-delay: var(--cv-wind-delay, 0s);
 }
 
 .cv-rail__item.is-live {
   z-index: 5;
-  animation-play-state: paused;
 }
 
 .cv-rail__item.is-live .cv-rail__garment {
@@ -3538,6 +3584,9 @@ textarea.checkout-field {
 .cv-rail__img.is-ready {
   opacity: 1;
   filter: drop-shadow(0 18px 18px rgb(40 32 20 / 0.18));
+  transform-origin: 50% 0;
+  animation: cv-rail-fabric calc(var(--cv-wind-dur, 5.8s) * 0.82) ease-in-out infinite;
+  animation-delay: calc(var(--cv-wind-delay, 0s) - 0.4s);
 }
 
 .cv-rail__tag {
@@ -3783,17 +3832,42 @@ textarea.checkout-field {
 }
 
 @keyframes cv-rail-sway {
+  0% {
+    transform: rotate(calc(var(--cv-sway, 0deg) - 2.8deg)) translate3d(-7px, 1px, 0);
+  }
+  22% {
+    transform: rotate(calc(var(--cv-sway, 0deg) + 2.1deg)) translate3d(5px, 0, 0);
+  }
+  41% {
+    transform: rotate(calc(var(--cv-sway, 0deg) - 1.4deg)) translate3d(-3px, 1px, 0);
+  }
+  63% {
+    transform: rotate(calc(var(--cv-sway, 0deg) + 3.2deg)) translate3d(8px, 0, 0);
+  }
+  82% {
+    transform: rotate(calc(var(--cv-sway, 0deg) - 2.2deg)) translate3d(-5px, 1px, 0);
+  }
+  100% {
+    transform: rotate(calc(var(--cv-sway, 0deg) - 2.8deg)) translate3d(-7px, 1px, 0);
+  }
+}
+
+@keyframes cv-rail-fabric {
   0%,
   100% {
-    transform: rotate(calc(var(--cv-sway, 0deg) - 0.55deg));
+    transform: rotate(-1.3deg);
   }
-  50% {
-    transform: rotate(calc(var(--cv-sway, 0deg) + 0.7deg));
+  35% {
+    transform: rotate(1.6deg);
+  }
+  68% {
+    transform: rotate(-0.7deg);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .cv-rail__item {
+  .cv-rail__item,
+  .cv-rail__img.is-ready {
     animation: none;
   }
 }

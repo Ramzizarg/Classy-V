@@ -145,6 +145,9 @@ export function HomeClothesline({ products }: { products: Product[] }) {
   const [dragging, setDragging] = useState(false);
   const ready = useRef(new Set<number>());
   const [, setReadyTick] = useState(0);
+  const glide = useRef(0);
+  const idleTimer = useRef(0);
+  const hoverRack = useRef(false);
 
   const markReady = useCallback((index: number) => {
     if (ready.current.has(index)) return;
@@ -196,6 +199,33 @@ export function HomeClothesline({ products }: { products: Product[] }) {
     }
   }, [wrapOffset]);
 
+  const itemSpan = useCallback(() => {
+    const track = trackRef.current;
+    const child = track?.firstElementChild as HTMLElement | undefined;
+    if (!track || !child) return 200;
+    const styles = getComputedStyle(track);
+    const gap = Number.parseFloat(styles.columnGap || styles.gap) || 16;
+    return child.getBoundingClientRect().width + gap;
+  }, []);
+
+  const bumpIdle = useCallback(() => {
+    paused.current = true;
+    window.clearTimeout(idleTimer.current);
+    idleTimer.current = window.setTimeout(() => {
+      if (!drag.current && !hoverRack.current) paused.current = false;
+    }, 2200);
+  }, []);
+
+  const slideBy = useCallback(
+    (dir: number) => {
+      paused.current = true;
+      velocity.current = 0;
+      glide.current += dir * itemSpan();
+      bumpIdle();
+    },
+    [bumpIdle, itemSpan],
+  );
+
   const measure = useCallback(() => {
     const track = trackRef.current;
     if (!track || baseItems.length === 0) return;
@@ -221,7 +251,7 @@ export function HomeClothesline({ products }: { products: Product[] }) {
   useEffect(() => {
     if (baseItems.length === 0) return;
     let frame = 0;
-    const CRUISE = 34;
+    const CRUISE = 38;
     const tick = (ts: number) => {
       const dt = lastTs.current ? Math.min(0.048, (ts - lastTs.current) / 1000) : 0.016;
       lastTs.current = ts;
@@ -229,11 +259,17 @@ export function HomeClothesline({ products }: { products: Product[] }) {
       if (!draggingNow) {
         const target = paused.current || reduceMotion.current ? 0 : CRUISE;
         speed.current += (target - speed.current) * (1 - Math.exp(-dt * 7));
-        if (Math.abs(velocity.current) > 0.4) {
+        if (Math.abs(glide.current) > 0.5) {
+          const step = glide.current * (1 - Math.exp(-dt * 11));
+          offset.current += step;
+          glide.current -= step;
+          velocity.current = 0;
+        } else if (Math.abs(velocity.current) > 0.35) {
           offset.current += velocity.current;
-          velocity.current *= Math.exp(-dt * 4.2);
-          if (Math.abs(velocity.current) < 0.4) velocity.current = 0;
+          velocity.current *= Math.exp(-dt * 2.6);
+          if (Math.abs(velocity.current) < 0.35) velocity.current = 0;
         } else {
+          glide.current = 0;
           offset.current -= speed.current * dt;
         }
         paint();
@@ -244,11 +280,37 @@ export function HomeClothesline({ products }: { products: Product[] }) {
     return () => cancelAnimationFrame(frame);
   }, [baseItems.length, paint]);
 
+  useEffect(() => {
+    const rack = rackRef.current;
+    if (!rack) return;
+    const onWheel = (event: WheelEvent) => {
+      const absX = Math.abs(event.deltaX);
+      const absY = Math.abs(event.deltaY);
+      if (absX < 0.4 && absY < 0.4) return;
+      let delta = absX > absY * 1.05 ? event.deltaX : event.deltaY;
+      if (event.shiftKey) delta = event.deltaY || event.deltaX;
+      if (event.deltaMode === 1) delta *= 18;
+      if (event.deltaMode === 2) delta *= rack.clientWidth * 0.85;
+      event.preventDefault();
+      paused.current = true;
+      glide.current = 0;
+      offset.current -= delta;
+      velocity.current = Math.max(-56, Math.min(56, velocity.current * 0.32 - delta * 0.16));
+      paint();
+      bumpIdle();
+    };
+    rack.addEventListener("wheel", onWheel, { passive: false });
+    return () => rack.removeEventListener("wheel", onWheel);
+  }, [bumpIdle, paint]);
+
+  useEffect(() => () => window.clearTimeout(idleTimer.current), []);
+
   const onPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
     if (event.pointerType === "mouse" && event.button !== 0) return;
     skipClick.current = false;
     paused.current = true;
     velocity.current = 0;
+    glide.current = 0;
     drag.current = {
       id: event.pointerId,
       x: event.clientX,
@@ -266,8 +328,8 @@ export function HomeClothesline({ products }: { products: Product[] }) {
     const dx = event.clientX - state.x;
     const dy = event.clientY - state.y;
     if (state.axis === "none") {
-      if (Math.abs(dx) < 7 && Math.abs(dy) < 7) return;
-      state.axis = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
+      if (Math.abs(dx) < 5 && Math.abs(dy) < 5) return;
+      state.axis = Math.abs(dx) >= Math.abs(dy) * 0.68 ? "x" : "y";
       if (state.axis === "y") {
         drag.current = null;
         setDragging(false);
@@ -280,7 +342,7 @@ export function HomeClothesline({ products }: { products: Product[] }) {
       event.currentTarget.setPointerCapture(event.pointerId);
     }
     const dt = Math.max(8, event.timeStamp - state.t);
-    velocity.current = (dx / dt) * 16.6;
+    velocity.current = Math.max(-62, Math.min(62, (dx / dt) * 18));
     offset.current += dx;
     state.x = event.clientX;
     state.y = event.clientY;
@@ -297,7 +359,19 @@ export function HomeClothesline({ products }: { products: Product[] }) {
     if (!state || state.id !== event.pointerId) return;
     drag.current = null;
     setDragging(false);
-    if (live == null) paused.current = false;
+    bumpIdle();
+    if (live == null && Math.abs(velocity.current) < 0.8) paused.current = false;
+  };
+
+  const onRackKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === "ArrowRight") {
+      event.preventDefault();
+      slideBy(-1);
+    }
+    if (event.key === "ArrowLeft") {
+      event.preventDefault();
+      slideBy(1);
+    }
   };
 
   const onItemClick = (event: React.MouseEvent) => {
@@ -337,14 +411,21 @@ export function HomeClothesline({ products }: { products: Product[] }) {
         <div
           ref={rackRef}
           className={`cv-rail__rack${dragging ? " is-dragging" : ""}`}
+          tabIndex={0}
+          role="region"
+          aria-roledescription="carousel"
+          aria-label="Collection rail"
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={endDrag}
           onPointerCancel={endDrag}
+          onKeyDown={onRackKeyDown}
           onMouseEnter={() => {
+            hoverRack.current = true;
             paused.current = true;
           }}
           onMouseLeave={() => {
+            hoverRack.current = false;
             if (!drag.current) paused.current = false;
             setLive(null);
           }}
@@ -352,7 +433,9 @@ export function HomeClothesline({ products }: { products: Product[] }) {
           <div ref={trackRef} className="cv-rail__track">
           {items.map((item, index) => {
             const amount = item.salePrice ?? item.price;
-            const sway = ((index % 7) - 3) * 0.7;
+            const sway = ((index % 7) - 3) * 0.9;
+            const windDur = 5.2 + (index % 5) * 0.7;
+            const windDelay = ((index % 6) * -0.95).toFixed(2);
             return (
               <Link
                 key={`${item.id}-${index}`}
@@ -360,7 +443,11 @@ export function HomeClothesline({ products }: { products: Product[] }) {
                 className={`cv-rail__item${live === index ? " is-live" : ""}${
                   item.comingSoon ? " is-soon" : item.soldOut ? " is-sold" : ""
                 }`}
-                style={{ ["--cv-sway" as string]: `${sway}deg` }}
+                style={{
+                  ["--cv-sway" as string]: `${sway}deg`,
+                  ["--cv-wind-dur" as string]: `${windDur}s`,
+                  ["--cv-wind-delay" as string]: `${windDelay}s`,
+                }}
                 onMouseEnter={() => {
                   paused.current = true;
                   setLive(index);
@@ -410,13 +497,30 @@ export function HomeClothesline({ products }: { products: Product[] }) {
           })}
           </div>
         </div>
+
+        <button
+          type="button"
+          className="cv-rail__nav cv-rail__nav--prev"
+          aria-label="Previous pieces"
+          onClick={() => slideBy(1)}
+        >
+          ‹
+        </button>
+        <button
+          type="button"
+          className="cv-rail__nav cv-rail__nav--next"
+          aria-label="Next pieces"
+          onClick={() => slideBy(-1)}
+        >
+          ›
+        </button>
       </div>
 
       <div className="cv-rail__foot">
         <div className="cv-rail__lead">
           <div className={`cv-rail__peek${hovered ? " is-on" : ""}`}>
             <p className="cv-rail__hint">
-              <span className="cv-rail__hint-d">Hover a piece · click to look closer</span>
+              <span className="cv-rail__hint-d">Scroll or drag · click to look closer</span>
               <span className="cv-rail__hint-m">Swipe the rail · tap to look closer</span>
             </p>
             <div className="cv-rail__info">
