@@ -3,76 +3,63 @@
 import Image from "next/image";
 import { useRef, useState } from "react";
 import { ProductLightbox } from "@/components/ProductLightbox";
-import { ChevronGlyph } from "@/components/SocialGlyphs";
-
-const SWIPE_PX = 36;
-const TAP_PX = 10;
 
 export function ProductGallery({ images, name }: { images: string[]; name: string }) {
   const [active, setActive] = useState(0);
   const [expanded, setExpanded] = useState(false);
   const multi = images.length > 1;
-  const touch = useRef<{ x: number; y: number; axis: "none" | "x" | "y" } | null>(null);
-  const suppressClick = useRef(false);
+  const railRef = useRef<HTMLDivElement>(null);
+  const tap = useRef<{ x: number; y: number } | null>(null);
 
-  const step = (delta: number) =>
-    setActive((current) => (current + delta + images.length) % images.length);
-
-  const onTouchStart = (event: React.TouchEvent) => {
-    if (!multi) return;
-    const t = event.touches[0];
-    if (!t) return;
-    touch.current = { x: t.clientX, y: t.clientY, axis: "none" };
-    suppressClick.current = false;
-  };
-
-  const onTouchMove = (event: React.TouchEvent) => {
-    const start = touch.current;
-    const t = event.touches[0];
-    if (!start || !t || !multi) return;
-
-    const dx = t.clientX - start.x;
-    const dy = t.clientY - start.y;
-
-    if (start.axis === "none") {
-      if (Math.abs(dx) < TAP_PX && Math.abs(dy) < TAP_PX) return;
-      start.axis = Math.abs(dx) >= Math.abs(dy) ? "x" : "y";
-    }
-
-    if (start.axis === "x") {
-      suppressClick.current = true;
-    }
-  };
-
-  const onTouchEnd = (event: React.TouchEvent) => {
-    const start = touch.current;
-    touch.current = null;
-    if (!start || !multi) return;
-
-    const t = event.changedTouches[0];
-    if (!t) return;
-
-    const dx = t.clientX - start.x;
-    if (start.axis === "x" && Math.abs(dx) >= SWIPE_PX) {
-      suppressClick.current = true;
-      step(dx < 0 ? 1 : -1);
-    }
-  };
-
-  const onTouchCancel = () => {
-    touch.current = null;
-  };
-
-  const openLightbox = () => {
-    if (suppressClick.current) {
-      suppressClick.current = false;
-      return;
-    }
+  const openLightbox = (index: number) => {
+    setActive(index);
     setExpanded(true);
   };
 
+  const slideWidth = () => {
+    const rail = railRef.current;
+    const first = rail?.firstElementChild as HTMLElement | null;
+    if (!rail || !first || first.offsetWidth < 80) return 0;
+    const gap = parseFloat(getComputedStyle(rail).columnGap || getComputedStyle(rail).gap) || 0;
+    return first.offsetWidth + gap;
+  };
+
+  const scrollRailTo = (index: number) => {
+    const rail = railRef.current;
+    const width = slideWidth();
+    if (!rail || width <= 0) return;
+    rail.scrollTo({ left: index * width, behavior: "smooth" });
+  };
+
+  const goTo = (index: number) => {
+    setActive(index);
+    scrollRailTo(index);
+  };
+
+  const onRailPointerDown = (event: React.PointerEvent) => {
+    tap.current = { x: event.clientX, y: event.clientY };
+  };
+
+  const onSlideClick = (index: number) => (event: React.MouseEvent) => {
+    const start = tap.current;
+    tap.current = null;
+    if (start && (Math.abs(event.clientX - start.x) > 8 || Math.abs(event.clientY - start.y) > 8)) {
+      event.preventDefault();
+      return;
+    }
+    openLightbox(index);
+  };
+
+  const onRailScroll = () => {
+    const rail = railRef.current;
+    const width = slideWidth();
+    if (!rail || width <= 0) return;
+    const next = Math.min(images.length - 1, Math.max(0, Math.round(rail.scrollLeft / width)));
+    setActive((current) => (current === next ? current : next));
+  };
+
   return (
-    <div className="product-gallery">
+    <div className={`product-gallery${multi ? " product-gallery--multi" : ""}`}>
       {multi ? (
         <div className="product-gallery__thumbs" role="tablist" aria-label={`${name} images`}>
           {images.map((image, index) => (
@@ -83,7 +70,7 @@ export function ProductGallery({ images, name }: { images: string[]; name: strin
               aria-label={`Show view ${index + 1}`}
               aria-selected={index === active}
               className={`product-gallery__thumb${index === active ? " product-gallery__thumb--active" : ""}`}
-              onClick={() => setActive(index)}
+              onClick={() => goTo(index)}
             >
               <Image
                 src={image}
@@ -98,61 +85,72 @@ export function ProductGallery({ images, name }: { images: string[]; name: strin
         </div>
       ) : null}
 
+      {multi ? (
+        <div className="product-gallery__viewport">
+          <div
+            ref={railRef}
+            className="product-gallery__rail"
+            role="region"
+            aria-roledescription="carousel"
+            aria-label={`${name} images`}
+            data-no-pull-refresh
+            onScroll={onRailScroll}
+            onPointerDown={onRailPointerDown}
+          >
+            {images.map((image, index) => (
+              <div
+                key={`${image}-rail-${index}`}
+                role="button"
+                tabIndex={0}
+                onClick={onSlideClick(index)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    openLightbox(index);
+                  }
+                }}
+                aria-label={`View ${name} image ${index + 1} of ${images.length}`}
+                className="media-frame product-gallery__main product-gallery__slide cursor-zoom-in"
+              >
+                <Image
+                  src={image}
+                  alt={`${name} — view ${index + 1}`}
+                  fill
+                  priority={index === 0}
+                  fetchPriority={index === 0 ? "high" : undefined}
+                  quality={100}
+                  sizes="100vw"
+                  className="h-full w-full object-contain p-1"
+                  draggable={false}
+                />
+              </div>
+            ))}
+          </div>
+          <p className="product-gallery__count" aria-live="polite">
+            {active + 1} / {images.length}
+          </p>
+        </div>
+      ) : null}
+
       <div className="product-gallery__stage">
         <button
           type="button"
-          onClick={openLightbox}
-          onTouchStart={onTouchStart}
-          onTouchMove={onTouchMove}
-          onTouchEnd={onTouchEnd}
-          onTouchCancel={onTouchCancel}
-          aria-label={multi ? `View ${name} images — swipe to change` : `View all ${name} images`}
-          className={`media-frame product-gallery__main cursor-zoom-in${
-            multi ? " product-gallery__main--swipe" : ""
-          }`}
+          onClick={() => openLightbox(active)}
+          aria-label={`View all ${name} images`}
+          className="media-frame product-gallery__main cursor-zoom-in"
         >
           <Image
             src={images[active]}
             alt={`${name} — view ${active + 1}`}
             fill
-            priority
-            fetchPriority="high"
+            priority={!multi}
+            fetchPriority={!multi ? "high" : undefined}
             quality={100}
             sizes="(min-width: 1280px) 520px, (min-width: 1024px) 460px, (min-width: 640px) 480px, 90vw"
             className="h-full w-full object-contain p-1 sm:p-2"
             draggable={false}
           />
         </button>
-
-        {multi ? (
-          <>
-            <button
-              type="button"
-              onClick={(event) => {
-                event.stopPropagation();
-                step(-1);
-              }}
-              aria-label="Previous view"
-              className="product-gallery__chevron product-gallery__chevron--prev"
-            >
-              <ChevronGlyph className="h-4 w-4 rotate-180" />
-            </button>
-            <button
-              type="button"
-              onClick={(event) => {
-                event.stopPropagation();
-                step(1);
-              }}
-              aria-label="Next view"
-              className="product-gallery__chevron product-gallery__chevron--next"
-            >
-              <ChevronGlyph className="h-4 w-4" />
-            </button>
-            <p className="product-gallery__count" aria-live="polite">
-              {active + 1} / {images.length}
-            </p>
-          </>
-        ) : null}
       </div>
 
       {multi ? (
@@ -162,7 +160,7 @@ export function ProductGallery({ images, name }: { images: string[]; name: strin
               key={`${image}-dot-${index}`}
               type="button"
               role="tab"
-              onClick={() => setActive(index)}
+              onClick={() => goTo(index)}
               aria-label={`Show view ${index + 1}`}
               aria-selected={index === active}
               className={`gallery-dots__dot ${index === active ? "gallery-dots__dot--active" : ""}`}
@@ -176,7 +174,7 @@ export function ProductGallery({ images, name }: { images: string[]; name: strin
           images={images}
           name={name}
           index={active}
-          onIndexChange={setActive}
+          onIndexChange={goTo}
           onClose={() => setExpanded(false)}
         />
       ) : null}

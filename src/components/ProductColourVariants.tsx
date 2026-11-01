@@ -17,7 +17,7 @@ export function ProductColourVariants({
 
   return (
     <div className="mt-5">
-      <p className="ui-sm text-muted">Colour</p>
+      <p className="ui-sm text-center text-muted lg:text-left">Colour</p>
 
       <div className="mt-2 flex flex-wrap justify-center gap-1.5 lg:justify-start">
         {variants.map((variant) => {

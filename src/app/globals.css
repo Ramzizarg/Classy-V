@@ -862,10 +862,13 @@ html.dashboard-light select option {
   overflow: visible;
 }
 
-.product-gallery__main--swipe {
-  touch-action: pan-y;
-  -webkit-user-select: none;
-  user-select: none;
+.product-gallery__viewport {
+  display: none;
+  position: relative;
+}
+
+.product-gallery__rail {
+  display: none;
 }
 
 .product-gallery__main img {
@@ -966,9 +969,80 @@ html.dashboard-light select option {
   pointer-events: none;
 }
 
+@media (max-width: 1023px) {
+  .product-gallery--multi {
+    width: calc(100% + 1.5rem);
+    max-width: none;
+    margin-inline: -0.75rem;
+  }
+
+  .product-gallery--multi .product-gallery__viewport {
+    display: block;
+  }
+
+  .product-gallery--multi .product-gallery__rail {
+    display: flex;
+    gap: 0;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: 0;
+    padding-inline: 0;
+    padding-block: 16px;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x pan-y;
+  }
+
+  .product-gallery--multi .product-gallery__rail::-webkit-scrollbar {
+    display: none;
+  }
+
+  .product-gallery--multi .product-gallery__slide {
+    flex: 0 0 100%;
+    width: 100%;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    scroll-snap-align: center;
+    scroll-snap-stop: always;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .product-gallery--multi .product-gallery__stage {
+    display: none;
+  }
+
+  .product-gallery--multi .product-gallery__dots {
+    padding-inline: 0.75rem;
+  }
+
+  .product-gallery--multi .product-gallery__count {
+    bottom: 28px;
+  }
+
+  .product-gallery__chevron {
+    display: none;
+  }
+}
+
 @media (min-width: 640px) {
   .product-gallery {
     max-width: 480px;
+  }
+}
+
+@media (min-width: 640px) and (max-width: 1023px) {
+  .product-gallery--multi {
+    width: calc(100% + 2rem);
+    margin-inline: -1rem;
+  }
+
+  .product-gallery--multi .product-gallery__dots {
+    padding-inline: 1rem;
   }
 }
 
