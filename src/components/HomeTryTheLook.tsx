@@ -571,7 +571,6 @@ export function HomeTryTheLook({ products }: { products: Product[] }) {
                 alt={item.name}
                 fill
                 sizes="(min-width: 768px) 280px, 42vw"
-                priority={i === 0}
                 placeholder="empty"
                 className="cv-look__img"
               />

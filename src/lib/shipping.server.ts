@@ -1,8 +1,10 @@
 import "server-only";
 
-import { unstable_noStore as noStore } from "next/cache";
+import { revalidateTag, unstable_cache } from "next/cache";
 import { neonQuery, resolveDatabaseUrl } from "@/lib/neon-db";
 import { DEFAULT_SHIPPING_RATE, normalizeShippingRate } from "@/lib/shipping";
+
+const SHIPPING_CACHE_TAG = "shipping-rate";
 
 export async function ensureShippingSettingsTable() {
   await neonQuery(`
@@ -14,8 +16,7 @@ export async function ensureShippingSettingsTable() {
   `);
 }
 
-export async function getShippingRate(): Promise<number> {
-  noStore();
+async function queryShippingRate(): Promise<number> {
   if (!resolveDatabaseUrl()) return DEFAULT_SHIPPING_RATE;
 
   try {
@@ -32,4 +33,14 @@ export async function getShippingRate(): Promise<number> {
     }
     return DEFAULT_SHIPPING_RATE;
   }
+}
+
+/** Cached so the root layout does not force every storefront page to no-store. */
+export const getShippingRate = unstable_cache(queryShippingRate, ["shipping-rate"], {
+  revalidate: 60,
+  tags: [SHIPPING_CACHE_TAG],
+});
+
+export function revalidateShippingRate() {
+  revalidateTag(SHIPPING_CACHE_TAG, "max");
 }

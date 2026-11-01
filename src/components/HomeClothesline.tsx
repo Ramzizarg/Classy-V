@@ -472,8 +472,6 @@ export function HomeClothesline({ products }: { products: Product[] }) {
                     fill
                     sizes="(min-width: 1280px) 234px, (min-width: 768px) 218px, 172px"
                     draggable={false}
-                    unoptimized
-                    priority={index < baseItems.length}
                     className={`cv-rail__img${ready.current.has(index) ? " is-ready" : ""}`}
                     placeholder="empty"
                     onLoad={(event) => revealImg(index, event.currentTarget)}

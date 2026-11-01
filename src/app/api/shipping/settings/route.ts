@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { isAdminAuthenticated } from "@/lib/adminAuth";
 import { neonQuery, resolveDatabaseUrl } from "@/lib/neon-db";
 import { DEFAULT_SHIPPING_RATE, normalizeShippingRate } from "@/lib/shipping";
-import { ensureShippingSettingsTable, getShippingRate } from "@/lib/shipping.server";
+import { ensureShippingSettingsTable, getShippingRate, revalidateShippingRate } from "@/lib/shipping.server";
 
 export const runtime = "nodejs";
 
@@ -38,6 +38,7 @@ export async function POST(request: Request) {
        SET delivery_price = EXCLUDED.delivery_price, updated_at = EXCLUDED.updated_at`,
       ["default", deliveryPrice],
     );
+    revalidateShippingRate();
     return NextResponse.json({ ok: true, deliveryPrice });
   } catch {
     return NextResponse.json(
