@@ -87,18 +87,24 @@ async function readImageBytes(src: string): Promise<Buffer | null> {
   return fs.readFile(filePath).catch(() => null);
 }
 
-function isDarkOrClear(rgba: Buffer, i: number, threshold: number) {
-  if (rgba[i + 3] < 16) return true;
+function isTransparent(rgba: Buffer, i: number) {
+  return rgba[i + 3] < 16;
+}
+
+function isDarkOpaque(rgba: Buffer, i: number, threshold: number) {
+  if (isTransparent(rgba, i)) return false;
   return rgba[i] <= threshold && rgba[i + 1] <= threshold && rgba[i + 2] <= threshold;
 }
 
-/** True for isolated packshots on black/transparent, false for lifestyle photos. */
-function isStudioBackdrop(rgba: Buffer, width: number, height: number, threshold: number) {
-  let studio = 0;
+function edgeStats(rgba: Buffer, width: number, height: number, threshold: number) {
+  let transparent = 0;
+  let dark = 0;
   let total = 0;
   const check = (x: number, y: number) => {
     total += 1;
-    if (isDarkOrClear(rgba, (y * width + x) * 4, threshold)) studio += 1;
+    const i = (y * width + x) * 4;
+    if (isTransparent(rgba, i)) transparent += 1;
+    else if (isDarkOpaque(rgba, i, threshold)) dark += 1;
   };
   for (let x = 0; x < width; x++) {
     check(x, 0);
@@ -108,20 +114,38 @@ function isStudioBackdrop(rgba: Buffer, width: number, height: number, threshold
     check(0, y);
     check(width - 1, y);
   }
-  return total > 0 && studio / total >= 0.7;
+  return { transparent, dark, total };
 }
 
-/** Replace the connected black studio backdrop with white, keep the garment. */
+/**
+ * Cutouts already have a transparent studio. Flattening onto white is enough —
+ * treating opaque black as "backdrop" eats black garments (joggers, hoodies).
+ */
+function hasCutoutAlpha(rgba: Buffer, width: number, height: number, threshold: number) {
+  const { transparent, total } = edgeStats(rgba, width, height, threshold);
+  return total > 0 && transparent / total >= 0.5;
+}
+
+/** True for isolated packshots on an opaque black studio, false for lifestyle photos. */
+function isOpaqueStudioBackdrop(rgba: Buffer, width: number, height: number, threshold: number) {
+  const { dark, total } = edgeStats(rgba, width, height, threshold);
+  return total > 0 && dark / total >= 0.7;
+}
+
+/** Replace a connected opaque black studio with white, keep the garment. */
 function fillBlackBackdrop(rgba: Buffer, width: number, height: number, threshold = 28) {
-  if (!isStudioBackdrop(rgba, width, height, threshold)) return;
+  if (hasCutoutAlpha(rgba, width, height, threshold)) return;
+  if (!isOpaqueStudioBackdrop(rgba, width, height, threshold)) return;
+
   const visited = new Uint8Array(width * height);
+  const filled: number[] = [];
   const stack: number[] = [];
   const push = (x: number, y: number) => {
     if (x < 0 || y < 0 || x >= width || y >= height) return;
     const p = y * width + x;
     if (visited[p]) return;
     visited[p] = 1;
-    if (!isDarkOrClear(rgba, p * 4, threshold)) return;
+    if (!isDarkOpaque(rgba, p * 4, threshold)) return;
     stack.push(p);
   };
   for (let x = 0; x < width; x++) {
@@ -134,17 +158,25 @@ function fillBlackBackdrop(rgba: Buffer, width: number, height: number, threshol
   }
   while (stack.length) {
     const p = stack.pop()!;
-    const i = p * 4;
-    rgba[i] = 255;
-    rgba[i + 1] = 255;
-    rgba[i + 2] = 255;
-    rgba[i + 3] = 255;
+    filled.push(p);
     const x = p % width;
     const y = (p / width) | 0;
     push(x + 1, y);
     push(x - 1, y);
     push(x, y + 1);
     push(x, y - 1);
+  }
+
+  // If most of the photo would go white, the garment is black and connected to
+  // the studio — leave it. Flattening cannot separate them.
+  if (filled.length / (width * height) > 0.45) return;
+
+  for (const p of filled) {
+    const i = p * 4;
+    rgba[i] = 255;
+    rgba[i + 1] = 255;
+    rgba[i + 2] = 255;
+    rgba[i + 3] = 255;
   }
 }
 

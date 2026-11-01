@@ -11,7 +11,7 @@ import {
   type AdRules,
 } from "@/lib/metaAds";
 
-const GRAPH_VERSION = process.env.META_GRAPH_VERSION?.trim() || "v23.0";
+const GRAPH_VERSION = process.env.META_GRAPH_VERSION?.trim() || "v26.0";
 const MAX_INSIGHT_ROWS = 1000;
 const CACHE_MS = 5 * 60 * 1000;
 
@@ -99,6 +99,61 @@ async function graph<T>(pathOrUrl: string, params: Record<string, string>, token
     throw new MetaAdsError(message);
   }
   return data;
+}
+
+type BatchOp = { method: "GET"; relative_url: string };
+type BatchEntry = { code?: number; body?: string } | null;
+
+/**
+ * v26+ rejects root `GET /?ids=…`. Batch per-object GETs instead (50 per POST).
+ */
+async function graphBatch<T>(ops: BatchOp[], token: string): Promise<T[]> {
+  const out: T[] = [];
+  for (let i = 0; i < ops.length; i += 50) {
+    const chunk = ops.slice(i, i + 50);
+    const res = await fetch(`https://graph.facebook.com/${GRAPH_VERSION}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        access_token: token,
+        include_headers: "false",
+        batch: JSON.stringify(chunk),
+      }),
+      cache: "no-store",
+    });
+    const data = (await res.json().catch(() => null)) as
+      | BatchEntry[]
+      | { error?: { message?: string; code?: number } }
+      | null;
+    if (!Array.isArray(data)) {
+      const err = data && "error" in data ? data.error : undefined;
+      if (err?.code === 190) throw new MetaAdsError("The Meta access token is invalid or expired. Generate a new one.");
+      if (err?.code === 200) {
+        throw new MetaAdsError(
+          "This Meta token cannot read the ClassyV ad account. Generate a system user token with ads_read and assign it to ad account 1344593787395557."
+        );
+      }
+      throw new MetaAdsError(err?.message || `Meta API error (${res.status}).`);
+    }
+    for (const entry of data) {
+      if (!entry || entry.code !== 200 || !entry.body) continue;
+      try {
+        const parsed = JSON.parse(entry.body) as T & { error?: unknown };
+        if (parsed && typeof parsed === "object" && !parsed.error) out.push(parsed);
+      } catch {
+        /* skip a malformed item; other ops in the batch still count */
+      }
+    }
+  }
+  return out;
+}
+
+async function graphObjects<T extends { id?: string }>(ids: string[], fields: string, token: string): Promise<T[]> {
+  if (ids.length === 0) return [];
+  return graphBatch<T>(
+    ids.map((id) => ({ method: "GET", relative_url: `${id}?fields=${fields}` })),
+    token
+  );
 }
 
 async function graphAll<T>(path: string, params: Record<string, string>, token: string, cap: number): Promise<T[]> {
@@ -204,17 +259,19 @@ function videoInfo(node: VideoNode): VideoInfo {
  */
 async function fetchVideos(ids: string[], token: string): Promise<Map<string, VideoInfo>> {
   const videos = new Map<string, VideoInfo>();
+  if (ids.length === 0) return videos;
   const withSource = "source,picture,thumbnails{uri,width,height,is_preferred}";
   const withoutSource = "picture,thumbnails{uri,width,height,is_preferred}";
-  for (let i = 0; i < ids.length; i += 50) {
-    const batch = ids.slice(i, i + 50);
-    const attempt = (fields: string) => graph<Record<string, VideoNode>>("", { ids: batch.join(","), fields }, token);
-    const result = await attempt(withSource).catch(() => attempt(withoutSource)).catch(() => null);
-    if (result) {
-      for (const node of Object.values(result)) videos.set(node.id, videoInfo(node));
-      continue;
-    }
-    const singles = await Promise.allSettled(batch.map((id) => graph<VideoNode>(id, { fields: withoutSource }, token)));
+  const take = (nodes: VideoNode[]) => {
+    for (const node of nodes) if (node.id) videos.set(node.id, videoInfo(node));
+  };
+
+  take(await graphObjects<VideoNode>(ids, withSource, token));
+  const leftover = ids.filter((id) => !videos.has(id));
+  if (leftover.length) take(await graphObjects<VideoNode>(leftover, withoutSource, token));
+  const still = ids.filter((id) => !videos.has(id));
+  if (still.length) {
+    const singles = await Promise.allSettled(still.map((id) => graph<VideoNode>(id, { fields: withoutSource }, token)));
     for (const single of singles) {
       if (single.status === "fulfilled") videos.set(single.value.id, videoInfo(single.value));
     }
@@ -326,9 +383,8 @@ export async function getMetaAdsReport(rangeKey: AdRange, fresh = false): Promis
 
   const nodes = new Map(active.map((node) => [node.id, node]));
   const missing = insights.map((row) => row.ad_id).filter((id) => !nodes.has(id));
-  for (let i = 0; i < missing.length; i += 50) {
-    const batch = await graph<Record<string, AdNode>>("", { ids: missing.slice(i, i + 50).join(","), fields: AD_FIELDS }, token);
-    for (const node of Object.values(batch)) nodes.set(node.id, node);
+  for (const node of await graphObjects<AdNode>(missing, AD_FIELDS, token)) {
+    if (node.id) nodes.set(node.id, node);
   }
 
   const rows = new Map(insights.map((row) => [row.ad_id, row]));

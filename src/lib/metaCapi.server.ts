@@ -5,7 +5,7 @@ import { META_PIXEL_ID, metaPurchaseEventId } from "@/lib/metaPixel";
 import { getSiteUrl } from "@/lib/siteUrl";
 import type { CartLine } from "@/lib/types";
 
-const GRAPH_VERSION = process.env.META_GRAPH_VERSION?.trim() || "v23.0";
+const GRAPH_VERSION = process.env.META_GRAPH_VERSION?.trim() || "v26.0";
 
 type UserFields = {
   email?: string | null;
