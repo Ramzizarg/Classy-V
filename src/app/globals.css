@@ -2891,6 +2891,7 @@ textarea.checkout-field {
   margin-top: 4px;
   overflow: hidden;
   touch-action: pan-y;
+  overscroll-behavior-x: contain;
   cursor: grab;
   user-select: none;
   -webkit-user-select: none;

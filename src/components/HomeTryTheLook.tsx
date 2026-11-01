@@ -220,12 +220,15 @@ export function HomeTryTheLook({ products }: { products: Product[] }) {
   const pointer = useRef<{
     id: number;
     x: number;
+    y: number;
     start: number;
     moved: boolean;
     lastX: number;
     lastT: number;
     vx: number;
+    axis: "none" | "x" | "y";
   } | null>(null);
+  const wheelSnap = useRef(0);
   const autoplayAt = useRef(performance.now() + AUTOPLAY_MS);
   const [index, setIndex] = useState(0);
   const [hot, setHot] = useState<number | null>(null);
@@ -338,7 +341,38 @@ export function HomeTryTheLook({ products }: { products: Product[] }) {
       ro.disconnect();
       cancelAnimationFrame(raf.current);
       raf.current = 0;
+      window.clearTimeout(wheelSnap.current);
     };
+  }, [kick, paint]);
+
+  useEffect(() => {
+    const stage = stageRef.current;
+    if (!stage) return;
+    const onWheel = (event: WheelEvent) => {
+      const absX = Math.abs(event.deltaX);
+      const absY = Math.abs(event.deltaY);
+      if (absX < 0.4 && absY < 0.4) return;
+      const sideways = event.shiftKey || (absX > absY * 1.2 && absX > 0.6);
+      if (!sideways) return;
+      let delta = event.shiftKey ? event.deltaY || event.deltaX : event.deltaX;
+      if (event.deltaMode === 1) delta *= 18;
+      if (event.deltaMode === 2) delta *= widthRef.current * 0.85;
+      event.preventDefault();
+      const span = Math.max(120, widthRef.current * 0.162);
+      target.current += delta / span;
+      cur.current = target.current;
+      vel.current = 0;
+      autoplayAt.current = performance.now() + AUTOPLAY_MS;
+      paint();
+      kick();
+      window.clearTimeout(wheelSnap.current);
+      wheelSnap.current = window.setTimeout(() => {
+        target.current = Math.round(cur.current);
+        kick();
+      }, 160);
+    };
+    stage.addEventListener("wheel", onWheel, { passive: false });
+    return () => stage.removeEventListener("wheel", onWheel);
   }, [kick, paint]);
 
   const nearest = (to: number) => {
@@ -431,21 +465,34 @@ export function HomeTryTheLook({ products }: { products: Product[] }) {
     pointer.current = {
       id: event.pointerId,
       x: event.clientX,
+      y: event.clientY,
       start: target.current,
       moved: false,
       lastX: event.clientX,
       lastT: now,
       vx: 0,
+      axis: "none",
     };
-    stageRef.current?.setPointerCapture(event.pointerId);
     kick();
   };
 
   const onPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
     const drag = pointer.current;
     if (!drag || drag.id !== event.pointerId) return;
-    const now = performance.now();
     const dx = event.clientX - drag.x;
+    const dy = event.clientY - drag.y;
+    if (drag.axis === "none") {
+      if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return;
+      drag.axis = Math.abs(dx) > Math.abs(dy) * 1.2 ? "x" : "y";
+      if (drag.axis === "y") {
+        dragging.current = false;
+        pointer.current = null;
+        return;
+      }
+      event.currentTarget.setPointerCapture(event.pointerId);
+    }
+    if (drag.axis !== "x") return;
+    const now = performance.now();
     if (Math.abs(dx) > 6) drag.moved = true;
     const dt = Math.max(8, now - drag.lastT);
     drag.vx = (event.clientX - drag.lastX) / dt;
@@ -456,6 +503,7 @@ export function HomeTryTheLook({ products }: { products: Product[] }) {
     cur.current = target.current;
     vel.current = 0;
     paint();
+    event.preventDefault();
   };
 
   const endPointer = (event: React.PointerEvent<HTMLDivElement>) => {

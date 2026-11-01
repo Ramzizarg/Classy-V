@@ -287,8 +287,9 @@ export function HomeClothesline({ products }: { products: Product[] }) {
       const absX = Math.abs(event.deltaX);
       const absY = Math.abs(event.deltaY);
       if (absX < 0.4 && absY < 0.4) return;
-      let delta = absX > absY * 1.05 ? event.deltaX : event.deltaY;
-      if (event.shiftKey) delta = event.deltaY || event.deltaX;
+      const sideways = event.shiftKey || (absX > absY * 1.2 && absX > 0.6);
+      if (!sideways) return;
+      let delta = event.shiftKey ? event.deltaY || event.deltaX : event.deltaX;
       if (event.deltaMode === 1) delta *= 18;
       if (event.deltaMode === 2) delta *= rack.clientWidth * 0.85;
       event.preventDefault();
@@ -329,7 +330,7 @@ export function HomeClothesline({ products }: { products: Product[] }) {
     const dy = event.clientY - state.y;
     if (state.axis === "none") {
       if (Math.abs(dx) < 5 && Math.abs(dy) < 5) return;
-      state.axis = Math.abs(dx) >= Math.abs(dy) * 0.68 ? "x" : "y";
+      state.axis = Math.abs(dx) > Math.abs(dy) * 1.2 ? "x" : "y";
       if (state.axis === "y") {
         drag.current = null;
         setDragging(false);
