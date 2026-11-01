@@ -5922,6 +5922,14 @@ html[data-splash-on="1"]:not([data-splash-reveal]) body {
 .lb-shell {
   overscroll-behavior: none;
   touch-action: none;
+  background: rgb(0 0 0 / var(--lb-dim, 0.96));
+  color: #ffffff;
+}
+
+html[data-theme="day"] .lb-shell,
+html.product-light .lb-shell {
+  background: rgb(0 0 0 / var(--lb-dim, 0.96));
+  color: #ffffff;
 }
 
 .lb-track,
@@ -5933,6 +5941,30 @@ html[data-splash-on="1"]:not([data-splash-reveal]) body {
 .lb-track[data-dragging="true"],
 .lb-frame[data-dragging="true"] {
   transition: none;
+}
+
+.lb-frame {
+  overflow: visible;
+}
+
+/*
+ * Zoom is always a black stage. White silhouette halo keeps dark cutouts readable,
+ * same as night collection tiles. Do not clip — clipping squares the glow.
+ */
+.lb-photo {
+  filter:
+    drop-shadow(0 0 6px rgb(255 255 255 / 0.55))
+    drop-shadow(0 0 16px rgb(255 255 255 / 0.35))
+    drop-shadow(0 0 28px rgb(255 255 255 / 0.18));
+  pointer-events: none;
+}
+
+.lb-dot {
+  background: rgb(255 255 255 / 0.35);
+}
+
+.lb-dot.is-on {
+  background: #ffffff;
 }
 
 .lb-hint {

@@ -337,9 +337,9 @@ export function ProductLightbox({ images, name, index, onIndexChange, onClose }:
       role="dialog"
       aria-modal
       aria-label={`${name} images`}
-      style={{ background: `rgb(0 0 0 / ${0.96 - progress * 0.45})` }}
+      style={{ ["--lb-dim" as string]: String(1 - progress * 0.45) }}
     >
-      <div className="lb-topbar relative z-10 flex items-center justify-between gap-3 px-3 py-3 text-white sm:px-4">
+      <div className="lb-topbar relative z-10 flex items-center justify-between gap-3 px-3 py-3 sm:px-4">
         <span className="ui tabular-nums tracking-wide">
           {index + 1} / {images.length}
         </span>
@@ -409,7 +409,7 @@ export function ProductLightbox({ images, name, index, onIndexChange, onClose }:
                     const img = event.currentTarget;
                     setNatural({ w: img.naturalWidth, h: img.naturalHeight });
                   }}
-                  className="h-full w-full object-contain p-2 select-none sm:p-10"
+                  className="lb-photo h-full w-full object-contain p-4 select-none sm:p-10"
                 />
               </div>
             </div>
@@ -476,8 +476,8 @@ export function ProductLightbox({ images, name, index, onIndexChange, onClose }:
                 onClick={() => goTo(slide)}
                 aria-label={`Show view ${slide + 1}`}
                 aria-current={slide === index}
-                className={`h-1.5 rounded-full transition-all ${
-                  slide === index ? "w-5 bg-white" : "w-1.5 bg-white/35"
+                className={`lb-dot h-1.5 rounded-full transition-all ${
+                  slide === index ? "is-on w-5" : "w-1.5"
                 }`}
               />
             ))}
