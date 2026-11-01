@@ -65,6 +65,7 @@ type Report = {
   ads?: AdCreative[];
   fetchedAt?: string;
   error?: string;
+  shopSales?: { orders: number; revenue: number };
 };
 
 type Row = JudgedAd;
@@ -164,7 +165,7 @@ function sampleReport(): Report {
 }
 
 export default function DashboardAdsPage() {
-  const [range, setRange] = useState<AdRange>("today");
+  const [range, setRange] = useState<AdRange>("7d");
   const [report, setReport] = useState<Report | null>(null);
   const [demo, setDemo] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -259,8 +260,12 @@ export default function DashboardAdsPage() {
       t.impressions += ad.impressions;
       t.clicks += ad.linkClicks;
     }
+    if (shown?.shopSales) {
+      t.purchases = shown.shopSales.orders;
+      t.revenue = shown.shopSales.revenue;
+    }
     return t;
-  }, [rows]);
+  }, [rows, shown?.shopSales]);
 
   const bench = useMemo(() => benchmarks(rows), [rows]);
   const recs = useMemo(() => buildRecommendations(rows, rules, goal, money, rangeDays), [rows, rules, goal, money, rangeDays]);
@@ -414,7 +419,15 @@ export default function DashboardAdsPage() {
             <Kpi label="Spend" value={money(totals.spend)} />
             {goal === "purchases" ? (
               <>
-                <Kpi label="Sales" value={count(totals.purchases)} sub={totals.revenue > 0 ? money(totals.revenue) : undefined} />
+                <Kpi
+                  label="Orders"
+                  value={count(totals.purchases)}
+                  sub={
+                    totals.revenue > 0
+                      ? `${money(totals.revenue)} · placed commandes`
+                      : "Placed commandes, not Facebook website purchases"
+                  }
+                />
                 <Kpi
                   label="ROAS"
                   value={totals.spend > 0 && totals.revenue > 0 ? `${(totals.revenue / totals.spend).toFixed(2)}×` : "—"}
@@ -636,9 +649,10 @@ function GoalNote({
         </span>
       ) : goal === "purchases" ? (
         <span>
-          Judged on <b className="text-black">sales</b>. Each creative gets{" "}
+          Judged on <b className="text-black">placed orders</b>, not Facebook&apos;s website-purchase pixel
+          (that number also counts people who opened checkout and did not finish). Each creative gets{" "}
           <b className="text-black">{money(testBudget(rules))}</b> to prove itself. Winning means {rules.minPurchases}+
-          sales at a ROAS of {rules.targetRoas}× or better.
+          orders at a ROAS of {rules.targetRoas}× or better.
         </span>
       ) : (
         <span>
@@ -846,7 +860,7 @@ function metricCells(row: Row, goal: Exclude<AdGoal, "auto">, money: (v: number)
       { label: "Spend", value: money(ad.spend) },
       { label: "ROAS", value: m.roas !== null && ad.revenue > 0 ? `${m.roas.toFixed(2)}×` : "—" },
       { label: "Per sale", value: m.cpa !== null ? money(m.cpa) : "—" },
-      { label: "Sales", value: count(ad.purchases) },
+      { label: "Orders", value: count(ad.purchases) },
       { label: "CTR", value: ad.impressions > 0 ? pct(m.ctr) : "—" },
       { label: m.hookRate !== null ? "Hook" : "CPC", value: m.hookRate !== null ? `${m.hookRate.toFixed(0)}%` : ad.linkClicks > 0 ? money(m.cpc) : "—" },
     ];
@@ -963,7 +977,7 @@ function CreativeDetail({
     { label: "Link clicks", value: ad.linkClicks },
     { label: "Add to cart", value: ad.addToCart },
     { label: "Checkout", value: ad.checkouts },
-    { label: "Sales", value: ad.purchases },
+    { label: "Orders", value: ad.purchases },
   ];
   const stats = [
     { label: "Spend", value: money(ad.spend) },
@@ -1217,7 +1231,7 @@ function RulesPanel({
               {(
                 [
                   ["auto", "Auto"],
-                  ["purchases", "Sales"],
+                  ["purchases", "Orders"],
                   ["clicks", "Clicks"],
                 ] as const
               ).map(([value, label]) => (
@@ -1237,7 +1251,7 @@ function RulesPanel({
           </div>
 
           <fieldset className="space-y-3 rounded-lg border border-zinc-200 p-4">
-            <legend className="px-1 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">Sales</legend>
+            <legend className="px-1 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">Orders</legend>
             <RuleInput
               id="rule-cpa"
               label="Target cost per sale"
@@ -1261,7 +1275,7 @@ function RulesPanel({
             />
             <RuleInput
               id="rule-sales"
-              label="Sales needed to call a winner"
+              label="Orders needed to call a winner"
               value={rules.minPurchases}
               step={1}
               onChange={(v) => set("minPurchases", v)}

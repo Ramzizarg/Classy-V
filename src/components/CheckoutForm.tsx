@@ -10,7 +10,7 @@ import { OrderPlacedModal } from "@/components/OrderPlacedModal";
 import { useStore } from "@/components/StoreProvider";
 import { shippingCost } from "@/lib/cart";
 import { formatPrice } from "@/lib/format";
-import { metaPurchaseEventId, trackMeta } from "@/lib/metaPixel";
+import { trackMeta } from "@/lib/metaPixel";
 import { XDELIVERY_GOVERNORATES, delegationsFor, matchDelegation, matchGovernorate } from "@/lib/xdeliveryLocations";
 
 const EMPTY = {
@@ -156,29 +156,13 @@ export function CheckoutForm() {
         }),
       });
 
-      const payload = (await response.json()) as { reference?: string; eventId?: string; error?: string };
+      const payload = (await response.json()) as { reference?: string; error?: string };
       if (!response.ok || !payload.reference) {
         setError(payload.error ?? "We could not place the order. Try again.");
         setSubmitting(false);
         return;
       }
 
-      trackMeta(
-        "Purchase",
-        {
-          content_ids: lines.map((line) => String(line.productId)),
-          content_type: "product",
-          contents: lines.map((line) => ({
-            id: String(line.productId),
-            quantity: line.quantity,
-            item_price: line.unitPrice,
-          })),
-          value: total,
-          num_items: lines.reduce((sum, line) => sum + line.quantity, 0),
-          order_id: payload.reference,
-        },
-        payload.eventId || metaPurchaseEventId(payload.reference)
-      );
       setPlaced({
         reference: payload.reference,
         firstName: form.fullName.trim().split(/\s+/)[0] ?? "",

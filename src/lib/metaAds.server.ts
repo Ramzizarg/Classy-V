@@ -177,7 +177,8 @@ function pick(actions: Action[] | undefined, types: string[]): number {
   return 0;
 }
 
-const PURCHASE = ["omni_purchase", "purchase", "offsite_conversion.fb_pixel_purchase"];
+/** Website Purchase only — skip omni (pixel+CAPI duplicates) and checkout starts. */
+const PURCHASE = ["purchase", "offsite_conversion.fb_pixel_purchase", "omni_purchase"];
 const ADD_TO_CART = ["omni_add_to_cart", "add_to_cart", "offsite_conversion.fb_pixel_add_to_cart"];
 const CHECKOUT = ["omni_initiated_checkout", "initiate_checkout", "offsite_conversion.fb_pixel_initiate_checkout"];
 
@@ -345,7 +346,104 @@ function toCreative(node: AdNode | undefined, row: InsightRow | undefined, id: s
   };
 }
 
-export type MetaAdsReport = { account: AdAccount; ads: AdCreative[]; fetchedAt: string };
+export type ShopSales = { orders: number; revenue: number };
+
+export type MetaAdsReport = {
+  account: AdAccount;
+  ads: AdCreative[];
+  fetchedAt: string;
+  /** Placed shop orders in the same window — not pixel clicks or unfinished checkouts. */
+  shopSales: ShopSales | null;
+};
+
+function ymdInZone(date: Date, timeZone: string) {
+  return new Intl.DateTimeFormat("en-CA", { timeZone }).format(date);
+}
+
+function zonedMidnight(ymd: string, timeZone: string): Date {
+  const utc = new Date(`${ymd}T00:00:00.000Z`);
+  const asTz = new Date(utc.toLocaleString("en-US", { timeZone }));
+  return new Date(utc.getTime() + (utc.getTime() - asTz.getTime()));
+}
+
+function addUtcDays(date: Date, days: number) {
+  return new Date(date.getTime() + days * 86_400_000);
+}
+
+function shopSalesWindow(rangeKey: AdRange, timeZone: string): { from: Date | null; to: Date | null } {
+  const today = zonedMidnight(ymdInZone(new Date(), timeZone), timeZone);
+  const tomorrow = addUtcDays(today, 1);
+  if (rangeKey === "today") return { from: today, to: tomorrow };
+  if (rangeKey === "yesterday") return { from: addUtcDays(today, -1), to: today };
+  if (rangeKey === "7d") return { from: addUtcDays(today, -6), to: tomorrow };
+  if (rangeKey === "14d") return { from: addUtcDays(today, -13), to: tomorrow };
+  if (rangeKey === "30d") return { from: addUtcDays(today, -29), to: tomorrow };
+  return { from: null, to: null };
+}
+
+async function completedShopSales(rangeKey: AdRange, timeZone: string): Promise<ShopSales | null> {
+  if (!resolveDatabaseUrl()) return null;
+  const { from, to } = shopSalesWindow(rangeKey, timeZone);
+  try {
+    const params: string[] = [];
+    const where = [
+      "LOWER(COALESCE(status, 'pending')) NOT IN ('cancelled', 'canceled', 'rejected')",
+    ];
+    if (from) {
+      params.push(from.toISOString());
+      where.push(`created_at >= $${params.length}::timestamptz`);
+    }
+    if (to) {
+      params.push(to.toISOString());
+      where.push(`created_at < $${params.length}::timestamptz`);
+    }
+    const { rows } = await neonQuery<{ orders: number | string; revenue: number | string }>(
+      `SELECT COUNT(*)::int AS orders, COALESCE(SUM(total_price), 0)::float AS revenue
+         FROM shop_orders
+        WHERE ${where.join(" AND ")}`,
+      params,
+    );
+    return {
+      orders: Math.max(0, Math.trunc(Number(rows[0]?.orders) || 0)),
+      revenue: Math.max(0, Number(rows[0]?.revenue) || 0),
+    };
+  } catch (err) {
+    console.warn("[meta-ads] shop sales lookup failed:", err instanceof Error ? err.message : err);
+    return null;
+  }
+}
+
+function distributeByWeight(weights: number[], total: number): number[] {
+  if (weights.length === 0 || total <= 0) return weights.map(() => 0);
+  const sum = weights.reduce((acc, value) => acc + value, 0);
+  if (sum <= 0) return weights.map(() => 0);
+  const raw = weights.map((value) => (value / sum) * total);
+  const out = raw.map(Math.floor);
+  let left = total - out.reduce((acc, value) => acc + value, 0);
+  const order = raw
+    .map((value, i) => ({ i, frac: value - Math.floor(value) }))
+    .sort((a, b) => b.frac - a.frac);
+  for (let k = 0; k < left; k++) out[order[k % order.length].i] += 1;
+  return out;
+}
+
+/** Cap Meta pixel "purchases" to real placed orders. Checkout starts stay on checkouts. */
+function applyCompletedOrders(ads: AdCreative[], shop: ShopSales | null): AdCreative[] {
+  if (!shop) return ads;
+  if (shop.orders <= 0) return ads.map((ad) => ({ ...ad, purchases: 0, revenue: 0 }));
+  const metaPurchases = ads.reduce((sum, ad) => sum + ad.purchases, 0);
+  const metaRevenue = ads.reduce((sum, ad) => sum + ad.revenue, 0);
+  if (metaPurchases <= shop.orders) return ads;
+  const purchases = distributeByWeight(
+    ads.map((ad) => ad.purchases),
+    shop.orders,
+  );
+  return ads.map((ad, i) => ({
+    ...ad,
+    purchases: purchases[i] ?? 0,
+    revenue: metaRevenue > 0 ? (ad.revenue / metaRevenue) * shop.revenue : 0,
+  }));
+}
 
 const cache = new Map<AdRange, { at: number; report: MetaAdsReport }>();
 
@@ -360,7 +458,11 @@ export async function getMetaAdsReport(rangeKey: AdRange, fresh = false): Promis
   const range = adRange(rangeKey);
 
   const [account, insights, active] = await Promise.all([
-    graph<{ id: string; name?: string; currency?: string }>(accountId, { fields: "name,currency" }, token),
+    graph<{ id: string; name?: string; currency?: string; timezone_name?: string }>(
+      accountId,
+      { fields: "name,currency,timezone_name" },
+      token,
+    ),
     graphAll<InsightRow>(
       `${accountId}/insights`,
       {
@@ -394,14 +496,19 @@ export async function getMetaAdsReport(rangeKey: AdRange, fresh = false): Promis
   const videoIds = [...new Set(refs.map((ref) => ref.videoId).filter((videoId): videoId is string => Boolean(videoId)))];
   const [images, videos] = await Promise.all([fetchImages(accountId, hashes, token), fetchVideos(videoIds, token)]);
 
-  const ads = [...ids].map((id) => {
-    const node = nodes.get(id);
-    return toCreative(node, rows.get(id), id, resolveMedia(node, images, videos));
-  });
+  const shopSales = await completedShopSales(rangeKey, account.timezone_name || "Africa/Tunis");
+  const ads = applyCompletedOrders(
+    [...ids].map((id) => {
+      const node = nodes.get(id);
+      return toCreative(node, rows.get(id), id, resolveMedia(node, images, videos));
+    }),
+    shopSales,
+  );
 
   const report: MetaAdsReport = {
     account: { id: accountId, name: account.name || accountId, currency: account.currency || "EUR" },
     ads,
+    shopSales,
     fetchedAt: new Date().toISOString(),
   };
   cache.set(rangeKey, { at: Date.now(), report });

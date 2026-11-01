@@ -102,6 +102,39 @@ function paymentLabel(method: string | null) {
   return "Cash on delivery";
 }
 
+function orderStatusLabel(status: string) {
+  const s = String(status ?? "").toLowerCase();
+  if (s === "pending") return "Pending";
+  if (s === "confirmed") return "Confirmed";
+  if (s === "rejected") return "Rejected";
+  if (s === "cancelled") return "Cancelled";
+  if (s === "out_for_delivery" || s === "shipped") return "Out for delivery";
+  if (s === "delivered") return "Delivered";
+  return status?.trim() || "—";
+}
+
+function orderStatusClass(status: string) {
+  const s = String(status ?? "").toLowerCase();
+  if (s === "pending") return "bg-amber-100 text-amber-800";
+  if (s === "confirmed") return "bg-violet-100 text-violet-800";
+  if (s === "rejected" || s === "cancelled") return "bg-red-100 text-red-800";
+  if (s === "out_for_delivery" || s === "shipped") return "bg-blue-100 text-blue-800";
+  if (s === "delivered") return "bg-emerald-100 text-emerald-800";
+  return "bg-zinc-100 text-zinc-700";
+}
+
+function OrderStatusBadge({ status, compact = false }: { status: string; compact?: boolean }) {
+  return (
+    <span
+      className={`inline-flex items-center rounded-full font-semibold ${
+        compact ? "px-2 py-0.5 text-[10px]" : "px-2.5 py-1 text-xs"
+      } ${orderStatusClass(status)}`}
+    >
+      {orderStatusLabel(status)}
+    </span>
+  );
+}
+
 function DetailRow({
   icon: Icon,
   label,
@@ -187,6 +220,9 @@ function OrderDetailMeta({ order }: { order: OrderRow }) {
           </a>
         </DetailRow>
       ) : null}
+      <DetailRow icon={Clock} label="Status">
+        <OrderStatusBadge status={order.status} />
+      </DetailRow>
       <DetailRow icon={Banknote} label="Payment">
         {paymentLabel(order.payment_method)}
       </DetailRow>
@@ -1180,17 +1216,17 @@ export default function DashboardAnalytiquesPage() {
                           </div>
                         ) : null}
                         <div className="min-w-0 flex-1">
-                          <div className="flex items-baseline gap-2">
-                            <span className="font-mono text-xs font-semibold text-zinc-500 shrink-0">{orderLabel(o)}</span>
-                            <span className="truncate text-sm font-semibold text-black">{o.full_name}</span>
-                          </div>
+                          <p className="truncate text-sm font-semibold text-black">{o.full_name}</p>
                           <p className="mt-0.5 text-[11px] text-zinc-500">
                             {formatDateShort(o.created_at)} · {o.items_count ?? 0} item{(o.items_count ?? 0) !== 1 ? "s" : ""}
                           </p>
                         </div>
-                        <div className="flex items-center gap-1.5 shrink-0">
-                          <span className="text-sm font-bold text-black tabular-nums">{formatPrice(Number(o.total_price))}</span>
-                          {expandedId === o.id ? <ChevronUp className="h-4 w-4 text-zinc-400" /> : <ChevronDown className="h-4 w-4 text-zinc-400" />}
+                        <div className="flex flex-col items-end gap-1 shrink-0">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-sm font-bold text-black tabular-nums">{formatPrice(Number(o.total_price))}</span>
+                            {expandedId === o.id ? <ChevronUp className="h-4 w-4 text-zinc-400" /> : <ChevronDown className="h-4 w-4 text-zinc-400" />}
+                          </div>
+                          <OrderStatusBadge status={o.status} compact />
                         </div>
                       </div>
                       <div className="mt-2.5 flex flex-wrap items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
@@ -1224,7 +1260,12 @@ export default function DashboardAnalytiquesPage() {
                                     <div className="h-full w-full flex items-center justify-center text-zinc-400 text-[10px]">—</div>
                                   )}
                                 </div>
-                                <span className="text-xs font-medium text-black truncate flex-1 min-w-0">{label}</span>
+                                <span className="min-w-0 flex-1">
+                                  <span className="block truncate text-xs font-medium text-black">{label}</span>
+                                  <span className="mt-0.5 block font-mono text-[10px] font-semibold text-zinc-500">
+                                    {orderLabel(o)}
+                                  </span>
+                                </span>
                               </div>
                             );
                           })}
@@ -1279,6 +1320,7 @@ export default function DashboardAnalytiquesPage() {
                     <th className="px-4 py-3 text-right font-semibold uppercase tracking-wider text-zinc-600">Items</th>
                     <th className="px-4 py-3 text-left font-semibold uppercase tracking-wider text-zinc-600">Size</th>
                     <th className="px-4 py-3 text-right font-semibold uppercase tracking-wider text-zinc-600">Total</th>
+                    <th className="px-4 py-3 text-left font-semibold uppercase tracking-wider text-zinc-600">Status</th>
                     <th className="px-4 py-3 text-left font-semibold uppercase tracking-wider text-zinc-600">X-Delivery</th>
                     <th className="px-4 py-3 text-center font-semibold uppercase tracking-wider text-zinc-600 w-12"> </th>
                     <th className="px-4 py-3 w-10" />
@@ -1327,6 +1369,9 @@ export default function DashboardAnalytiquesPage() {
                         <td className="px-4 py-3 text-right text-zinc-600">{o.items_count ?? 0}</td>
                         <td className="px-4 py-3 text-zinc-700 font-medium">{formatOrderSizes(orderItems[o.id])}</td>
                         <td className="px-4 py-3 text-right font-semibold text-black">{formatPrice(Number(o.total_price))}</td>
+                        <td className="px-4 py-3">
+                          <OrderStatusBadge status={o.status} />
+                        </td>
                         <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                           {renderDeliveryStatus(o)}
                         </td>
@@ -1343,7 +1388,7 @@ export default function DashboardAnalytiquesPage() {
                       </tr>
                       {expandedId === o.id && orderItems[o.id] && (
                         <tr className="bg-zinc-50/50">
-                          <td colSpan={10} className="px-4 py-3">
+                          <td colSpan={11} className="px-4 py-3">
                             <div className="pl-0 sm:pl-4 space-y-1 text-xs">
                               <p className="font-semibold text-zinc-700 mb-2">Items</p>
                               <div className="min-w-0 flex-1 space-y-1">
