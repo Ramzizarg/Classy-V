@@ -114,11 +114,11 @@ export function ProductLightbox({ images, name, index, onIndexChange, onClose }:
   const goTo = useCallback(
     (next: number) => {
       const wrapped = (next + images.length) % images.length;
-      onIndexChange(wrapped);
-      setNatural(null);
+      if (wrapped === index) return;
       reset();
+      onIndexChange(wrapped);
     },
-    [images.length, onIndexChange, reset]
+    [images.length, index, onIndexChange, reset]
   );
 
   const bumpZoom = (direction: 1 | -1) => {
@@ -298,8 +298,13 @@ export function ProductLightbox({ images, name, index, onIndexChange, onClose }:
     }
 
     if (state.mode === "swipe") {
-      if (Math.abs(dragX) > SWIPE_DISTANCE) goTo(index + (dragX < 0 ? 1 : -1));
+      const pass = Math.abs(dragX) > SWIPE_DISTANCE;
+      const dir = dragX < 0 ? 1 : -1;
+      setDragging(false);
+      if (pass) goTo(index + dir);
       setDragX(0);
+      state.mode = "idle";
+      return;
     } else if (state.mode === "dismiss") {
       if (dragY > DISMISS_DISTANCE) {
         onClose();
@@ -409,18 +414,24 @@ export function ProductLightbox({ images, name, index, onIndexChange, onClose }:
                     const img = event.currentTarget;
                     setNatural({ w: img.naturalWidth, h: img.naturalHeight });
                   }}
-                  className="lb-photo h-full w-full object-contain p-4 select-none sm:p-10"
+                  className={`lb-photo h-full w-full object-contain select-none ${
+                    slide >= 2 ? "lb-photo--shot p-0 sm:p-2" : "p-4 sm:p-10"
+                  }`}
                 />
               </div>
             </div>
           ))}
         </div>
 
-        {images.length > 1 && !zoomed ? (
+        {images.length > 1 ? (
           <>
             <button
               type="button"
-              onClick={() => goTo(index - 1)}
+              onPointerDown={(event) => event.stopPropagation()}
+              onClick={(event) => {
+                event.stopPropagation();
+                goTo(index - 1);
+              }}
               aria-label="Previous view"
               className="lb-nav lb-nav--prev"
             >
@@ -428,7 +439,11 @@ export function ProductLightbox({ images, name, index, onIndexChange, onClose }:
             </button>
             <button
               type="button"
-              onClick={() => goTo(index + 1)}
+              onPointerDown={(event) => event.stopPropagation()}
+              onClick={(event) => {
+                event.stopPropagation();
+                goTo(index + 1);
+              }}
               aria-label="Next view"
               className="lb-nav lb-nav--next"
             >
@@ -439,7 +454,7 @@ export function ProductLightbox({ images, name, index, onIndexChange, onClose }:
 
         {hintVisible && !zoomed ? (
           <p className="lb-hint" aria-hidden>
-            Pinch or double-tap to zoom · Swipe for next
+            Pinch or double-tap to zoom · Arrows to change
           </p>
         ) : null}
       </div>
@@ -468,20 +483,43 @@ export function ProductLightbox({ images, name, index, onIndexChange, onClose }:
         </div>
 
         {images.length > 1 ? (
-          <div className="mt-1 flex justify-center gap-1.5">
-            {images.map((image, slide) => (
-              <button
-                key={image}
-                type="button"
-                onClick={() => goTo(slide)}
-                aria-label={`Show view ${slide + 1}`}
-                aria-current={slide === index}
-                className={`lb-dot h-1.5 rounded-full transition-all ${
-                  slide === index ? "is-on w-5" : "w-1.5"
-                }`}
-              />
-            ))}
-          </div>
+          <>
+            <div className="lb-dots mt-1 flex justify-center gap-1.5">
+              {images.map((image, slide) => (
+                <button
+                  key={image}
+                  type="button"
+                  onClick={() => goTo(slide)}
+                  aria-label={`Show view ${slide + 1}`}
+                  aria-current={slide === index}
+                  className={`lb-dot h-1.5 rounded-full transition-all ${
+                    slide === index ? "is-on w-5" : "w-1.5"
+                  }`}
+                />
+              ))}
+            </div>
+            <div className="lb-thumbs">
+              {images.map((image, slide) => (
+                <button
+                  key={image}
+                  type="button"
+                  onClick={() => goTo(slide)}
+                  aria-label={`Show view ${slide + 1}`}
+                  aria-current={slide === index}
+                  className={`lb-thumb${slide === index ? " is-on" : ""}`}
+                >
+                  <Image
+                    src={image}
+                    alt=""
+                    aria-hidden
+                    fill
+                    sizes="64px"
+                    className={slide >= 2 ? "object-cover" : "lb-thumb__cutout object-contain p-1"}
+                  />
+                </button>
+              ))}
+            </div>
+          </>
         ) : null}
       </div>
     </div>,

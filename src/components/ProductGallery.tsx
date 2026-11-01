@@ -3,10 +3,12 @@
 import Image from "next/image";
 import { useRef, useState } from "react";
 import { ProductLightbox } from "@/components/ProductLightbox";
+import { ChevronGlyph } from "@/components/SocialGlyphs";
 
 export function ProductGallery({ images, name }: { images: string[]; name: string }) {
   const [active, setActive] = useState(0);
   const [expanded, setExpanded] = useState(false);
+  const [tall, setTall] = useState<Record<number, boolean>>({});
   const multi = images.length > 1;
   const railRef = useRef<HTMLDivElement>(null);
   const tap = useRef<{ x: number; y: number } | null>(null);
@@ -36,6 +38,10 @@ export function ProductGallery({ images, name }: { images: string[]; name: strin
     scrollRailTo(index);
   };
 
+  const step = (delta: number) => {
+    goTo((active + delta + images.length) % images.length);
+  };
+
   const onRailPointerDown = (event: React.PointerEvent) => {
     tap.current = { x: event.clientX, y: event.clientY };
   };
@@ -49,6 +55,18 @@ export function ProductGallery({ images, name }: { images: string[]; name: strin
     }
     openLightbox(index);
   };
+
+  const markTall = (index: number) => (event: React.SyntheticEvent<HTMLImageElement>) => {
+    const img = event.currentTarget;
+    if (img.naturalWidth < 1 || img.naturalHeight < 1) return;
+    const isTall = img.naturalHeight / img.naturalWidth > 1.08;
+    setTall((current) => (current[index] === isTall ? current : { ...current, [index]: isTall }));
+  };
+
+  const photoClass = (index: number) =>
+    tall[index]
+      ? "product-gallery__photo--tall h-full w-full object-cover object-center"
+      : "h-full w-full object-contain p-1 sm:p-2";
 
   const onRailScroll = () => {
     const rail = railRef.current;
@@ -77,8 +95,8 @@ export function ProductGallery({ images, name }: { images: string[]; name: strin
                 alt=""
                 aria-hidden
                 fill
-                sizes="64px"
-                className="object-contain p-0.5"
+                sizes="72px"
+                className="object-cover object-top p-1"
               />
             </button>
           ))}
@@ -110,7 +128,9 @@ export function ProductGallery({ images, name }: { images: string[]; name: strin
                   }
                 }}
                 aria-label={`View ${name} image ${index + 1} of ${images.length}`}
-                className="media-frame product-gallery__main product-gallery__slide cursor-zoom-in"
+                className={`media-frame product-gallery__main product-gallery__slide cursor-zoom-in${
+                  tall[index] ? " product-gallery__main--photo" : ""
+                }`}
               >
                 <Image
                   src={image}
@@ -120,7 +140,8 @@ export function ProductGallery({ images, name }: { images: string[]; name: strin
                   fetchPriority={index === 0 ? "high" : undefined}
                   quality={100}
                   sizes="100vw"
-                  className="h-full w-full object-contain p-1"
+                  onLoad={markTall(index)}
+                  className={photoClass(index)}
                   draggable={false}
                 />
               </div>
@@ -137,7 +158,13 @@ export function ProductGallery({ images, name }: { images: string[]; name: strin
           type="button"
           onClick={() => openLightbox(active)}
           aria-label={`View all ${name} images`}
-          className="media-frame product-gallery__main cursor-zoom-in"
+          className={`media-frame product-gallery__main cursor-zoom-in${
+            active >= 2
+              ? " product-gallery__main--later"
+              : tall[active]
+                ? " product-gallery__main--photo"
+                : ""
+          }`}
         >
           <Image
             src={images[active]}
@@ -147,10 +174,42 @@ export function ProductGallery({ images, name }: { images: string[]; name: strin
             fetchPriority={!multi ? "high" : undefined}
             quality={100}
             sizes="(min-width: 1280px) 520px, (min-width: 1024px) 460px, (min-width: 640px) 480px, 90vw"
-            className="h-full w-full object-contain p-1 sm:p-2"
+            onLoad={markTall(active)}
+            className={
+              active >= 2
+                ? "product-gallery__photo--later h-full w-full object-contain"
+                : photoClass(active)
+            }
             draggable={false}
           />
         </button>
+
+        {multi ? (
+          <>
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                step(-1);
+              }}
+              aria-label="Previous view"
+              className="product-gallery__chevron product-gallery__chevron--prev"
+            >
+              <ChevronGlyph className="h-4 w-4 rotate-180" />
+            </button>
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                step(1);
+              }}
+              aria-label="Next view"
+              className="product-gallery__chevron product-gallery__chevron--next"
+            >
+              <ChevronGlyph className="h-4 w-4" />
+            </button>
+          </>
+        ) : null}
       </div>
 
       {multi ? (
@@ -174,8 +233,11 @@ export function ProductGallery({ images, name }: { images: string[]; name: strin
           images={images}
           name={name}
           index={active}
-          onIndexChange={goTo}
-          onClose={() => setExpanded(false)}
+          onIndexChange={setActive}
+          onClose={() => {
+            setExpanded(false);
+            scrollRailTo(active);
+          }}
         />
       ) : null}
     </div>

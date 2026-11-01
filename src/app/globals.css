@@ -881,12 +881,37 @@ html.dashboard-light select option {
   user-select: none;
 }
 
+.product-gallery__main--photo {
+  overflow: hidden;
+}
+
+.product-gallery__main img.product-gallery__photo--tall {
+  object-fit: cover;
+  object-position: center center;
+  padding: 0;
+  filter: none;
+}
+
+@media (min-width: 1024px) {
+  .product-gallery__main--later {
+    overflow: hidden;
+  }
+
+  .product-gallery__main img.product-gallery__photo--later {
+    object-fit: contain;
+    object-position: center top;
+    padding: 2% 16% 26%;
+    filter: none;
+  }
+}
+
 /* Colour swatches use the same silhouette glow as the main PDP photo. */
 .product-colour-variants__thumb {
   overflow: visible;
 }
 
-.product-colour-variants__img {
+.product-colour-variants__img,
+.product-gallery__thumb img {
   filter:
     drop-shadow(0 0 4px rgb(255 255 255 / 0.55))
     drop-shadow(0 0 10px rgb(255 255 255 / 0.35))
@@ -1048,7 +1073,7 @@ html.dashboard-light select option {
 
 @media (min-width: 1024px) {
   .product-gallery {
-    grid-template-columns: 56px minmax(0, 1fr);
+    grid-template-columns: 64px minmax(0, 1fr);
     align-items: start;
     /* Same as .product-layout lg:gap-36 (144px): thumbs → main → buy. */
     column-gap: 144px;
@@ -1062,7 +1087,8 @@ html.dashboard-light select option {
   .product-gallery__thumbs {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 10px;
+    width: 64px;
     max-height: 520px;
     overflow-x: hidden;
     overflow-y: auto;
@@ -1072,12 +1098,15 @@ html.dashboard-light select option {
 
   .product-gallery__thumb {
     position: relative;
-    flex-shrink: 0;
-    width: 56px;
-    height: 56px;
+    flex: 0 0 64px;
+    width: 64px;
+    height: 64px;
+    aspect-ratio: 1 / 1;
+    box-sizing: border-box;
     padding: 0;
-    border: 1px solid transparent;
-    background: rgb(255 255 255 / 0.06);
+    border: 1px solid rgb(255 255 255 / 0.28);
+    overflow: hidden;
+    background: rgb(255 255 255 / 0.08);
     cursor: pointer;
   }
 
@@ -1106,28 +1135,40 @@ html.dashboard-light select option {
     object-position: center top;
   }
 
-  /* Desktop uses left thumbs — hide dots + side chevrons + counter. */
+  /* Desktop uses left thumbs — hide dots + counter. Chevrons change the photo. */
   .product-gallery__dots,
-  .product-gallery__chevron,
   .product-gallery__count {
     display: none;
+  }
+
+  .product-gallery__chevron {
+    top: 36%;
+    width: 52px;
+    height: 52px;
+  }
+
+  .product-gallery__chevron svg {
+    width: 18px;
+    height: 18px;
   }
 }
 
 @media (min-width: 1280px) {
   .product-gallery {
-    grid-template-columns: 64px minmax(0, 1fr);
+    grid-template-columns: 72px minmax(0, 1fr);
     /* Same as .product-layout xl:gap-40 (160px). */
     column-gap: 160px;
   }
 
-  .product-gallery__thumb {
-    width: 64px;
-    height: 64px;
+  .product-gallery__thumbs {
+    width: 72px;
+    max-height: 580px;
   }
 
-  .product-gallery__thumbs {
-    max-height: 580px;
+  .product-gallery__thumb {
+    flex-basis: 72px;
+    width: 72px;
+    height: 72px;
   }
 
   .product-gallery__stage {
@@ -6010,7 +6051,7 @@ html.product-light .lb-shell {
 .lb-track,
 .lb-frame {
   will-change: transform;
-  transition: transform 300ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition: transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .lb-track[data-dragging="true"],
@@ -6032,6 +6073,10 @@ html.product-light .lb-shell {
     drop-shadow(0 0 16px rgb(255 255 255 / 0.35))
     drop-shadow(0 0 28px rgb(255 255 255 / 0.18));
   pointer-events: none;
+}
+
+.lb-photo--shot {
+  filter: none;
 }
 
 .lb-dot {
@@ -6120,6 +6165,30 @@ html.product-light .lb-shell {
   right: 10px;
 }
 
+.lb-thumbs {
+  display: none;
+}
+
+.lb-thumb {
+  position: relative;
+  width: 56px;
+  height: 56px;
+  overflow: hidden;
+  border: 1px solid rgb(255 255 255 / 0.22);
+  background: rgb(255 255 255 / 0.08);
+}
+
+.lb-thumb.is-on {
+  border-color: #ffffff;
+}
+
+.lb-thumb__cutout {
+  filter:
+    drop-shadow(0 0 4px rgb(255 255 255 / 0.55))
+    drop-shadow(0 0 10px rgb(255 255 255 / 0.35))
+    drop-shadow(0 0 18px rgb(255 255 255 / 0.18));
+}
+
 @media (min-width: 640px) {
   .lb-nav {
     display: inline-flex;
@@ -6128,6 +6197,38 @@ html.product-light .lb-shell {
   .lb-hint {
     font-size: 11px;
     bottom: 22px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .lb-nav {
+    width: 56px;
+    height: 56px;
+  }
+
+  .lb-nav--prev {
+    left: 20px;
+  }
+
+  .lb-nav--next {
+    right: 20px;
+  }
+
+  .lb-nav:hover {
+    background: rgb(0 0 0 / 0.72);
+    border-color: rgb(255 255 255 / 0.55);
+  }
+
+  .lb-dots {
+    display: none;
+  }
+
+  .lb-thumbs {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 4px;
   }
 }
 
@@ -6871,7 +6972,13 @@ html[data-theme="day"] .product-gallery__main img {
     drop-shadow(0 0 28px rgb(0 0 0 / 0.18));
 }
 
+html[data-theme="day"] .product-gallery__main img.product-gallery__photo--tall,
+html[data-theme="day"] .product-gallery__main img.product-gallery__photo--later {
+  filter: none;
+}
+
 html[data-theme="day"] .product-colour-variants__img,
+html[data-theme="day"] .product-gallery__thumb img,
 html[data-theme="day"] .track-thumb .media-primary,
 html[data-theme="day"] .track-thumb .media-secondary {
   filter:
@@ -6908,6 +7015,7 @@ html[data-theme="day"] .gallery-dots__dot--active {
 
 html[data-theme="day"] .product-gallery__thumb {
   background: rgb(17 17 17 / 0.04);
+  border-color: rgb(17 17 17 / 0.2);
 }
 
 html[data-theme="day"] .product-gallery__thumb:hover {
