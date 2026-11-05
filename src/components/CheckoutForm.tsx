@@ -10,7 +10,7 @@ import { OrderPlacedModal } from "@/components/OrderPlacedModal";
 import { useStore } from "@/components/StoreProvider";
 import { shippingCost } from "@/lib/cart";
 import { formatPrice } from "@/lib/format";
-import { trackMeta } from "@/lib/metaPixel";
+import { metaCatalogContentId, trackMeta } from "@/lib/metaPixel";
 import { XDELIVERY_GOVERNORATES, delegationsFor, matchDelegation, matchGovernorate } from "@/lib/xdeliveryLocations";
 
 const EMPTY = {
@@ -55,14 +55,14 @@ export function CheckoutForm() {
   useEffect(() => {
     if (checkoutTracked.current || !hydrated || lines.length === 0) return;
     checkoutTracked.current = true;
+    const contents = lines.flatMap((line) => {
+      const id = metaCatalogContentId(line);
+      return id ? [{ id, quantity: line.quantity, item_price: line.unitPrice }] : [];
+    });
     trackMeta("InitiateCheckout", {
-      content_ids: lines.map((line) => String(line.productId)),
+      content_ids: contents.map((item) => item.id),
       content_type: "product",
-      contents: lines.map((line) => ({
-        id: String(line.productId),
-        quantity: line.quantity,
-        item_price: line.unitPrice,
-      })),
+      contents,
       value: total,
       num_items: lines.reduce((sum, line) => sum + line.quantity, 0),
     });

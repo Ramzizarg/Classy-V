@@ -12,7 +12,7 @@ import {
 } from "react";
 import { cartCount, cartSubtotal } from "@/lib/cart";
 import * as shopStore from "@/lib/clientStore";
-import { trackMeta } from "@/lib/metaPixel";
+import { metaCatalogContentId, trackMeta } from "@/lib/metaPixel";
 import type { CartLine, Product } from "@/lib/types";
 
 type StoreContextValue = {
@@ -92,14 +92,17 @@ export function StoreProvider({
 
   const addLine = useCallback<StoreContextValue["addLine"]>((line, options) => {
     shopStore.addLine(line);
-    trackMeta("AddToCart", {
-      content_ids: [String(line.productId)],
-      content_name: line.name,
-      content_type: "product",
-      contents: [{ id: String(line.productId), quantity: line.quantity, item_price: line.unitPrice }],
-      value: line.unitPrice * line.quantity,
-      num_items: line.quantity,
-    });
+    const contentId = metaCatalogContentId(line);
+    if (contentId) {
+      trackMeta("AddToCart", {
+        content_ids: [contentId],
+        content_name: line.name,
+        content_type: "product",
+        contents: [{ id: contentId, quantity: line.quantity, item_price: line.unitPrice }],
+        value: line.unitPrice * line.quantity,
+        num_items: line.quantity,
+      });
+    }
     if (options?.openCart !== false) setCartOpen(true);
   }, []);
 

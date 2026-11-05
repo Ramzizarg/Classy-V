@@ -1,7 +1,7 @@
 import "server-only";
 
 import { createHash } from "node:crypto";
-import { META_PIXEL_ID, metaPurchaseEventId } from "@/lib/metaPixel";
+import { META_PIXEL_ID, metaCatalogContentId, metaPurchaseEventId } from "@/lib/metaPixel";
 import { getSiteUrl } from "@/lib/siteUrl";
 import type { CartLine } from "@/lib/types";
 
@@ -100,6 +100,10 @@ export async function sendMetaPurchase(input: PurchaseInput): Promise<void> {
   if (!token || !META_PIXEL_ID) return;
 
   const event_id = metaPurchaseEventId(input.reference);
+  const contents = input.lines.flatMap((line) => {
+    const id = metaCatalogContentId(line);
+    return id ? [{ id, quantity: line.quantity, item_price: line.unitPrice }] : [];
+  });
   const body: Record<string, unknown> = {
     data: [
       {
@@ -113,12 +117,8 @@ export async function sendMetaPurchase(input: PurchaseInput): Promise<void> {
           currency: "TND",
           value: Number(input.total.toFixed(2)),
           content_type: "product",
-          content_ids: input.lines.map((line) => String(line.productId)),
-          contents: input.lines.map((line) => ({
-            id: String(line.productId),
-            quantity: line.quantity,
-            item_price: line.unitPrice,
-          })),
+          content_ids: contents.map((item) => item.id),
+          contents,
           num_items: input.lines.reduce((sum, line) => sum + line.quantity, 0),
           order_id: input.reference,
         },

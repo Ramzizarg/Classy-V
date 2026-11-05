@@ -34,13 +34,34 @@ export function isMetaPixelSkipped(pathname: string) {
   return SKIP.test(pathname);
 }
 
-/** Official Meta snippet for <head> so Events Manager can detect the website. */
-export const META_PIXEL_BOOT_SCRIPT = `!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
-fbq('init', '${META_PIXEL_ID}');
-fbq('track', 'PageView');`;
+/**
+ * Value for pixel/CAPI `content_ids` and `contents[].id`.
+ * Must be identical to the `id` column in the Facebook catalog feed.
+ */
+export function metaCatalogContentId(item: {
+  slug?: string | null;
+  id?: number | null;
+  productId?: number | null;
+}): string {
+  const slug = item.slug?.trim();
+  if (slug) return slug;
+  const numeric = item.id ?? item.productId;
+  if (numeric != null && Number.isFinite(Number(numeric))) return `cv-${numeric}`;
+  return "";
+}
+
+/** Dev machines must not show up as a domain in Events Manager. */
+export function isLocalPixelHost(hostname: string) {
+  const host = hostname.split(":")[0]?.toLowerCase() ?? "";
+  return host === "localhost" || host === "127.0.0.1" || host === "0.0.0.0" || host.endsWith(".local");
+}
+
+/** Official Meta snippet for <head>. Skips localhost so dev browsing is not a domain. */
+export const META_PIXEL_BOOT_SCRIPT = `(function(){var h=location.hostname;if(h==="localhost"||h==="127.0.0.1"||h==="0.0.0.0"||/\\.local$/.test(h))return;!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');fbq('init','${META_PIXEL_ID}');fbq('track','PageView');})();`;
 
 function ensureMetaPixel() {
   if (typeof window === "undefined") return;
+  if (isLocalPixelHost(window.location.hostname)) return;
   if (window.fbq) return;
 
   const fbq = function (...args: unknown[]) {
@@ -69,6 +90,7 @@ export function metaPurchaseEventId(reference: string) {
 
 export function trackMeta(event: string, params?: MetaPixelParams, eventID?: string) {
   if (typeof window === "undefined") return;
+  if (isLocalPixelHost(window.location.hostname)) return;
   if (isMetaPixelSkipped(window.location.pathname)) return;
   ensureMetaPixel();
   const payload = params ? { currency: "TND" as const, ...params } : undefined;

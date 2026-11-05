@@ -1,3 +1,4 @@
+import { metaCatalogContentId } from "@/lib/metaPixel";
 import { effectivePrice, isComingSoon, isSoldOut } from "@/lib/products";
 import { getSiteUrl } from "@/lib/siteUrl";
 import type { Product } from "@/lib/types";
@@ -118,7 +119,7 @@ function rowForProduct(product: Product, siteUrl: string): Record<(typeof CSV_CO
   const sale = product.salePrice && product.salePrice > 0 && product.salePrice < product.price;
 
   return {
-    id: product.slug || `cv-${product.id}`,
+    id: metaCatalogContentId(product),
     title: product.name.replace(/\bNoir\b/gi, "Black"),
     description,
     availability: "in stock",
