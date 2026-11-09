@@ -15,7 +15,11 @@ import {
 import type { Product, Category, Coupon, SizeStock } from "@/lib/shop-db-types";
 import { isProductOutOfStock } from "@/lib/productSizesDisplay";
 import { parseSizeStocks, totalSizeStock } from "@/lib/productSizeStock";
-import { uploadSizeGuideImage, uploadProductImage } from "@/lib/uploadProductImage";
+import {
+  MAX_UPLOAD_IMAGE_BYTES,
+  uploadSizeGuideImage,
+  uploadProductImage,
+} from "@/lib/uploadProductImage";
 import { DashboardDeliveryPriceModal } from "@/components/DashboardDeliveryPriceModal";
 import Link from "next/link";
 import {
@@ -39,6 +43,11 @@ import {
 } from "lucide-react";
 
 const SIZES = ["Standard", "S", "M", "L", "XL", "XXL"];
+const PRODUCT_IMAGE_SLOTS = 4;
+
+function productImageSlots(urls: string[]): string[] {
+  return Array.from({ length: PRODUCT_IMAGE_SLOTS }, (_, index) => urls[index] ?? "");
+}
 
 /** Sale is only valid when discount_price is set and strictly below regular price. */
 function productSalePrice(p: Pick<Product, "price" | "discount_price">): number | null {
@@ -465,13 +474,41 @@ export default function DashboardProduitsPage() {
     });
   };
 
+  const setProductImageSlot = (index: number, url: string) => {
+    setProductImageUrls((prev) => {
+      const next = [...prev];
+      while (next.length <= index) next.push("");
+      next[index] = url;
+      return next;
+    });
+  };
+
+  const clearProductImageSlot = (index: number) => {
+    setProductImageUrls((prev) => {
+      if (index < 0 || index >= prev.length) return prev;
+      const next = [...prev];
+      next[index] = "";
+      return next;
+    });
+  };
+
   const setPrincipalProductImage = (index: number) => {
     setProductImageUrls((prev) => {
-      if (index <= 0 || index >= prev.length) return prev;
+      if (index <= 0 || index >= prev.length || !prev[index]) return prev;
       const next = [...prev];
-      const [img] = next.splice(index, 1);
-      return [img, ...next];
+      const selected = next[index];
+      next[index] = next[0] ?? "";
+      next[0] = selected;
+      return next;
     });
+  };
+
+  const uploadProductImageToSlot = async (index: number, file: File) => {
+    if (file.size > MAX_UPLOAD_IMAGE_BYTES) {
+      throw new Error("Image is too large. Max size is 10 MB.");
+    }
+    const url = await uploadProductImage(file);
+    setProductImageSlot(index, url);
   };
 
   const closeForm = () => {
@@ -1729,69 +1766,102 @@ export default function DashboardProduitsPage() {
 
             <div>
               <label className="block text-xs font-medium text-black mb-1.5">
-                Product images <span className="text-zinc-500 font-normal">(max 5 MB per image)</span>
+                Product images{" "}
+                <span className="text-zinc-500 font-normal">(4 slots · max 10 MB each)</span>
               </label>
-              <label className="flex items-center justify-center gap-2 w-full py-6 px-4 border-2 border-dashed border-zinc-300 rounded-lg bg-zinc-50 hover:bg-zinc-100 cursor-pointer transition-colors">
-                <Upload className="h-5 w-5 text-zinc-500" />
-                <span className="text-sm font-medium text-zinc-600">{productImagesUploading ? "Uploading…" : "Upload images (multiple)"}</span>
-                <input
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  className="sr-only"
-                  disabled={productImagesUploading}
-                  onChange={async (e) => {
-                    const files = e.target.files;
-                    if (!files?.length) return;
-                    setProductImagesUploading(true);
-                    setError(null);
-                    try {
-                      for (let i = 0; i < files.length; i++) {
-                        const url = await uploadProductImage(files[i]);
-                        setProductImageUrls((prev) => [...prev, url]);
-                      }
-                    } catch (err) {
-                      setError(err instanceof Error ? err.message : "Image upload failed");
-                    } finally {
-                      setProductImagesUploading(false);
-                      e.target.value = "";
-                    }
-                  }}
-                />
-              </label>
-              {productImageUrls.length > 0 && (
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {productImageUrls.map((url, i) => (
-                    <div key={`${url}-${i}`} className="relative group">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={url} alt="" className={`h-14 w-14 rounded border object-cover ${i === 0 ? "ring-2 ring-black" : ""}`} />
-                      {i === 0 && (
-                        <span className="absolute bottom-0 left-0 right-0 bg-black/70 text-white text-[10px] font-medium py-0.5 text-center rounded-b">Main</span>
-                      )}
-                      {i > 0 && (
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                {productImageSlots(productImageUrls).map((url, index) => (
+                  <div
+                    key={`product-image-slot-${index}`}
+                    className={`relative overflow-hidden rounded-lg border bg-zinc-50 ${
+                      index === 0 && url ? "border-black ring-1 ring-black" : "border-zinc-300"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-1 border-b border-zinc-200 bg-white px-2 py-1.5">
+                      <span className="text-[11px] font-semibold text-black">
+                        Image {index + 1}
+                        {index === 0 ? (
+                          <span className="ml-1 font-normal text-zinc-500">· Main</span>
+                        ) : null}
+                      </span>
+                      {url && index > 0 ? (
                         <button
                           type="button"
-                          onClick={() => setPrincipalProductImage(i)}
-                          className="absolute bottom-0 left-0 right-0 bg-black/70 text-white text-[10px] font-medium py-0.5 flex items-center justify-center gap-0.5 rounded-b opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={() => setPrincipalProductImage(index)}
+                          className="inline-flex items-center gap-0.5 text-[10px] font-medium text-zinc-500 hover:text-black"
                           title="Set as main image"
                         >
-                          <Star className="h-3 w-3 fill-current" />
+                          <Star className="h-3 w-3" />
                           Main
                         </button>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => setProductImageUrls((prev) => prev.filter((_, j) => j !== i))}
-                        className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 text-white rounded-full flex items-center justify-center text-xs"
-                        aria-label="Delete"
-                      >
-                        ×
-                      </button>
+                      ) : null}
                     </div>
-                  ))}
-                </div>
-              )}
-              <p className="mt-1 text-xs text-zinc-500">The first image is the main image.</p>
+
+                    <div className="relative aspect-[4/5] bg-zinc-100">
+                      {url ? (
+                        <>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={url} alt="" className="absolute inset-0 h-full w-full object-cover" />
+                          <button
+                            type="button"
+                            onClick={() => clearProductImageSlot(index)}
+                            className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-xs text-white shadow"
+                            aria-label={`Remove image ${index + 1}`}
+                          >
+                            ×
+                          </button>
+                        </>
+                      ) : (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 px-2 text-center text-zinc-400">
+                          <Upload className="h-5 w-5" />
+                          <span className="text-[10px] font-medium">Empty</span>
+                        </div>
+                      )}
+                    </div>
+
+                    <label
+                      className={`flex cursor-pointer items-center justify-center gap-1.5 border-t border-zinc-200 bg-white px-2 py-2 text-[11px] font-medium transition-colors ${
+                        productImagesUploading
+                          ? "pointer-events-none text-zinc-400"
+                          : "text-zinc-700 hover:bg-zinc-50 hover:text-black"
+                      }`}
+                    >
+                      <Upload className="h-3.5 w-3.5" />
+                      <span>{url ? "Replace" : "Upload"}</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="sr-only"
+                        disabled={productImagesUploading}
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          setProductImagesUploading(true);
+                          setError(null);
+                          try {
+                            await uploadProductImageToSlot(index, file);
+                          } catch (err) {
+                            setError(err instanceof Error ? err.message : "Image upload failed");
+                          } finally {
+                            setProductImagesUploading(false);
+                            e.target.value = "";
+                          }
+                        }}
+                      />
+                    </label>
+                  </div>
+                ))}
+              </div>
+              <p className="mt-2 text-xs text-zinc-500">
+                Pick which slot to fill (1–4). Image 1 is the main catalog photo. Max 10 MB per file —
+                uploads are converted to high-quality WebP automatically to keep the site fast.
+              </p>
+              {productImagesUploading ? (
+                <p className="mt-1 flex items-center gap-1.5 text-xs font-medium text-zinc-600">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  Uploading…
+                </p>
+              ) : null}
               <button
                 type="button"
                 onClick={() => setShowUrlImages(!showUrlImages)}
@@ -1805,7 +1875,7 @@ export default function DashboardProduitsPage() {
                   value={imagesStr}
                   onChange={(e) => setImagesStr(e.target.value)}
                   rows={2}
-                  placeholder="One URL per line"
+                  placeholder="One URL per line (added after the 4 slots)"
                   className="mt-2 w-full bg-white text-black text-xs border border-zinc-300 rounded-lg px-3 py-2 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-400"
                 />
               )}

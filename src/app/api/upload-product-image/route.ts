@@ -8,6 +8,7 @@ import { optimizeUploadedImage } from "@/lib/optimizeUploadedImage";
 export const runtime = "nodejs";
 
 const SAFE_EXTS = new Set(["jpg", "jpeg", "png", "webp", "gif", "avif", "bmp", "svg", "ico"]);
+const MAX_UPLOAD_IMAGE_BYTES = 10 * 1024 * 1024;
 const MIME_TO_EXT: Record<string, string> = {
   "image/jpeg": "jpg",
   "image/jpg": "jpg",
@@ -51,6 +52,9 @@ export async function POST(request: NextRequest) {
     }
     if (!file.type?.toLowerCase().startsWith("image/")) {
       return NextResponse.json({ error: "Only image files are allowed" }, { status: 400 });
+    }
+    if (file.size > MAX_UPLOAD_IMAGE_BYTES) {
+      return NextResponse.json({ error: "Image is too large. Max size is 10 MB." }, { status: 400 });
     }
 
     const rawBytes = Buffer.from(await file.arrayBuffer());

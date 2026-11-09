@@ -1,6 +1,19 @@
 const UPLOAD_API = "/api/upload-product-image";
 
+/** Hard cap for product / size-guide image uploads (matches the API). */
+export const MAX_UPLOAD_IMAGE_BYTES = 10 * 1024 * 1024;
+
+function assertImageFile(file: File) {
+  if (!file.type?.toLowerCase().startsWith("image/")) {
+    throw new Error("Only image files are allowed.");
+  }
+  if (file.size > MAX_UPLOAD_IMAGE_BYTES) {
+    throw new Error("Image is too large. Max size is 10 MB.");
+  }
+}
+
 async function uploadViaApi(file: File, type: "product" | "sizeGuide"): Promise<string> {
+  assertImageFile(file);
   const formData = new FormData();
   formData.set("file", file);
   formData.set("type", type);

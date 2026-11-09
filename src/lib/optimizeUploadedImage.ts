@@ -1,27 +1,29 @@
 import sharp from "sharp";
 
 /**
- * Web targets: keep source files modest; Next.js `/_next/image` still serves
- * viewport-sized AVIF/WebP at request time.
+ * Every raster upload is stored as WebP so Blob / DB URLs stay small while
+ * Next.js `/_next/image` can still serve viewport-sized AVIF/WebP at request time.
+ * Quality is kept high so product photos stay sharp on PDP and catalog.
  */
 const MAX_WIDTH: Record<"product" | "home" | "sizeGuide", number> = {
-  product: 1600,
+  product: 2000,
   /** Heroes are object-cover + mobile crop — keep enough pixels for ~3x DPR. */
   home: 2560,
-  sizeGuide: 1600,
+  sizeGuide: 1800,
 };
 
+/** WebP quality 0–100. Higher = sharper, still far smaller than PNG/JPEG. */
 const UPLOAD_QUALITY: Record<"product" | "home" | "sizeGuide", number> = {
-  product: 80,
-  home: 88,
-  sizeGuide: 82,
+  product: 92,
+  home: 90,
+  sizeGuide: 90,
 };
 
 const SKIP_OPTIMIZE_EXT = new Set(["svg", "gif", "ico"]);
 
 /**
- * Resize and encode uploads as WebP to keep blobs small.
- * Returns original bytes for formats we should not transform.
+ * Resize and encode uploads as high-quality WebP.
+ * Returns original bytes only for formats we should not transform (svg/gif/ico).
  */
 export async function optimizeUploadedImage(
   bytes: Buffer,
@@ -43,8 +45,18 @@ export async function optimizeUploadedImage(
   const quality = UPLOAD_QUALITY[type];
   const optimized = await sharp(bytes, { failOn: "none" })
     .rotate()
-    .resize({ width: maxWidth, withoutEnlargement: true })
-    .webp({ quality, effort: 6 })
+    .resize({
+      width: maxWidth,
+      height: maxWidth,
+      fit: "inside",
+      withoutEnlargement: true,
+    })
+    .webp({
+      quality,
+      /** Max compression effort — smaller files at the same visual quality. */
+      effort: 6,
+      smartSubsample: true,
+    })
     .toBuffer();
 
   return { bytes: optimized, ext: "webp", contentType: "image/webp" };
