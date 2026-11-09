@@ -2,32 +2,59 @@ import { put } from "@vercel/blob";
 import { NextRequest, NextResponse } from "next/server";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
+import sharp from "sharp";
 import { isAdminAuthenticated } from "@/lib/adminAuth";
 import { optimizeUploadedImage } from "@/lib/optimizeUploadedImage";
+import { IMAGE_UPLOAD_EXTS, MAX_UPLOAD_IMAGE_BYTES } from "@/lib/uploadProductImage";
 
 export const runtime = "nodejs";
 
-const SAFE_EXTS = new Set(["jpg", "jpeg", "png", "webp", "gif", "avif", "bmp", "svg", "ico"]);
-const MAX_UPLOAD_IMAGE_BYTES = 10 * 1024 * 1024;
 const MIME_TO_EXT: Record<string, string> = {
   "image/jpeg": "jpg",
   "image/jpg": "jpg",
+  "image/pjpeg": "jpg",
   "image/png": "png",
+  "image/x-png": "png",
   "image/webp": "webp",
   "image/gif": "gif",
   "image/avif": "avif",
   "image/bmp": "bmp",
+  "image/x-bmp": "bmp",
+  "image/x-ms-bmp": "bmp",
   "image/svg+xml": "svg",
   "image/x-icon": "ico",
   "image/vnd.microsoft.icon": "ico",
+  "image/tiff": "tiff",
+  "image/heic": "heic",
+  "image/heif": "heif",
+  "image/apng": "apng",
 };
 
 function getExt(filename: string, mimeType?: string) {
   const fromName = filename.split(".").pop()?.toLowerCase() || "";
-  if (SAFE_EXTS.has(fromName)) return fromName;
+  if (IMAGE_UPLOAD_EXTS.has(fromName)) return fromName;
   const fromMime = mimeType ? MIME_TO_EXT[mimeType.toLowerCase()] : "";
-  if (fromMime && SAFE_EXTS.has(fromMime)) return fromMime;
+  if (fromMime && IMAGE_UPLOAD_EXTS.has(fromMime)) return fromMime;
   return "jpg";
+}
+
+function looksLikeImageUpload(file: File): boolean {
+  const mime = file.type?.toLowerCase().trim() || "";
+  if (mime.startsWith("image/")) return true;
+  if (mime === "" || mime === "application/octet-stream") {
+    const ext = file.name.split(".").pop()?.toLowerCase() || "";
+    return IMAGE_UPLOAD_EXTS.has(ext);
+  }
+  return false;
+}
+
+async function canDecodeImage(bytes: Buffer): Promise<boolean> {
+  try {
+    const meta = await sharp(bytes, { failOn: "none", unlimited: true }).metadata();
+    return Boolean(meta.format || meta.width);
+  } catch {
+    return false;
+  }
 }
 
 function vercelBlobConfigured() {
@@ -50,14 +77,24 @@ export async function POST(request: NextRequest) {
     if (!file?.size) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
-    if (!file.type?.toLowerCase().startsWith("image/")) {
-      return NextResponse.json({ error: "Only image files are allowed" }, { status: 400 });
-    }
     if (file.size > MAX_UPLOAD_IMAGE_BYTES) {
       return NextResponse.json({ error: "Image is too large. Max size is 10 MB." }, { status: 400 });
     }
+    if (!looksLikeImageUpload(file)) {
+      return NextResponse.json(
+        { error: "Only image files are allowed (JPG, PNG, WebP, HEIC, TIFF, …)." },
+        { status: 400 },
+      );
+    }
 
     const rawBytes = Buffer.from(await file.arrayBuffer());
+    if (!(await canDecodeImage(rawBytes))) {
+      return NextResponse.json(
+        { error: "That file could not be read as an image. Try JPG, PNG, WebP, HEIC, or TIFF." },
+        { status: 400 },
+      );
+    }
+
     const extIn = getExt(file.name, file.type);
     const uploadType = type === "sizeGuide" ? "sizeGuide" : type === "home" ? "home" : "product";
     const { bytes, ext, contentType } = await optimizeUploadedImage(rawBytes, extIn, uploadType);
@@ -71,7 +108,7 @@ export async function POST(request: NextRequest) {
           error:
             "Vercel Blob is not configured. In the Vercel project: Storage → create a Blob store, then link it or add the BLOB_READ_WRITE_TOKEN (Read-Write) variable. Redeploy.",
         },
-        { status: 503 }
+        { status: 503 },
       );
     }
 

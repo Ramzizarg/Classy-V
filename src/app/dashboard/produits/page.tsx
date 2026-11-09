@@ -16,6 +16,7 @@ import type { Product, Category, Coupon, SizeStock } from "@/lib/shop-db-types";
 import { isProductOutOfStock } from "@/lib/productSizesDisplay";
 import { parseSizeStocks, totalSizeStock } from "@/lib/productSizeStock";
 import {
+  IMAGE_UPLOAD_ACCEPT,
   MAX_UPLOAD_IMAGE_BYTES,
   uploadSizeGuideImage,
   uploadProductImage,
@@ -1636,7 +1637,7 @@ export default function DashboardProduitsPage() {
                 <span className="text-sm font-medium text-zinc-600">{sizeGuideUploading ? "Uploading…" : "Upload size guide image"}</span>
                 <input
                   type="file"
-                  accept="image/*"
+                  accept={IMAGE_UPLOAD_ACCEPT}
                   className="sr-only"
                   disabled={sizeGuideUploading}
                   onChange={async (e) => {
@@ -1830,7 +1831,7 @@ export default function DashboardProduitsPage() {
                       <span>{url ? "Replace" : "Upload"}</span>
                       <input
                         type="file"
-                        accept="image/*"
+                        accept={IMAGE_UPLOAD_ACCEPT}
                         className="sr-only"
                         disabled={productImagesUploading}
                         onChange={async (e) => {
@@ -1853,8 +1854,8 @@ export default function DashboardProduitsPage() {
                 ))}
               </div>
               <p className="mt-2 text-xs text-zinc-500">
-                Pick which slot to fill (1–4). Image 1 is the main catalog photo. Max 10 MB per file —
-                uploads are converted to high-quality WebP automatically to keep the site fast.
+                Pick which slot to fill (1–4). Image 1 is the main catalog photo. Any image type is
+                fine (JPG, PNG, WebP, HEIC, TIFF, …) up to 10 MB — stored as high-quality WebP.
               </p>
               {productImagesUploading ? (
                 <p className="mt-1 flex items-center gap-1.5 text-xs font-medium text-zinc-600">
