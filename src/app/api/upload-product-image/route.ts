@@ -125,11 +125,26 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ url: blob.url });
     }
 
+    // Relative /uploads/... URLs break on Vercel (`/_next/image` → 400). Prefer Blob.
+    if (isVercel) {
+      return NextResponse.json(
+        {
+          error:
+            "Vercel Blob is not configured. In the Vercel project: Storage → create a Blob store, then link it or add the BLOB_READ_WRITE_TOKEN (Read-Write) variable. Redeploy.",
+        },
+        { status: 503 },
+      );
+    }
+
     const uploadDir = path.join(process.cwd(), "public", "uploads", folder);
     await mkdir(uploadDir, { recursive: true });
     await writeFile(path.join(uploadDir, filename), bytes);
 
-    return NextResponse.json({ url: `/uploads/${folder}/${filename}` });
+    return NextResponse.json({
+      url: `/uploads/${folder}/${filename}`,
+      warning:
+        "Saved to local /public/uploads. Set BLOB_READ_WRITE_TOKEN so production can load this image.",
+    });
   } catch (e) {
     const message = e instanceof Error ? e.message : "Upload failed";
     if (process.env.NODE_ENV === "development") {

@@ -1,4 +1,5 @@
 import { cache } from "react";
+import { resolveMediaUrl } from "@/lib/mediaUrl";
 import { neonQuery, resolveDatabaseUrl } from "@/lib/neon-db";
 import { parseSizeStocks } from "@/lib/productSizeStock";
 import { slugifyProductName } from "@/lib/productUrl";
@@ -69,7 +70,9 @@ function toImages(raw: unknown): string[] {
         })()
       : [];
 
-  const urls = list.filter((x): x is string => typeof x === "string" && x.trim().length > 0);
+  const urls = list
+    .filter((x): x is string => typeof x === "string" && x.trim().length > 0)
+    .map((url) => resolveMediaUrl(url.trim()));
   return urls.length > 0 ? urls : [PLACEHOLDER_IMAGE];
 }
 

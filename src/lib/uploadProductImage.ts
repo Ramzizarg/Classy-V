@@ -112,9 +112,12 @@ async function uploadViaApi(file: File, type: "product" | "sizeGuide"): Promise<
   formData.set("file", prepared);
   formData.set("type", type);
   const res = await fetch(UPLOAD_API, { method: "POST", body: formData });
-  const data = await res.json().catch(() => ({}));
+  const data = (await res.json().catch(() => ({}))) as { url?: string; error?: string; warning?: string };
   if (!res.ok) throw new Error(data.error || "Upload failed");
   if (!data.url) throw new Error("No URL returned");
+  if (data.warning && typeof window !== "undefined") {
+    console.warn("[upload]", data.warning);
+  }
   return data.url;
 }
 
