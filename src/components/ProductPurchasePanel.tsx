@@ -1,17 +1,33 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { ProductBuyNowForm } from "@/components/ProductBuyNowForm";
 import { ProductColourVariants } from "@/components/ProductColourVariants";
 import { ProductCountdown } from "@/components/ProductCountdown";
 import { SizeGuideModal } from "@/components/SizeGuideModal";
 import { useStore } from "@/components/StoreProvider";
 import { useFitProfile } from "@/components/useFitProfile";
 import { formatPrice } from "@/lib/format";
+import {
+  JOGGER_DUO_PAIR_PRICE,
+  buildCartLine,
+  isJoggerDuoEligible,
+  joggerDuoCompareAt,
+  joggerDuoSavings,
+  joggerDuoUnitPrice,
+} from "@/lib/joggerDuo";
 import { metaCatalogContentId, trackMeta } from "@/lib/metaPixel";
 import { effectivePrice, isComingSoon, isSoldOut, productHoverImage } from "@/lib/products";
 import { chartSupportsFinder, recommendSize, type SizeChart } from "@/lib/sizeCharts";
-import type { Product } from "@/lib/types";
+import type { CartLine, Product } from "@/lib/types";
+
+type Pack = 1 | 2;
+
+type DuoSlot = {
+  productId: number;
+  size: string;
+};
 
 export function ProductPurchasePanel({
   product,
@@ -23,9 +39,16 @@ export function ProductPurchasePanel({
   sizeChart?: SizeChart | null;
 }) {
   const { addLine, toggleWishlist, wishlist, hydrated, shippingRate } = useStore();
+  const colourOptions = useMemo(
+    () => (variants.length >= 2 ? variants : [product]),
+    [variants, product],
+  );
+
   const available = product.sizes.filter((entry) => entry.stock > 0);
   const [size, setSize] = useState(available.length === 1 ? available[0].size : "");
   const [quantity, setQuantity] = useState(1);
+  const [pack, setPack] = useState<Pack>(1);
+  const [slots, setSlots] = useState<DuoSlot[]>(() => defaultSlots(product, colourOptions, ""));
   const [guideOpen, setGuideOpen] = useState(false);
   const { profile } = useFitProfile();
   const finder = sizeChart ? chartSupportsFinder(sizeChart) : false;
@@ -35,15 +58,29 @@ export function ProductPurchasePanel({
     return product.sizes.find((entry) => entry.size.toUpperCase() === recommended?.toUpperCase())?.size ?? null;
   }, [sizeChart, finder, profile, product.sizes]);
 
-  const router = useRouter();
-  const [buying, setBuying] = useState(false);
-  const [needSize, setNeedSize] = useState(false);
-  const [nudge, setNudge] = useState(false);
+  const duoEligible = isJoggerDuoEligible(product);
+  const duoMode = duoEligible && pack === 2;
+  const duoPreviewOther =
+    colourOptions.find((entry) => entry.id !== product.id) ?? product;
+  const packOneImage = product.images[0];
+  const packTwoImages = [product.images[0], duoPreviewOther.images[0]].filter(Boolean) as string[];
 
   const selectSize = (next: string) => {
     setSize(next);
     setQuantity(1);
-    setNeedSize(false);
+  };
+
+  const setPackMode = (next: Pack) => {
+    setPack(next);
+    if (next === 2) {
+      setSlots(defaultSlots(product, colourOptions, size));
+    }
+  };
+
+  const updateSlot = (index: 0 | 1, patch: Partial<DuoSlot>) => {
+    setSlots((current) =>
+      current.map((slot, slotIndex) => (slotIndex === index ? { ...slot, ...patch } : slot)),
+    );
   };
 
   useEffect(() => {
@@ -68,40 +105,76 @@ export function ProductPurchasePanel({
   const selectedStock = product.sizes.find((entry) => entry.size === size)?.stock ?? 0;
   const locked = comingSoon || soldOut;
 
-  useEffect(() => {
-    if (!locked) router.prefetch("/checkout");
-  }, [router, locked]);
+  const duoUnit = joggerDuoUnitPrice();
+  const duoCompare = joggerDuoCompareAt(price);
+  const duoSave = joggerDuoSavings(price);
 
-  const line = () => ({
-    productId: product.id,
-    slug: product.slug,
-    name: product.name,
-    unitPrice: price,
-    compareAtPrice: onSale ? product.price : null,
-    image: product.images[0],
-    hoverImage: productHoverImage(product.images),
-    size,
-    colorway: product.colorway,
-    quantity,
-  });
+  const productById = (id: number) => colourOptions.find((entry) => entry.id === id) ?? product;
 
-  const add = () => {
-    if (locked || !size) return;
-    /* No toast: `addLine` slides the cart open, which is the confirmation. */
-    addLine(line());
-  };
+  const stockFor = (candidate: Product, sizeValue: string) =>
+    candidate.sizes.find((entry) => entry.size === sizeValue)?.stock ?? 0;
 
-  const buyNow = () => {
-    if (locked || buying) return;
-    if (!size) {
-      setNeedSize(true);
-      setNudge(true);
-      return;
+  const orderLines = useMemo((): CartLine[] | null => {
+    if (locked) return null;
+
+    if (duoMode) {
+      if (!slots[0]?.size || !slots[1]?.size) return null;
+
+      const first = productById(slots[0].productId);
+      const second = productById(slots[1].productId);
+      if (stockFor(first, slots[0].size) < 1 || stockFor(second, slots[1].size) < 1) return null;
+
+      const sameSku = first.id === second.id && slots[0].size === slots[1].size;
+      if (sameSku && stockFor(first, slots[0].size) < 2) return null;
+
+      const compareAt = price < product.price ? product.price : price;
+      if (sameSku) {
+        return [buildCartLine(first, slots[0].size, 2, duoUnit, compareAt)];
+      }
+      return [
+        buildCartLine(first, slots[0].size, 1, duoUnit, compareAt),
+        buildCartLine(second, slots[1].size, 1, duoUnit, compareAt),
+      ];
     }
-    setBuying(true);
-    addLine(line(), { openCart: false });
-    router.push("/checkout");
+
+    if (!size) return null;
+    return [
+      {
+        productId: product.id,
+        slug: product.slug,
+        name: product.name,
+        unitPrice: price,
+        compareAtPrice: onSale ? product.price : null,
+        image: product.images[0],
+        hoverImage: productHoverImage(product.images),
+        size,
+        colorway: product.colorway,
+        quantity,
+      },
+    ];
+    // colourOptions / slots are the live selectors; productById closes over them.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    locked,
+    duoMode,
+    slots,
+    colourOptions,
+    size,
+    quantity,
+    price,
+    onSale,
+    product,
+    duoUnit,
+  ]);
+
+  const addToCart = () => {
+    if (!orderLines) return;
+    orderLines.forEach((line, index) => {
+      addLine(line, { openCart: index === orderLines.length - 1 });
+    });
   };
+
+  const actionReady = Boolean(orderLines);
 
   return (
     <div>
@@ -123,6 +196,12 @@ export function ProductPurchasePanel({
             </p>
           ) : null}
         </div>
+      ) : duoMode ? (
+        <p className="product-price mt-2 text-center lg:text-right">
+          <span className="text-muted line-through">{formatPrice(duoCompare)}</span>{" "}
+          <span className="product-price__current">{formatPrice(JOGGER_DUO_PAIR_PRICE)}</span>
+          <span className="product-price__pack ui-sm text-muted"> · 2 joggers</span>
+        </p>
       ) : (
         <p className="product-price mt-2 text-center lg:text-right">
           {onSale ? (
@@ -137,74 +216,218 @@ export function ProductPurchasePanel({
         </p>
       )}
 
-      <ProductColourVariants variants={variants} activeId={product.id} />
+      {duoEligible && !comingSoon && !soldOut ? (
+        <div className="pack-toggle mt-4" role="radiogroup" aria-label="Choose pack">
+          <button
+            type="button"
+            role="radio"
+            aria-checked={pack === 1}
+            className={`pack-toggle__btn${pack === 1 ? " pack-toggle__btn--active" : ""}`}
+            onClick={() => setPackMode(1)}
+          >
+            <span className="pack-toggle__radio" aria-hidden />
+            {packOneImage ? (
+              <span className="pack-toggle__media pack-toggle__media--one" aria-hidden>
+                <span className="pack-toggle__thumb">
+                  <Image src={packOneImage} alt="" fill sizes="64px" className="pack-toggle__photo object-contain" />
+                </span>
+              </span>
+            ) : null}
+            <span className="pack-toggle__copy">
+              <span className="pack-toggle__label">1 jogger</span>
+              <span className="pack-toggle__sub">Standard price</span>
+            </span>
+            <span className="pack-toggle__prices">
+              <span className="pack-toggle__price tabular-nums">{formatPrice(price)}</span>
+              {onSale ? (
+                <span className="pack-toggle__was tabular-nums">{formatPrice(product.price)}</span>
+              ) : null}
+            </span>
+          </button>
+          <button
+            type="button"
+            role="radio"
+            aria-checked={pack === 2}
+            className={`pack-toggle__btn pack-toggle__btn--deal${pack === 2 ? " pack-toggle__btn--active" : ""}`}
+            onClick={() => setPackMode(2)}
+          >
+            <span className="pack-toggle__tag">Best deal</span>
+            <span className="pack-toggle__radio" aria-hidden />
+            {packTwoImages.length > 0 ? (
+              <span className="pack-toggle__media pack-toggle__media--two" aria-hidden>
+                {packTwoImages.map((src, index) => (
+                  <span key={`${src}-${index}`} className="pack-toggle__thumb">
+                    <Image src={src} alt="" fill sizes="56px" className="pack-toggle__photo object-contain" />
+                  </span>
+                ))}
+              </span>
+            ) : null}
+            <span className="pack-toggle__copy">
+              <span className="pack-toggle__label">2 joggers</span>
+              {duoSave > 0 ? (
+                <span className="pack-toggle__save">Save {formatPrice(duoSave)}</span>
+              ) : (
+                <span className="pack-toggle__sub">Mix colours & sizes</span>
+              )}
+            </span>
+            <span className="pack-toggle__prices">
+              <span className="pack-toggle__price tabular-nums">{formatPrice(JOGGER_DUO_PAIR_PRICE)}</span>
+              <span className="pack-toggle__was tabular-nums">{formatPrice(duoCompare)}</span>
+            </span>
+          </button>
+        </div>
+      ) : null}
 
-      <div className={`mt-5${comingSoon ? " pointer-events-none opacity-40" : ""}`}>
-        <div className="flex items-baseline justify-center gap-3 lg:justify-between lg:gap-0">
-          <p className="ui-sm hidden text-muted lg:block">Size</p>
-          {sizeChart && !comingSoon ? (
-            <button
-              type="button"
-              onClick={() => setGuideOpen(true)}
-              className="ui-sm hover-underline size-guide-link"
-            >
-              <RulerGlyph />
-              {finder ? "Find my size" : "Size guide"}
-            </button>
+      {!duoMode ? <ProductColourVariants variants={variants} activeId={product.id} /> : null}
+
+      {duoMode ? (
+        <div className={`mt-5${comingSoon ? " pointer-events-none opacity-40" : ""}`}>
+          <div className="flex items-baseline justify-center gap-3 lg:justify-between lg:gap-0">
+            <p className="ui-sm text-muted">Pick colour & size for each</p>
+            {sizeChart ? (
+              <button
+                type="button"
+                onClick={() => setGuideOpen(true)}
+                className="ui-sm hover-underline size-guide-link"
+              >
+                <RulerGlyph />
+                {finder ? "Find my size" : "Size guide"}
+              </button>
+            ) : null}
+          </div>
+
+          <div className="duo-slots mt-3 space-y-4">
+            {([0, 1] as const).map((index) => {
+              const slot = slots[index]!;
+              const slotProduct = productById(slot.productId);
+              return (
+                <div key={index} className="duo-slot">
+                  <p className="ui-sm font-bold">Jogger {index + 1}</p>
+
+                  {colourOptions.length > 1 ? (
+                    <div className="mt-2 flex flex-wrap justify-center gap-1.5 lg:justify-start">
+                      {colourOptions.map((option) => {
+                        const current = option.id === slot.productId;
+                        return (
+                          <button
+                            key={option.id}
+                            type="button"
+                            aria-label={option.colorway || option.name}
+                            aria-pressed={current}
+                            onClick={() => updateSlot(index, { productId: option.id, size: "" })}
+                            className={`media-frame product-colour-variants__thumb h-16 w-16 border transition-colors lg:h-20 lg:w-20 ${
+                              current ? "border-price" : "border-line hover:border-foreground"
+                            }`}
+                          >
+                            <Image
+                              src={option.images[0]}
+                              alt={option.name}
+                              fill
+                              sizes="80px"
+                              className="product-colour-variants__img h-full w-full object-contain p-1"
+                            />
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <p className="ui-sm mt-1 text-center text-muted lg:text-left">{slotProduct.colorway}</p>
+                  )}
+
+                  <div className="mt-2 flex flex-wrap justify-center gap-1.5 lg:justify-start">
+                    {slotProduct.sizes.map((entry) => {
+                      const other = slots[index === 0 ? 1 : 0]!;
+                      const sameAsOther =
+                        other.productId === slotProduct.id && other.size === entry.size;
+                      const disabled = entry.stock === 0 || (sameAsOther && entry.stock < 2);
+                      const recommended = yourSize === entry.size;
+                      return (
+                        <button
+                          key={entry.size}
+                          type="button"
+                          disabled={disabled}
+                          onClick={() => updateSlot(index, { size: entry.size })}
+                          aria-label={recommended ? `${entry.size}, your recommended size` : undefined}
+                          className={`ui relative min-w-11 border px-3 py-2 transition-colors lg:min-w-14 lg:py-3 ${
+                            slot.size === entry.size
+                              ? "border-selected bg-selected text-white"
+                              : "border-foreground hover:bg-foreground hover:text-background"
+                          } ${disabled ? "size-sold-out cursor-not-allowed border-line text-muted hover:bg-transparent hover:text-muted" : ""}`}
+                        >
+                          {entry.size}
+                          {recommended ? <span className="size-btn__dot" aria-hidden /> : null}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ) : (
+        <div className={`mt-5${comingSoon ? " pointer-events-none opacity-40" : ""}`}>
+          <div className="flex items-baseline justify-center gap-3 lg:justify-between lg:gap-0">
+            <p className="ui-sm hidden text-muted lg:block">Size</p>
+            {sizeChart && !comingSoon ? (
+              <button
+                type="button"
+                onClick={() => setGuideOpen(true)}
+                className="ui-sm hover-underline size-guide-link"
+              >
+                <RulerGlyph />
+                {finder ? "Find my size" : "Size guide"}
+              </button>
+            ) : null}
+          </div>
+
+          <div className="mt-2 flex flex-wrap justify-center gap-1.5 lg:justify-start">
+            {product.sizes.map((entry) => {
+              const disabled = entry.stock === 0;
+              const recommended = yourSize === entry.size;
+              return (
+                <button
+                  key={entry.size}
+                  type="button"
+                  disabled={disabled}
+                  onClick={() => selectSize(entry.size)}
+                  aria-label={recommended ? `${entry.size}, your recommended size` : undefined}
+                  className={`ui relative min-w-11 border px-3 py-2 transition-colors lg:min-w-16 lg:py-5 ${
+                    size === entry.size
+                      ? "border-selected bg-selected text-white"
+                      : "border-foreground hover:bg-foreground hover:text-background"
+                  } ${disabled ? "size-sold-out cursor-not-allowed border-line text-muted hover:bg-transparent hover:text-muted" : ""}`}
+                >
+                  {entry.size}
+                  {recommended ? <span className="size-btn__dot" aria-hidden /> : null}
+                </button>
+              );
+            })}
+          </div>
+
+          {yourSize ? (
+            <p className="ui-sm mt-2 text-center text-muted lg:text-left">
+              <span className="size-btn__dot size-btn__dot--inline" aria-hidden /> Your size: {yourSize}
+              {size !== yourSize ? (
+                <>
+                  {" · "}
+                  <button type="button" className="hover-underline text-foreground" onClick={() => selectSize(yourSize)}>
+                    Select
+                  </button>
+                </>
+              ) : null}
+              {" · "}
+              <button type="button" className="hover-underline" onClick={() => setGuideOpen(true)}>
+                Edit
+              </button>
+            </p>
+          ) : null}
+
+          {size && selectedStock > 0 && selectedStock <= 5 ? (
+            <p className="ui-sm mt-2 text-center lg:text-left">Low stock — {selectedStock} left</p>
           ) : null}
         </div>
-
-        <div
-          className={`mt-2 flex flex-wrap justify-center gap-1.5 lg:justify-start ${nudge ? "size-grid--nudge" : ""} ${
-            needSize ? "size-grid--need" : ""
-          }`}
-          onAnimationEnd={() => setNudge(false)}
-        >
-          {product.sizes.map((entry) => {
-            const disabled = entry.stock === 0;
-            const recommended = yourSize === entry.size;
-            return (
-              <button
-                key={entry.size}
-                type="button"
-                disabled={disabled}
-                onClick={() => selectSize(entry.size)}
-                aria-label={recommended ? `${entry.size}, your recommended size` : undefined}
-                className={`ui relative min-w-11 border px-3 py-2 transition-colors lg:min-w-16 lg:py-5 ${
-                  size === entry.size
-                    ? "border-selected bg-selected text-white"
-                    : "border-foreground hover:bg-foreground hover:text-background"
-                } ${disabled ? "size-sold-out cursor-not-allowed border-line text-muted hover:bg-transparent hover:text-muted" : ""}`}
-              >
-                {entry.size}
-                {recommended ? <span className="size-btn__dot" aria-hidden /> : null}
-              </button>
-            );
-          })}
-        </div>
-
-        {yourSize ? (
-          <p className="ui-sm mt-2 text-center text-muted lg:text-left">
-            <span className="size-btn__dot size-btn__dot--inline" aria-hidden /> Your size: {yourSize}
-            {size !== yourSize ? (
-              <>
-                {" · "}
-                <button type="button" className="hover-underline text-foreground" onClick={() => selectSize(yourSize)}>
-                  Select
-                </button>
-              </>
-            ) : null}
-            {" · "}
-            <button type="button" className="hover-underline" onClick={() => setGuideOpen(true)}>
-              Edit
-            </button>
-          </p>
-        ) : null}
-
-        {size && selectedStock > 0 && selectedStock <= 5 ? (
-          <p className="ui-sm mt-2 text-center lg:text-left">Low stock — {selectedStock} left</p>
-        ) : null}
-      </div>
+      )}
 
       <div className="purchase-actions mx-auto mt-4 lg:mx-0">
         {comingSoon ? (
@@ -212,8 +435,8 @@ export function ProductPurchasePanel({
             Coming soon
           </button>
         ) : (
-          <>
-            <div className="flex items-stretch gap-2">
+          <div className="flex items-stretch gap-2">
+            {!duoMode ? (
               <div className="flex items-center border border-line">
                 <button
                   type="button"
@@ -235,44 +458,29 @@ export function ProductPurchasePanel({
                   +
                 </button>
               </div>
-
-              <button
-                type="button"
-                onClick={add}
-                disabled={soldOut || !size}
-                className={`btn min-w-[150px] flex-1 ${soldOut ? "btn--sold-out" : "btn--solid"}`}
-              >
-                {soldOut ? "Sold out" : size ? "Add to cart" : "Select a size"}
-              </button>
-            </div>
-
-            {!soldOut ? (
-              <>
-                <button
-                  type="button"
-                  onClick={buyNow}
-                  disabled={buying}
-                  aria-describedby={needSize ? "buy-now-hint" : undefined}
-                  className="btn btn--buy mt-2 w-full"
-                >
-                  <BoltGlyph />
-                  <span>{buying ? "Going to checkout…" : "Buy now"}</span>
-                  {size && !buying ? (
-                    <span className="btn--buy__total tabular-nums">{formatPrice(price * quantity)}</span>
-                  ) : null}
-                </button>
-                <p
-                  id="buy-now-hint"
-                  role="status"
-                  className={`ui-sm mt-1.5 text-center lg:text-left ${needSize ? "text-selected" : "text-muted"}`}
-                >
-                  {needSize ? "Pick a size first" : "Skip the cart — straight to checkout"}
-                </p>
-              </>
             ) : null}
-          </>
+
+            <button
+              type="button"
+              onClick={addToCart}
+              disabled={soldOut || !actionReady}
+              className={`btn min-w-[150px] flex-1 ${soldOut ? "btn--sold-out" : "btn--solid"}`}
+            >
+              {soldOut ? "Sold out" : actionReady ? "Add to cart" : duoMode ? "Select sizes" : "Select a size"}
+            </button>
+          </div>
         )}
       </div>
+
+      {orderLines ? (
+        <div id="product-buy-now">
+          <ProductBuyNowForm
+            key={orderLines.map((line) => `${line.productId}-${line.size}-${line.quantity}`).join("|")}
+            lines={orderLines}
+            shippingRate={shippingRate}
+          />
+        </div>
+      ) : null}
 
       <button
         type="button"
@@ -290,7 +498,13 @@ export function ProductPurchasePanel({
         <SizeGuideModal
           chart={sizeChart}
           productSizes={product.sizes}
-          onSelectSize={selectSize}
+          onSelectSize={(next) => {
+            if (duoMode) {
+              setSlots((current) => current.map((slot) => ({ ...slot, size: next })));
+            } else {
+              selectSize(next);
+            }
+          }}
           onClose={() => setGuideOpen(false)}
         />
       ) : null}
@@ -298,12 +512,12 @@ export function ProductPurchasePanel({
   );
 }
 
-function BoltGlyph() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden className="btn--buy__icon" fill="currentColor">
-      <path d="M13.2 2 4.5 13.6h6.1L9.9 22l8.6-11.7h-6.1L13.2 2Z" />
-    </svg>
-  );
+function defaultSlots(product: Product, colourOptions: Product[], seedSize: string): DuoSlot[] {
+  const other = colourOptions.find((entry) => entry.id !== product.id) ?? product;
+  return [
+    { productId: product.id, size: seedSize },
+    { productId: other.id, size: "" },
+  ];
 }
 
 function RulerGlyph() {

@@ -104,14 +104,16 @@ const STEPS: { id: Step; label: string }[] = [
 
 const GENDER_LABELS: Record<Gender, string> = { men: "Men", women: "Women" };
 
+const GENDER_HINTS: Record<Gender, string> = { men: "Men's fit", women: "Women's fit" };
+
 function GenderGlyph({ gender }: { gender: Gender }) {
   return (
-    <svg viewBox="0 0 24 24" aria-hidden fill="currentColor">
-      <circle cx="12" cy="4.4" r="2.6" />
+    <svg viewBox="0 0 48 64" aria-hidden fill="currentColor">
+      <circle cx="24" cy="8" r="6" />
       {gender === "men" ? (
-        <path d="M8.2 8.6h7.6a2 2 0 0 1 2 2v4.9h-2.1V23h-2.6v-6.6h-2.2V23H8.3v-7.5H6.2v-4.9a2 2 0 0 1 2-2Z" />
+        <path d="M14 17h20a4 4 0 0 1 4 4v16a2.5 2.5 0 0 1-5 0V24h-1v37a3 3 0 0 1-6 0V40h-4v21a3 3 0 0 1-6 0V24h-1v13a2.5 2.5 0 0 1-5 0V21a4 4 0 0 1 4-4Z" />
       ) : (
-        <path d="M9.7 8.6h4.6a1.6 1.6 0 0 1 1.5 1.1l2.6 7.1h-2.9V23h-2.3v-5.4h-2.4V23H8.5v-6.2H5.6l2.6-7.1a1.6 1.6 0 0 1 1.5-1.1Z" />
+        <path d="M18 17h12a4 4 0 0 1 3.8 2.8L38 34a2.4 2.4 0 0 1-4.6 1.4L30 26l5 20h-6v15a2 2 0 0 1-4 0V46h-2v15a2 2 0 0 1-4 0V46h-6l5-20-3.4 9.4a2.4 2.4 0 0 1-4.6-1.4l4.2-14.2A4 4 0 0 1 18 17Z" />
       )}
     </svg>
   );
@@ -252,7 +254,7 @@ function SizeFinder({
       {step === "gender" ? (
         <div key="gender" className="size-pane text-center">
           <p className="section-title">Who are you shopping for?</p>
-          <div role="radiogroup" aria-label="Gender" className="mt-5 flex justify-center gap-6 sm:gap-10">
+          <div role="radiogroup" aria-label="Gender" className="size-genders mt-5">
             {(["men", "women"] as const).map((option) => (
               <button
                 key={option}
@@ -262,10 +264,12 @@ function SizeFinder({
                 className="size-gender"
                 onClick={() => chooseGender(option)}
               >
-                <span className="size-gender__circle">
+                <span className="size-gender__check" aria-hidden />
+                <span className="size-gender__figure">
                   <GenderGlyph gender={option} />
                 </span>
-                <span className="ui font-bold">{GENDER_LABELS[option]}</span>
+                <span className="size-gender__label">{GENDER_LABELS[option]}</span>
+                <span className="size-gender__hint">{GENDER_HINTS[option]}</span>
               </button>
             ))}
           </div>

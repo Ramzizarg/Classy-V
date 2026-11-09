@@ -42,6 +42,8 @@ export type Product = {
   details: string[];
   materials: string;
   care: string;
+  /** Custom Shipping & returns accordion copy; empty uses the storefront default. */
+  shippingReturns?: string;
   images: string[];
   sizes: SizeStock[];
   badges?: string[];

@@ -42,6 +42,12 @@ export type Product = {
   /** ISO datetime when the product becomes buyable. */
   release_at?: string | null;
   description: string | null;
+  /** Fabric & care accordion — materials line(s). */
+  materials?: string | null;
+  /** Fabric & care accordion — wash / care line(s). */
+  care?: string | null;
+  /** Shipping & returns accordion; empty = storefront default copy. */
+  shipping_returns?: string | null;
   price: number;
   /** Total stock across all sizes (synced on save / order). */
   stock: number;

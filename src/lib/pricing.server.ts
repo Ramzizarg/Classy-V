@@ -1,3 +1,5 @@
+import { isJogger } from "@/lib/facebookCatalog";
+import { applyJoggerDuoPricing } from "@/lib/joggerDuo";
 import { getProductById, isComingSoon, productHoverImage } from "@/lib/products";
 import { getCatalog } from "@/lib/storefrontCatalog";
 import type { CartLine } from "@/lib/types";
@@ -13,6 +15,7 @@ export type PricedCart =
 export async function priceCart(requested: CartLine[]): Promise<PricedCart> {
   const catalog = await getCatalog();
   const lines: CartLine[] = [];
+  const joggerByLine: boolean[] = [];
 
   for (const line of requested) {
     const product = getProductById(line.productId, catalog);
@@ -28,7 +31,8 @@ export async function priceCart(requested: CartLine[]): Promise<PricedCart> {
     }
 
     const sizeEntry = product.sizes.find((entry) => entry.size === line.size);
-    if (!sizeEntry || sizeEntry.stock === 0) {
+    const quantity = Math.max(1, Math.min(10, Math.trunc(line.quantity)));
+    if (!sizeEntry || sizeEntry.stock < quantity) {
       return {
         ok: false,
         error: `${product.name} in size ${line.size} is no longer available.`,
@@ -49,10 +53,12 @@ export async function priceCart(requested: CartLine[]): Promise<PricedCart> {
       hoverImage: productHoverImage(product.images),
       size: line.size,
       colorway: product.colorway,
-      quantity: Math.max(1, Math.min(10, Math.trunc(line.quantity))),
+      quantity,
     });
+    joggerByLine.push(isJogger(product));
   }
 
-  const subtotal = lines.reduce((sum, line) => sum + line.unitPrice * line.quantity, 0);
-  return { ok: true, lines, subtotal };
+  const pricedLines = applyJoggerDuoPricing(lines, joggerByLine);
+  const subtotal = pricedLines.reduce((sum, line) => sum + line.unitPrice * line.quantity, 0);
+  return { ok: true, lines: pricedLines, subtotal };
 }

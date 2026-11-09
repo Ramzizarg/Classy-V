@@ -261,6 +261,9 @@ export default function DashboardProduitsPage() {
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [materials, setMaterials] = useState("");
+  const [care, setCare] = useState("");
+  const [shippingReturns, setShippingReturns] = useState("");
   const [price, setPrice] = useState("");
   const [discountPrice, setDiscountPrice] = useState("");
   const [categoryId, setCategoryId] = useState<string>("");
@@ -369,6 +372,9 @@ export default function DashboardProduitsPage() {
     setEditing(null);
     setName("");
     setDescription("");
+    setMaterials("");
+    setCare("");
+    setShippingReturns("");
     setPrice("");
     setDiscountPrice("");
     setCategoryId("");
@@ -390,6 +396,9 @@ export default function DashboardProduitsPage() {
     setEditing(p);
     setName(p.name);
     setDescription(p.description ?? "");
+    setMaterials(p.materials ?? "");
+    setCare(p.care ?? "");
+    setShippingReturns(p.shipping_returns ?? "");
     setPrice(String(p.price));
     const parsed = parseSizeStocks(p.sizes ?? null, p.stock);
     const next: Record<string, string> = {};
@@ -488,6 +497,9 @@ export default function DashboardProduitsPage() {
       }
 
       const hasDescription = description.trim().length > 0;
+      const materialsText = materials.trim();
+      const careText = care.trim();
+      const shippingReturnsText = shippingReturns.trim();
       const sizePayload: SizeStock[] = Object.entries(sizeStocks).map(([size, stock]) => ({
         size,
         stock: Math.max(0, Math.floor(Number(stock) || 0)),
@@ -533,6 +545,9 @@ export default function DashboardProduitsPage() {
       const payload: Record<string, unknown> = {
         name: name.trim(),
         description: hasDescription ? description : null,
+        materials: materialsText || null,
+        care: careText || null,
+        shipping_returns: shippingReturnsText || null,
         price: regularPrice,
         stock: totalStock,
         category_id: categoryId ? parseInt(categoryId, 10) : null,
@@ -1517,7 +1532,9 @@ export default function DashboardProduitsPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-black mb-1.5">Description</label>
+              <label className="block text-xs font-medium text-black mb-1.5">
+                Description <span className="font-normal text-zinc-500">(product page accordion)</span>
+              </label>
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
@@ -1527,6 +1544,51 @@ export default function DashboardProduitsPage() {
               />
               <p className="mt-1 text-[11px] text-zinc-500">
                 Tip: one field per line (Material, Fit, Style…). Packed ALL CAPS text is split automatically on the store.
+              </p>
+            </div>
+
+            <div className="rounded-lg border border-zinc-200 bg-zinc-50/80 p-3 space-y-3">
+              <p className="text-xs font-medium text-black">
+                Fabric &amp; care <span className="font-normal text-zinc-500">(product page accordion)</span>
+              </p>
+              <div>
+                <label className="block text-[11px] font-medium text-zinc-600 mb-1">Materials</label>
+                <textarea
+                  value={materials}
+                  onChange={(e) => setMaterials(e.target.value)}
+                  rows={3}
+                  placeholder={"100% cotton French terry\n350 GSM"}
+                  className="w-full bg-white text-black text-xs border border-zinc-300 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-zinc-400 resize-y min-h-[72px] overflow-y-auto"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-medium text-zinc-600 mb-1">Care</label>
+                <textarea
+                  value={care}
+                  onChange={(e) => setCare(e.target.value)}
+                  rows={3}
+                  placeholder={"Machine wash cold\nDo not tumble dry\nIron on low"}
+                  className="w-full bg-white text-black text-xs border border-zinc-300 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-zinc-400 resize-y min-h-[72px] overflow-y-auto"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-black mb-1.5">
+                Shipping &amp; returns{" "}
+                <span className="font-normal text-zinc-500">(product page accordion)</span>
+              </label>
+              <textarea
+                value={shippingReturns}
+                onChange={(e) => setShippingReturns(e.target.value)}
+                rows={4}
+                placeholder={
+                  "Leave blank for the default store copy (dispatch time, delivery price, 30-day returns).\nOr write your own text here — one paragraph per line."
+                }
+                className="w-full bg-white text-black text-xs border border-zinc-300 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-zinc-400 resize-y min-h-[88px] overflow-y-auto"
+              />
+              <p className="mt-1 text-[11px] text-zinc-500">
+                Empty = default shipping &amp; returns text with the live delivery price.
               </p>
             </div>
 

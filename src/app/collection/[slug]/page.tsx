@@ -146,8 +146,23 @@ export default async function ProductPage({ params }: { params: Params }) {
                 title: "Fabric & care",
                 body: (
                   <div className="prose-raw">
-                    <p>{product.materials}</p>
-                    <p>{product.care}</p>
+                    {[
+                      ...product.materials
+                        .split(/\n+/)
+                        .map((line) => line.trim())
+                        .filter(Boolean)
+                        .map((line) => ({ key: `m-${line}`, line })),
+                      ...product.care
+                        .split(/\n+/)
+                        .map((line) => line.trim())
+                        .filter(Boolean)
+                        .map((line) => ({ key: `c-${line}`, line })),
+                    ].map(({ key, line }) => (
+                      <p key={key}>{line}</p>
+                    ))}
+                    {!product.materials && !product.care ? (
+                      <p>Fabric and care details coming soon.</p>
+                    ) : null}
                   </div>
                 ),
               },
@@ -156,11 +171,19 @@ export default async function ProductPage({ params }: { params: Params }) {
                 title: "Shipping & returns",
                 body: (
                   <div className="prose-raw">
-                    <p>
-                      Dispatched from {SITE.city} within 48 working hours. Delivery costs{" "}
-                      {shippingRate} DT. 30 days to return unworn pieces — see{" "}
-                      <ShippingPolicyTrigger />.
-                    </p>
+                    {product.shippingReturns ? (
+                      product.shippingReturns
+                        .split(/\n+/)
+                        .map((line) => line.trim())
+                        .filter(Boolean)
+                        .map((line) => <p key={line}>{line}</p>)
+                    ) : (
+                      <p>
+                        Dispatched from {SITE.city} within 48 working hours. Delivery costs{" "}
+                        {shippingRate} DT. 30 days to return unworn pieces — see{" "}
+                        <ShippingPolicyTrigger />.
+                      </p>
+                    )}
                   </div>
                 ),
               },

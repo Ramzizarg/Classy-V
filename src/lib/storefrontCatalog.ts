@@ -16,6 +16,9 @@ type ProductRow = {
   name: string;
   slug: string | null;
   description: unknown;
+  materials: string | null;
+  care: string | null;
+  shipping_returns: string | null;
   price: string | number | null;
   discount_price: string | number | null;
   stock: number | string | null;
@@ -111,8 +114,10 @@ function rowToProduct(row: ProductRow): Product {
     shortDescription: description.split("\n")[0] ?? "",
     description,
     details: [],
-    materials: "",
-    care: "",
+    materials: typeof row.materials === "string" ? row.materials.trim() : "",
+    care: typeof row.care === "string" ? row.care.trim() : "",
+    shippingReturns:
+      typeof row.shipping_returns === "string" ? row.shipping_returns.trim() : "",
     images: toImages(row.images),
     sizes: toSizes(row.sizes, stock),
     badges: salePrice != null ? ["Sale"] : undefined,
@@ -133,6 +138,9 @@ const getDatabaseProducts = cache(async (): Promise<Product[]> => {
               p.name,
               p.slug,
               p.description,
+              p.materials,
+              p.care,
+              p.shipping_returns,
               p.price,
               p.discount_price,
               p.stock,

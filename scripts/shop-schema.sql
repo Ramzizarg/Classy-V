@@ -52,6 +52,11 @@ ALTER TABLE products ADD COLUMN IF NOT EXISTS coming_soon BOOLEAN NOT NULL DEFAU
 ALTER TABLE products ADD COLUMN IF NOT EXISTS release_at TIMESTAMPTZ;
 CREATE INDEX IF NOT EXISTS products_coming_soon_idx ON products (coming_soon) WHERE coming_soon = TRUE;
 
+-- Product page accordion copy (Description already uses `description`).
+ALTER TABLE products ADD COLUMN IF NOT EXISTS materials TEXT;
+ALTER TABLE products ADD COLUMN IF NOT EXISTS care TEXT;
+ALTER TABLE products ADD COLUMN IF NOT EXISTS shipping_returns TEXT;
+
 -- Coupons -------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS coupons (
   id             SERIAL PRIMARY KEY,

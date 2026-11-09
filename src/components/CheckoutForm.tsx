@@ -9,24 +9,19 @@ import { OrderLineThumb } from "@/components/OrderLineThumb";
 import { OrderPlacedModal } from "@/components/OrderPlacedModal";
 import { useStore } from "@/components/StoreProvider";
 import { shippingCost } from "@/lib/cart";
+import {
+  CHECKOUT_FIELD_ORDER,
+  EMPTY_CHECKOUT_FORM,
+  validateCheckoutRequired,
+  type CheckoutFieldErrors,
+  type CheckoutFieldKey,
+} from "@/lib/checkoutValidation";
 import { formatPrice } from "@/lib/format";
 import { metaCatalogContentId, trackMeta } from "@/lib/metaPixel";
-import { XDELIVERY_GOVERNORATES, delegationsFor, matchDelegation, matchGovernorate } from "@/lib/xdeliveryLocations";
+import { XDELIVERY_GOVERNORATES, delegationsFor } from "@/lib/xdeliveryLocations";
 
-const EMPTY = {
-  email: "",
-  fullName: "",
-  address: "",
-  governorate: "",
-  city: "",
-  phone: "",
-  phone2: "",
-  note: "",
-};
-
-type FormFields = typeof EMPTY;
-type FieldKey = keyof FormFields;
-type FieldErrors = Partial<Record<FieldKey, string>>;
+type FieldKey = CheckoutFieldKey;
+type FieldErrors = CheckoutFieldErrors;
 
 type AppliedCoupon = { code: string; discount: number; label: string };
 
@@ -44,39 +39,12 @@ const FIELD_FOCUS_IDS: Record<FieldKey, string> = {
   note: "co-note",
 };
 
-const EMAIL_OK = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
-
-function validateRequired(form: FormFields): FieldErrors {
-  const errors: FieldErrors = {};
-  const email = form.email.trim();
-  const fullName = form.fullName.trim().replace(/\s+/g, " ");
-  const address = form.address.trim();
-  const phone = form.phone.trim();
-
-  // Email is optional — only reject a badly typed value.
-  if (email && !EMAIL_OK.test(email)) errors.email = "Enter a valid email address.";
-
-  if (!fullName) errors.fullName = "Full name is required.";
-  else if (fullName.length < 2) errors.fullName = "Enter your full name.";
-
-  const governorateName = matchGovernorate(form.governorate);
-  if (!governorateName) errors.governorate = "Governorate is required.";
-  else if (!matchDelegation(governorateName, form.city)) {
-    errors.city = "Delegation is required.";
-  }
-
-  if (!address) errors.address = "Address is required.";
-  if (!phone) errors.phone = "Phone is required.";
-
-  return errors;
-}
-
 export function CheckoutForm() {
   const router = useRouter();
   const { lines, subtotal, shippingRate, clearCart, hydrated } = useStore();
 
   const [placed, setPlaced] = useState<PlacedOrder | null>(null);
-  const [form, setForm] = useState(EMPTY);
+  const [form, setForm] = useState(EMPTY_CHECKOUT_FORM);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
@@ -190,13 +158,11 @@ export function CheckoutForm() {
   const tryPlaceOrder = () => {
     if (submitting) return;
 
-    const errors = validateRequired(form);
+    const errors = validateCheckoutRequired(form);
     setFieldErrors(errors);
     setError("");
 
-    const firstInvalid = (
-      ["fullName", "governorate", "city", "address", "phone", "email"] as FieldKey[]
-    ).find((key) => errors[key]);
+    const firstInvalid = CHECKOUT_FIELD_ORDER.find((key) => errors[key]);
     if (firstInvalid) {
       focusField(firstInvalid);
       return;
@@ -207,7 +173,7 @@ export function CheckoutForm() {
 
   const placeOrder = async () => {
     // Hard stop — never hit the API if a required field is still empty.
-    const errors = validateRequired(form);
+    const errors = validateCheckoutRequired(form);
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);
       setSubmitting(false);
@@ -291,29 +257,7 @@ export function CheckoutForm() {
       <div className="order-3 px-4 pt-7 pb-12 sm:px-6 lg:col-start-1 lg:row-start-2 lg:px-10 lg:pt-8">
         <div className="mx-auto w-full max-w-[420px]">
           <form noValidate onSubmit={submitCheckout}>
-            <h2 className="ui font-bold">Contact</h2>
-            <div className="mt-3">
-              <label htmlFor="co-email" className="sr-only">
-                Email
-              </label>
-              <input
-                id="co-email"
-                type="email"
-                autoComplete="email"
-                placeholder="Email (optional)"
-                aria-invalid={Boolean(fieldErrors.email)}
-                value={form.email}
-                onChange={(event) => update("email", event.target.value)}
-                className={`checkout-field${fieldErrors.email ? " checkout-field--invalid" : ""}`}
-              />
-              {fieldErrors.email ? (
-                <p className="ui-sm mt-1.5 text-danger">{fieldErrors.email}</p>
-              ) : (
-                <p className="ui-sm mt-1.5 text-muted">Optional. We send your order confirmation here if you leave one.</p>
-              )}
-            </div>
-
-            <h2 className="ui mt-7 font-bold">Delivery address</h2>
+            <h2 className="ui font-bold">Delivery address</h2>
             <div className="mt-3 grid gap-3">
               <div>
                 <label htmlFor="co-name" className="sr-only">
@@ -419,35 +363,44 @@ export function CheckoutForm() {
                 )}
               </div>
 
-              <div>
-                <label htmlFor="co-phone2" className="sr-only">
-                  Second phone (optional)
-                </label>
-                <input
-                  id="co-phone2"
-                  type="tel"
-                  inputMode="tel"
-                  autoComplete="tel"
-                  placeholder="Second phone (optional)"
-                  value={form.phone2}
-                  onChange={(event) => update("phone2", event.target.value)}
-                  className="checkout-field"
-                />
-              </div>
             </div>
 
             <div className="mt-7">
-              <label htmlFor="co-note" className="ui-sm text-muted">
-                Order note (optional)
-              </label>
-              <textarea
-                id="co-note"
-                rows={3}
-                placeholder="Anything we should know?"
-                value={form.note}
-                onChange={(event) => update("note", event.target.value)}
-                className="checkout-field mt-2"
-              />
+              <h2 className="ui font-bold">Optional</h2>
+              <div className="mt-3 grid gap-3">
+                <div>
+                  <label htmlFor="co-email" className="sr-only">
+                    Email
+                  </label>
+                  <input
+                    id="co-email"
+                    type="email"
+                    autoComplete="email"
+                    placeholder="Email (optional)"
+                    aria-invalid={Boolean(fieldErrors.email)}
+                    value={form.email}
+                    onChange={(event) => update("email", event.target.value)}
+                    className={`checkout-field${fieldErrors.email ? " checkout-field--invalid" : ""}`}
+                  />
+                  {fieldErrors.email ? (
+                    <p className="ui-sm mt-1.5 text-danger">{fieldErrors.email}</p>
+                  ) : null}
+                </div>
+
+                <div>
+                  <label htmlFor="co-note" className="sr-only">
+                    Order note
+                  </label>
+                  <textarea
+                    id="co-note"
+                    rows={3}
+                    placeholder="Order note (optional)"
+                    value={form.note}
+                    onChange={(event) => update("note", event.target.value)}
+                    className="checkout-field"
+                  />
+                </div>
+              </div>
             </div>
 
             {error ? <p className="ui-sm mt-4 font-bold text-danger">{error}</p> : null}
