@@ -17,7 +17,7 @@ import { isProductOutOfStock } from "@/lib/productSizesDisplay";
 import { parseSizeStocks, totalSizeStock } from "@/lib/productSizeStock";
 import {
   IMAGE_UPLOAD_ACCEPT,
-  MAX_UPLOAD_IMAGE_BYTES,
+  MAX_SOURCE_IMAGE_BYTES,
   uploadSizeGuideImage,
   uploadProductImage,
 } from "@/lib/uploadProductImage";
@@ -44,10 +44,21 @@ import {
 } from "lucide-react";
 
 const SIZES = ["Standard", "S", "M", "L", "XL", "XXL"];
-const PRODUCT_IMAGE_SLOTS = 4;
+/** Hard cap — gallery can grow with “Add image”, starting from 4 visible slots. */
+const MAX_PRODUCT_IMAGE_SLOTS = 10;
+const MIN_PRODUCT_IMAGE_SLOTS = 4;
 
-function productImageSlots(urls: string[]): string[] {
-  return Array.from({ length: PRODUCT_IMAGE_SLOTS }, (_, index) => urls[index] ?? "");
+function visibleProductImageCount(urls: string[], slotCount: number): number {
+  const filled = urls.filter((url) => String(url ?? "").trim()).length;
+  return Math.min(
+    MAX_PRODUCT_IMAGE_SLOTS,
+    Math.max(MIN_PRODUCT_IMAGE_SLOTS, slotCount, filled),
+  );
+}
+
+function productImageSlots(urls: string[], slotCount: number): string[] {
+  const count = visibleProductImageCount(urls, slotCount);
+  return Array.from({ length: count }, (_, index) => urls[index] ?? "");
 }
 
 /** Sale is only valid when discount_price is set and strictly below regular price. */
@@ -288,6 +299,7 @@ export default function DashboardProduitsPage() {
   /** Selected sizes → qty text. Missing key = size not selected. */
   const [sizeStocks, setSizeStocks] = useState<Record<string, string>>({});
   const [productImageUrls, setProductImageUrls] = useState<string[]>([]);
+  const [productImageSlotCount, setProductImageSlotCount] = useState(MIN_PRODUCT_IMAGE_SLOTS);
   const [comingSoon, setComingSoon] = useState(false);
   const [releaseDate, setReleaseDate] = useState("");
   const [releaseTime, setReleaseTime] = useState("");
@@ -395,6 +407,7 @@ export default function DashboardProduitsPage() {
     setCustomChart(null);
     setSizeStocks({});
     setProductImageUrls([]);
+    setProductImageSlotCount(MIN_PRODUCT_IMAGE_SLOTS);
     setShowUrlImages(false);
     setComingSoon(false);
     setReleaseDate("");
@@ -439,7 +452,14 @@ export default function DashboardProduitsPage() {
     );
     setGuideMode(guide.mode);
     setCustomChart(guide.mode === "custom" ? guide.chart : null);
-    setProductImageUrls(normalizeProductImages(p.images));
+    const existingImages = normalizeProductImages(p.images);
+    setProductImageUrls(existingImages);
+    setProductImageSlotCount(
+      Math.min(
+        MAX_PRODUCT_IMAGE_SLOTS,
+        Math.max(MIN_PRODUCT_IMAGE_SLOTS, existingImages.length),
+      ),
+    );
     setShowUrlImages(false);
     setComingSoon(Boolean(p.coming_soon));
     setReleaseDate(toLocalDateInput(p.release_at));
@@ -505,8 +525,8 @@ export default function DashboardProduitsPage() {
   };
 
   const uploadProductImageToSlot = async (index: number, file: File) => {
-    if (file.size > MAX_UPLOAD_IMAGE_BYTES) {
-      throw new Error("Image is too large. Max size is 10 MB.");
+    if (file.size > MAX_SOURCE_IMAGE_BYTES) {
+      throw new Error("Image is too large. Max source size is 40 MB.");
     }
     const url = await uploadProductImage(file);
     setProductImageSlot(index, url);
@@ -1768,10 +1788,12 @@ export default function DashboardProduitsPage() {
             <div>
               <label className="block text-xs font-medium text-black mb-1.5">
                 Product images{" "}
-                <span className="text-zinc-500 font-normal">(4 slots · max 10 MB each)</span>
+                <span className="text-zinc-500 font-normal">
+                  (up to {MAX_PRODUCT_IMAGE_SLOTS} · high-res OK · max 40 MB)
+                </span>
               </label>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                {productImageSlots(productImageUrls).map((url, index) => (
+                {productImageSlots(productImageUrls, productImageSlotCount).map((url, index) => (
                   <div
                     key={`product-image-slot-${index}`}
                     className={`relative overflow-hidden rounded-lg border bg-zinc-50 ${
@@ -1853,9 +1875,26 @@ export default function DashboardProduitsPage() {
                   </div>
                 ))}
               </div>
+              {visibleProductImageCount(productImageUrls, productImageSlotCount) <
+              MAX_PRODUCT_IMAGE_SLOTS ? (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setProductImageSlotCount((count) =>
+                      Math.min(MAX_PRODUCT_IMAGE_SLOTS, count + 1),
+                    )
+                  }
+                  className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-dashed border-zinc-300 bg-white px-3 py-2 text-xs font-medium text-zinc-700 hover:border-zinc-400 hover:bg-zinc-50 hover:text-black"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  Add another image
+                </button>
+              ) : (
+                <p className="mt-2 text-xs text-zinc-500">Maximum {MAX_PRODUCT_IMAGE_SLOTS} images.</p>
+              )}
               <p className="mt-2 text-xs text-zinc-500">
-                Pick which slot to fill (1–4). Image 1 is the main catalog photo. Any image type is
-                fine (JPG, PNG, WebP, HEIC, TIFF, …) up to 10 MB — stored as high-quality WebP.
+                Image 1 is the main catalog photo. High-res is fine (e.g. 4000×6000 and larger).
+                Any image type up to 40 MB — kept sharp and stored as high-quality WebP.
               </p>
               {productImagesUploading ? (
                 <p className="mt-1 flex items-center gap-1.5 text-xs font-medium text-zinc-600">
@@ -1876,7 +1915,7 @@ export default function DashboardProduitsPage() {
                   value={imagesStr}
                   onChange={(e) => setImagesStr(e.target.value)}
                   rows={2}
-                  placeholder="One URL per line (added after the 4 slots)"
+                  placeholder="One URL per line (added after the image slots)"
                   className="mt-2 w-full bg-white text-black text-xs border border-zinc-300 rounded-lg px-3 py-2 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-400"
                 />
               )}

@@ -3,13 +3,13 @@ import sharp from "sharp";
 /**
  * Every raster upload is stored as WebP so Blob / DB URLs stay small while
  * Next.js `/_next/image` can still serve viewport-sized AVIF/WebP at request time.
- * Quality is kept high so product photos stay sharp on PDP and catalog.
+ * Long edge stays high so camera files like 4000×6000 keep their detail.
  */
-const MAX_WIDTH: Record<"product" | "home" | "sizeGuide", number> = {
-  product: 2000,
-  /** Heroes are object-cover + mobile crop — keep enough pixels for ~3x DPR. */
-  home: 2560,
-  sizeGuide: 1800,
+const MAX_EDGE: Record<"product" | "home" | "sizeGuide", number> = {
+  /** Allows 4000×6000 and larger studio shots without soft downscale. */
+  product: 8000,
+  home: 4000,
+  sizeGuide: 4000,
 };
 
 /** WebP quality 0–100. Higher = sharper, still far smaller than PNG/JPEG. */
@@ -41,13 +41,13 @@ export async function optimizeUploadedImage(
     return { bytes, ext: normalized, contentType };
   }
 
-  const maxWidth = MAX_WIDTH[type];
+  const maxEdge = MAX_EDGE[type];
   const quality = UPLOAD_QUALITY[type];
-  const optimized = await sharp(bytes, { failOn: "none" })
+  const optimized = await sharp(bytes, { failOn: "none", unlimited: true })
     .rotate()
     .resize({
-      width: maxWidth,
-      height: maxWidth,
+      width: maxEdge,
+      height: maxEdge,
       fit: "inside",
       withoutEnlargement: true,
     })

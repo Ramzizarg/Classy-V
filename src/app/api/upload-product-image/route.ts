@@ -78,7 +78,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
     if (file.size > MAX_UPLOAD_IMAGE_BYTES) {
-      return NextResponse.json({ error: "Image is too large. Max size is 10 MB." }, { status: 400 });
+      return NextResponse.json(
+        { error: "Image is too large. Max upload size is 20 MB after compression." },
+        { status: 400 },
+      );
     }
     if (!looksLikeImageUpload(file)) {
       return NextResponse.json(

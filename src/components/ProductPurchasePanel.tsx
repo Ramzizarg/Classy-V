@@ -225,7 +225,6 @@ export function ProductPurchasePanel({
             className={`pack-toggle__btn${pack === 1 ? " pack-toggle__btn--active" : ""}`}
             onClick={() => setPackMode(1)}
           >
-            <span className="pack-toggle__radio" aria-hidden />
             {packOneImage ? (
               <span className="pack-toggle__media pack-toggle__media--one" aria-hidden>
                 <span className="pack-toggle__thumb">
@@ -243,6 +242,7 @@ export function ProductPurchasePanel({
                 <span className="pack-toggle__was tabular-nums">{formatPrice(product.price)}</span>
               ) : null}
             </span>
+            <span className="pack-toggle__radio" aria-hidden />
           </button>
           <button
             type="button"
@@ -252,7 +252,6 @@ export function ProductPurchasePanel({
             onClick={() => setPackMode(2)}
           >
             <span className="pack-toggle__tag">Best deal</span>
-            <span className="pack-toggle__radio" aria-hidden />
             {packTwoImages.length > 0 ? (
               <span className="pack-toggle__media pack-toggle__media--two" aria-hidden>
                 {packTwoImages.map((src, index) => (
@@ -274,6 +273,7 @@ export function ProductPurchasePanel({
               <span className="pack-toggle__price tabular-nums">{formatPrice(JOGGER_DUO_PAIR_PRICE)}</span>
               <span className="pack-toggle__was tabular-nums">{formatPrice(duoCompare)}</span>
             </span>
+            <span className="pack-toggle__radio" aria-hidden />
           </button>
         </div>
       ) : null}
