@@ -127,7 +127,7 @@ export async function POST(request: Request) {
       orderId: order.id,
       reference: order.reference,
       createdAt: order.createdAt,
-      to: order.customer.email,
+      to: order.customer.email ?? "",
       fullName: order.customer.fullName,
       phone: order.customer.phone,
       address: order.customer.address,

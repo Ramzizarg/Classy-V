@@ -276,7 +276,8 @@ export type OrderEmailPayload = {
   orderId: number | string;
   reference: string;
   createdAt?: string;
-  to: string;
+  /** Optional — without it only the admin notice is sent. */
+  to?: string;
   fullName: string;
   phone: string;
   items: OrderEmailItem[];
