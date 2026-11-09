@@ -56,7 +56,8 @@ export function ComingSoonGate() {
       return;
     }
     try {
-      const res = await fetch("/api/coming-soon/status", { cache: "no-store" });
+      // Do not force no-store — idle responses are CDN-cached to save Active CPU.
+      const res = await fetch("/api/coming-soon/status");
       if (!res.ok) {
         setStatus(null);
         return;

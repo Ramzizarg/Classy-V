@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { ListOrdered, Users, X } from "lucide-react";
 
-const POLL_MS = 5_000;
+/** Dashboard only — keep light on Hobby Fluid Active CPU. */
+const POLL_MS = 60_000;
 
 type PagePresence = { path: string; count: number };
 

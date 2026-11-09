@@ -5,7 +5,8 @@ import { createHmac, timingSafeEqual } from "crypto";
 import { COMING_SOON_COOKIE } from "@/lib/comingSoonCookie";
 
 export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
+/** Short cache — gate flips rarely; no-store was burning Fluid Active CPU. */
+export const revalidate = 30;
 
 function getCookieSecret() {
   return process.env.COMING_SOON_COOKIE_SECRET || "dev-cookie-secret";
@@ -47,9 +48,17 @@ const IDLE = {
   hasPassword: false,
 };
 
+function cachedJson(data: unknown) {
+  return NextResponse.json(data, {
+    headers: {
+      "Cache-Control": "public, s-maxage=30, stale-while-revalidate=120",
+    },
+  });
+}
+
 export async function GET() {
   if (!resolveDatabaseUrl()) {
-    return NextResponse.json(IDLE);
+    return cachedJson(IDLE);
   }
 
   try {
@@ -68,20 +77,28 @@ export async function GET() {
       | undefined;
 
     if (!row || !row.enabled || gateEndPassed(row.end_at ?? null)) {
-      return NextResponse.json(IDLE);
+      return cachedJson(IDLE);
     }
 
     const jar = await cookies();
     const unlocked = hasValidAccessCookie(jar.get(COMING_SOON_COOKIE)?.value);
 
-    return NextResponse.json({
-      blocking: !unlocked,
-      heroImageUrl: String(row.hero_image_url ?? ""),
-      endAt: String(row.end_at ?? ""),
-      requirePassword: Boolean(row.require_password),
-      hasPassword: Boolean(row.password_hash),
-    });
+    // Cookie-dependent response must not be shared across visitors.
+    return NextResponse.json(
+      {
+        blocking: !unlocked,
+        heroImageUrl: String(row.hero_image_url ?? ""),
+        endAt: String(row.end_at ?? ""),
+        requirePassword: Boolean(row.require_password),
+        hasPassword: Boolean(row.password_hash),
+      },
+      {
+        headers: {
+          "Cache-Control": "private, no-store",
+        },
+      },
+    );
   } catch {
-    return NextResponse.json(IDLE);
+    return cachedJson(IDLE);
   }
 }

@@ -4,7 +4,8 @@ import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 
 const STORAGE_KEY = "classyv-visitor-id";
-const HEARTBEAT_MS = 20_000;
+/** Slow heartbeats — every 20s burned Hobby Fluid Active CPU (4h/month). */
+const HEARTBEAT_MS = 120_000;
 
 function createVisitorId(): string {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();

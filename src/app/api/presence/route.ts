@@ -65,10 +65,10 @@ export async function POST(req: NextRequest) {
 
     await upsertPresence({ visitorId, path, userAgent: ua });
 
-    if (Math.random() < 0.35) void pruneStalePresence();
+    // Rare prune only — counting online on every heartbeat burned Active CPU.
+    if (Math.random() < 0.05) void pruneStalePresence();
 
-    const online = await countOnlineVisitors();
-    return noStoreJson({ ok: true, online });
+    return noStoreJson({ ok: true });
   } catch (err) {
     console.warn("[presence] POST failed:", describeDbError(err));
     return noStoreJson({ error: "presence failed", online: 0 }, 500);

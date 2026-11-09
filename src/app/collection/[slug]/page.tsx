@@ -24,7 +24,7 @@ import { SITE } from "@/lib/site";
 type Params = Promise<{ slug: string }>;
 
 /** Cache product HTML briefly — stock still refreshes via catalog + cart reconcile. */
-export const revalidate = 60;
+export const revalidate = 300;
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const { slug } = await params;

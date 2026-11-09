@@ -2,7 +2,7 @@ import { buildFacebookCatalogCsv, type FacebookCatalogSet } from "@/lib/facebook
 import { getCatalog } from "@/lib/storefrontCatalog";
 
 export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
+export const revalidate = 300;
 
 function catalogSet(value: string | null): FacebookCatalogSet {
   return value === "all" ? "all" : "joggers";
