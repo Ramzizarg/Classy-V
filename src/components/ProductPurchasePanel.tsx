@@ -429,55 +429,63 @@ export function ProductPurchasePanel({
         </div>
       )}
 
-      <div className="purchase-actions mx-auto mt-4 lg:mx-0">
-        {comingSoon ? (
+      {comingSoon ? (
+        <div className="purchase-actions mx-auto mt-4 lg:mx-0">
           <button type="button" disabled className="btn btn--coming-soon w-full">
             Coming soon
           </button>
-        ) : (
-          <div className="flex items-stretch gap-2">
-            {!duoMode ? (
-              <div className="flex items-center border border-line">
-                <button
-                  type="button"
-                  onClick={() => setQuantity((value) => Math.max(1, value - 1))}
-                  aria-label="Decrease quantity"
-                  className="ui h-10 w-8"
-                >
-                  −
-                </button>
-                <span className="ui w-7 text-center tabular-nums">{quantity}</span>
-                <button
-                  type="button"
-                  onClick={() =>
-                    setQuantity((value) => (selectedStock ? Math.min(selectedStock, value + 1) : value + 1))
-                  }
-                  aria-label="Increase quantity"
-                  className="ui h-10 w-8"
-                >
-                  +
-                </button>
-              </div>
-            ) : null}
-
-            <button
-              type="button"
-              onClick={addToCart}
-              disabled={soldOut || !actionReady}
-              className={`btn min-w-[150px] flex-1 ${soldOut ? "btn--sold-out" : "btn--solid"}`}
-            >
-              {soldOut ? "Sold out" : actionReady ? "Add to cart" : duoMode ? "Select sizes" : "Select a size"}
-            </button>
-          </div>
-        )}
-      </div>
+        </div>
+      ) : soldOut ? (
+        <div className="purchase-actions mx-auto mt-4 lg:mx-0">
+          <button type="button" disabled className="btn btn--sold-out w-full">
+            Sold out
+          </button>
+        </div>
+      ) : null}
 
       {orderLines ? (
         <div id="product-buy-now">
           <ProductBuyNowForm
-            key={orderLines.map((line) => `${line.productId}-${line.size}-${line.quantity}`).join("|")}
+            key={orderLines.map((line) => `${line.productId}-${line.size}`).join("|")}
             lines={orderLines}
             shippingRate={shippingRate}
+            afterPlaceOrder={
+              <div className="flex items-stretch gap-2">
+                {!duoMode ? (
+                  <div className="flex items-center border border-line">
+                    <button
+                      type="button"
+                      onClick={() => setQuantity((value) => Math.max(1, value - 1))}
+                      aria-label="Decrease quantity"
+                      className="ui h-10 w-8"
+                    >
+                      −
+                    </button>
+                    <span className="ui w-7 text-center tabular-nums">{quantity}</span>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setQuantity((value) =>
+                          selectedStock ? Math.min(selectedStock, value + 1) : value + 1,
+                        )
+                      }
+                      aria-label="Increase quantity"
+                      className="ui h-10 w-8"
+                    >
+                      +
+                    </button>
+                  </div>
+                ) : null}
+
+                <button
+                  type="button"
+                  onClick={addToCart}
+                  className="btn btn--solid min-w-[150px] flex-1"
+                >
+                  Add to cart
+                </button>
+              </div>
+            }
           />
         </div>
       ) : null}

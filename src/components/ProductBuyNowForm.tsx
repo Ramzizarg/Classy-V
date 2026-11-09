@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { GovernorateSelect } from "@/components/GovernorateSelect";
 import { OrderPlacedModal } from "@/components/OrderPlacedModal";
 import { shippingCost } from "@/lib/cart";
@@ -22,9 +22,12 @@ type PlacedOrder = { reference: string; firstName: string; total: number };
 export function ProductBuyNowForm({
   lines,
   shippingRate,
+  afterPlaceOrder,
 }: {
   lines: CartLine[];
   shippingRate: number;
+  /** Rendered directly under the Place order button (e.g. Add to cart). */
+  afterPlaceOrder?: ReactNode;
 }) {
   const uid = useId();
   const formRef = useRef<HTMLElement>(null);
@@ -328,6 +331,8 @@ export function ProductBuyNowForm({
             </>
           )}
         </button>
+
+        {afterPlaceOrder ? <div className="mt-3">{afterPlaceOrder}</div> : null}
 
         <p className="ui-sm mt-3 leading-relaxed text-muted text-center lg:text-left">
           By placing this order you accept our{" "}
