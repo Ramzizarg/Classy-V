@@ -24,10 +24,52 @@ const EMPTY = {
   note: "",
 };
 
+type FormFields = typeof EMPTY;
+type FieldKey = keyof FormFields;
+type FieldErrors = Partial<Record<FieldKey, string>>;
+
 type AppliedCoupon = { code: string; discount: number; label: string };
 
 /** Kept after the cart is emptied so the pop-up can still report on the order. */
 type PlacedOrder = { reference: string; firstName: string; total: number };
+
+const FIELD_FOCUS_IDS: Record<FieldKey, string> = {
+  email: "co-email",
+  fullName: "co-name",
+  governorate: "co-governorate",
+  city: "co-delegation",
+  address: "co-address",
+  phone: "co-phone",
+  phone2: "co-phone2",
+  note: "co-note",
+};
+
+const EMAIL_OK = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+
+function validateRequired(form: FormFields): FieldErrors {
+  const errors: FieldErrors = {};
+  const email = form.email.trim();
+  const fullName = form.fullName.trim().replace(/\s+/g, " ");
+  const address = form.address.trim();
+  const phone = form.phone.trim();
+
+  // Email is optional — only reject a badly typed value.
+  if (email && !EMAIL_OK.test(email)) errors.email = "Enter a valid email address.";
+
+  if (!fullName) errors.fullName = "Full name is required.";
+  else if (fullName.length < 2) errors.fullName = "Enter your full name.";
+
+  const governorateName = matchGovernorate(form.governorate);
+  if (!governorateName) errors.governorate = "Governorate is required.";
+  else if (!matchDelegation(governorateName, form.city)) {
+    errors.city = "Delegation is required.";
+  }
+
+  if (!address) errors.address = "Address is required.";
+  if (!phone) errors.phone = "Phone is required.";
+
+  return errors;
+}
 
 export function CheckoutForm() {
   const router = useRouter();
@@ -37,8 +79,7 @@ export function CheckoutForm() {
   const [form, setForm] = useState(EMPTY);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
-  const [governorateError, setGovernorateError] = useState("");
-  const [delegationError, setDelegationError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
 
   const [codeInput, setCodeInput] = useState("");
   const [coupon, setCoupon] = useState<AppliedCoupon | null>(null);
@@ -68,8 +109,22 @@ export function CheckoutForm() {
     });
   }, [hydrated, lines, total]);
 
-  const update = (key: keyof typeof EMPTY, value: string) =>
+  const update = (key: FieldKey, value: string) => {
     setForm((current) => ({ ...current, [key]: value }));
+    setFieldErrors((current) => {
+      if (!current[key]) return current;
+      const next = { ...current };
+      delete next[key];
+      return next;
+    });
+  };
+
+  const focusField = (key: FieldKey) => {
+    const el = document.getElementById(FIELD_FOCUS_IDS[key]);
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    if (el instanceof HTMLElement) el.focus({ preventScroll: true });
+  };
 
   if (!hydrated) return <div className="h-40" />;
 
@@ -132,7 +187,33 @@ export function CheckoutForm() {
     }
   };
 
+  const tryPlaceOrder = () => {
+    if (submitting) return;
+
+    const errors = validateRequired(form);
+    setFieldErrors(errors);
+    setError("");
+
+    const firstInvalid = (
+      ["fullName", "governorate", "city", "address", "phone", "email"] as FieldKey[]
+    ).find((key) => errors[key]);
+    if (firstInvalid) {
+      focusField(firstInvalid);
+      return;
+    }
+
+    void placeOrder();
+  };
+
   const placeOrder = async () => {
+    // Hard stop — never hit the API if a required field is still empty.
+    const errors = validateRequired(form);
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      setSubmitting(false);
+      return;
+    }
+
     setSubmitting(true);
     setError("");
 
@@ -177,19 +258,8 @@ export function CheckoutForm() {
 
   const submitCheckout = (event: React.FormEvent) => {
     event.preventDefault();
-
-    // The governorate control is not a native input, so it needs its own check.
-    const governorateName = matchGovernorate(form.governorate);
-    if (!governorateName) {
-      setGovernorateError("Choose your governorate.");
-      return;
-    }
-    if (!matchDelegation(governorateName, form.city)) {
-      setDelegationError("Choose your delegation.");
-      return;
-    }
-
-    void placeOrder();
+    event.stopPropagation();
+    tryPlaceOrder();
   };
 
   return (
@@ -220,7 +290,7 @@ export function CheckoutForm() {
       {/* Form side — ordered after the summary on phones, left column on desktop. */}
       <div className="order-3 px-4 pt-7 pb-12 sm:px-6 lg:col-start-1 lg:row-start-2 lg:px-10 lg:pt-8">
         <div className="mx-auto w-full max-w-[420px]">
-          <form onSubmit={submitCheckout}>
+          <form noValidate onSubmit={submitCheckout}>
             <h2 className="ui font-bold">Contact</h2>
             <div className="mt-3">
               <label htmlFor="co-email" className="sr-only">
@@ -229,14 +299,18 @@ export function CheckoutForm() {
               <input
                 id="co-email"
                 type="email"
-                required
                 autoComplete="email"
-                placeholder="Email"
+                placeholder="Email (optional)"
+                aria-invalid={Boolean(fieldErrors.email)}
                 value={form.email}
                 onChange={(event) => update("email", event.target.value)}
-                className="checkout-field"
+                className={`checkout-field${fieldErrors.email ? " checkout-field--invalid" : ""}`}
               />
-              <p className="ui-sm mt-1.5 text-muted">Required. We send your order confirmation here.</p>
+              {fieldErrors.email ? (
+                <p className="ui-sm mt-1.5 text-danger">{fieldErrors.email}</p>
+              ) : (
+                <p className="ui-sm mt-1.5 text-muted">Optional. We send your order confirmation here if you leave one.</p>
+              )}
             </div>
 
             <h2 className="ui mt-7 font-bold">Delivery address</h2>
@@ -247,15 +321,17 @@ export function CheckoutForm() {
                 </label>
                 <input
                   id="co-name"
-                  required
-                  minLength={2}
                   autoComplete="name"
                   autoCapitalize="words"
                   placeholder="Full name"
+                  aria-invalid={Boolean(fieldErrors.fullName)}
                   value={form.fullName}
                   onChange={(event) => update("fullName", event.target.value)}
-                  className="checkout-field"
+                  className={`checkout-field${fieldErrors.fullName ? " checkout-field--invalid" : ""}`}
                 />
+                {fieldErrors.fullName ? (
+                  <p className="ui-sm mt-1.5 text-danger">{fieldErrors.fullName}</p>
+                ) : null}
               </div>
 
               <div>
@@ -266,15 +342,19 @@ export function CheckoutForm() {
                   id="co-governorate"
                   options={XDELIVERY_GOVERNORATES}
                   value={form.governorate}
-                  invalid={Boolean(governorateError)}
+                  invalid={Boolean(fieldErrors.governorate)}
                   onChange={(governorate) => {
                     setForm((current) => ({ ...current, governorate, city: "" }));
-                    setGovernorateError("");
-                    setDelegationError("");
+                    setFieldErrors((current) => {
+                      const next = { ...current };
+                      delete next.governorate;
+                      delete next.city;
+                      return next;
+                    });
                   }}
                 />
-                {governorateError ? (
-                  <p className="ui-sm mt-1.5 text-danger">{governorateError}</p>
+                {fieldErrors.governorate ? (
+                  <p className="ui-sm mt-1.5 text-danger">{fieldErrors.governorate}</p>
                 ) : null}
               </div>
 
@@ -286,17 +366,14 @@ export function CheckoutForm() {
                   id="co-delegation"
                   options={delegationsFor(form.governorate)}
                   value={form.city}
-                  invalid={Boolean(delegationError)}
+                  invalid={Boolean(fieldErrors.city)}
                   disabled={!form.governorate}
                   placeholder="Delegation"
                   emptyLabel="No delegation matches that."
-                  onChange={(city) => {
-                    update("city", city);
-                    setDelegationError("");
-                  }}
+                  onChange={(city) => update("city", city)}
                 />
-                {delegationError ? (
-                  <p className="ui-sm mt-1.5 text-danger">{delegationError}</p>
+                {fieldErrors.city ? (
+                  <p className="ui-sm mt-1.5 text-danger">{fieldErrors.city}</p>
                 ) : null}
               </div>
 
@@ -306,13 +383,16 @@ export function CheckoutForm() {
                 </label>
                 <input
                   id="co-address"
-                  required
                   autoComplete="street-address"
                   placeholder="Address"
+                  aria-invalid={Boolean(fieldErrors.address)}
                   value={form.address}
                   onChange={(event) => update("address", event.target.value)}
-                  className="checkout-field"
+                  className={`checkout-field${fieldErrors.address ? " checkout-field--invalid" : ""}`}
                 />
+                {fieldErrors.address ? (
+                  <p className="ui-sm mt-1.5 text-danger">{fieldErrors.address}</p>
+                ) : null}
               </div>
 
               <div>
@@ -321,18 +401,22 @@ export function CheckoutForm() {
                 </label>
                 <input
                   id="co-phone"
-                  required
                   type="tel"
                   inputMode="tel"
                   autoComplete="tel"
                   placeholder="Phone"
+                  aria-invalid={Boolean(fieldErrors.phone)}
                   value={form.phone}
                   onChange={(event) => update("phone", event.target.value)}
-                  className="checkout-field"
+                  className={`checkout-field${fieldErrors.phone ? " checkout-field--invalid" : ""}`}
                 />
-                <p className="ui-sm mt-1.5 text-muted">
-                  We call this number to confirm your delivery.
-                </p>
+                {fieldErrors.phone ? (
+                  <p className="ui-sm mt-1.5 text-danger">{fieldErrors.phone}</p>
+                ) : (
+                  <p className="ui-sm mt-1.5 text-muted">
+                    We call this number to confirm your delivery.
+                  </p>
+                )}
               </div>
 
               <div>
@@ -373,7 +457,16 @@ export function CheckoutForm() {
                 ‹ Return to cart
               </Link>
 
-              <button type="submit" disabled={submitting} className="btn btn--buy">
+              <button
+                type="button"
+                disabled={submitting}
+                className="btn btn--buy"
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  tryPlaceOrder();
+                }}
+              >
                 {submitting ? (
                   "Placing order…"
                 ) : (

@@ -19,7 +19,7 @@ type Payload = {
   couponCode?: string;
 };
 
-const REQUIRED_FIELDS: (keyof OrderCustomer)[] = ["fullName", "email", "phone", "address", "governorate", "city"];
+const REQUIRED_FIELDS: (keyof OrderCustomer)[] = ["fullName", "phone", "address", "governorate", "city"];
 
 export async function POST(request: Request) {
   let payload: Payload;
@@ -39,7 +39,7 @@ export async function POST(request: Request) {
   }
 
   const email = customer.email?.toString().trim().toLowerCase() ?? "";
-  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+  if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
     return NextResponse.json({ error: "Enter a valid email address." }, { status: 400 });
   }
 
@@ -85,7 +85,7 @@ export async function POST(request: Request) {
     createdAt: new Date().toISOString(),
     customer: {
       fullName: customer.fullName!.trim(),
-      email: email.toLowerCase(),
+      email: email || undefined,
       phone: customer.phone!.trim(),
       phone2: customer.phone2?.trim() || undefined,
       address: customer.address!.trim(),

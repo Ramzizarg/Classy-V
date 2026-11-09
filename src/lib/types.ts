@@ -77,7 +77,8 @@ export type CartLine = {
 
 export type OrderCustomer = {
   fullName: string;
-  email: string;
+  /** Optional — confirmation email is only sent when provided. */
+  email?: string;
   phone: string;
   /** Optional second number, sent to X-Delivery as customerPhone2. */
   phone2?: string;
