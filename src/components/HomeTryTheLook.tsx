@@ -488,6 +488,7 @@ export function HomeTryTheLook({ products }: { products: Product[] }) {
   const onPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
     if (event.button !== 0) return;
     dragging.current = true;
+    event.currentTarget.classList.remove("is-swiping");
     const now = performance.now();
     pointer.current = {
       id: event.pointerId,
@@ -509,23 +510,26 @@ export function HomeTryTheLook({ products }: { products: Product[] }) {
     const dx = event.clientX - drag.x;
     const dy = event.clientY - drag.y;
     if (drag.axis === "none") {
-      if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return;
-      drag.axis = Math.abs(dx) > Math.abs(dy) * 1.2 ? "x" : "y";
+      if (Math.abs(dx) < 4 && Math.abs(dy) < 4) return;
+      drag.axis = Math.abs(dx) > Math.abs(dy) * 1.05 ? "x" : "y";
       if (drag.axis === "y") {
         dragging.current = false;
         pointer.current = null;
+        event.currentTarget.classList.remove("is-swiping");
         return;
       }
+      event.currentTarget.classList.add("is-swiping");
       event.currentTarget.setPointerCapture(event.pointerId);
     }
     if (drag.axis !== "x") return;
     const now = performance.now();
-    if (Math.abs(dx) > 6) drag.moved = true;
+    if (Math.abs(dx) > 4) drag.moved = true;
     const dt = Math.max(8, now - drag.lastT);
     drag.vx = (event.clientX - drag.lastX) / dt;
     drag.lastX = event.clientX;
     drag.lastT = now;
-    const span = Math.max(120, widthRef.current * 0.162);
+    // Wider span = less distance to move one look — snappier swipe.
+    const span = Math.max(96, widthRef.current * 0.128);
     target.current = drag.start - dx / span;
     cur.current = target.current;
     vel.current = 0;
@@ -538,10 +542,16 @@ export function HomeTryTheLook({ products }: { products: Product[] }) {
     if (!drag || drag.id !== event.pointerId) return;
     dragging.current = false;
     pointer.current = null;
-    const span = Math.max(120, widthRef.current * 0.162);
-    const flick = Math.max(-7, Math.min(7, (-drag.vx * 1000) / span));
-    vel.current = flick;
-    target.current = Math.round(cur.current + flick * 0.22);
+    event.currentTarget.classList.remove("is-swiping");
+    const span = Math.max(96, widthRef.current * 0.128);
+    const flick = Math.max(-9, Math.min(9, (-drag.vx * 1000) / span));
+    const from = Math.round(drag.start);
+    const intent = cur.current - drag.start + flick * 0.18;
+    // One swipe → one look (Instagram-style), otherwise snap back.
+    if (intent > 0.14) target.current = from + 1;
+    else if (intent < -0.14) target.current = from - 1;
+    else target.current = from;
+    vel.current = 0;
     autoplayAt.current = performance.now() + AUTOPLAY_MS;
     if (drag.moved) setHot(null);
     kick();

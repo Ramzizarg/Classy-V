@@ -213,8 +213,23 @@ export function HomeClothesline({ products }: { products: Product[] }) {
     window.clearTimeout(idleTimer.current);
     idleTimer.current = window.setTimeout(() => {
       if (!drag.current && !hoverRack.current) paused.current = false;
-    }, 2200);
+    }, 3800);
   }, []);
+
+  /** Snap the rail to the nearest hanger after a flick / release. */
+  const snapToNearest = useCallback(
+    (bias = 0) => {
+      const span = itemSpan();
+      if (span <= 0) return;
+      const projected = offset.current + bias;
+      const snapped = Math.round(projected / span) * span;
+      glide.current = snapped - offset.current;
+      velocity.current = 0;
+      paused.current = true;
+      bumpIdle();
+    },
+    [bumpIdle, itemSpan],
+  );
 
   const slideBy = useCallback(
     (dir: number) => {
@@ -369,8 +384,9 @@ export function HomeClothesline({ products }: { products: Product[] }) {
     const dx = event.clientX - state.x;
     const dy = event.clientY - state.y;
     if (state.axis === "none") {
-      if (Math.abs(dx) < 5 && Math.abs(dy) < 5) return;
-      state.axis = Math.abs(dx) > Math.abs(dy) * 1.2 ? "x" : "y";
+      // Easier horizontal lock so the rail follows the finger faster.
+      if (Math.abs(dx) < 3 && Math.abs(dy) < 3) return;
+      state.axis = Math.abs(dx) > Math.abs(dy) * 1.05 ? "x" : "y";
       if (state.axis === "y") {
         drag.current = null;
         setDragging(false);
@@ -383,7 +399,7 @@ export function HomeClothesline({ products }: { products: Product[] }) {
       event.currentTarget.setPointerCapture(event.pointerId);
     }
     const dt = Math.max(8, event.timeStamp - state.t);
-    velocity.current = Math.max(-62, Math.min(62, (dx / dt) * 18));
+    velocity.current = Math.max(-78, Math.min(78, (dx / dt) * 22));
     offset.current += dx;
     state.x = event.clientX;
     state.y = event.clientY;
@@ -400,6 +416,11 @@ export function HomeClothesline({ products }: { products: Product[] }) {
     if (!state || state.id !== event.pointerId) return;
     drag.current = null;
     setDragging(false);
+    if (state.axis === "x" && state.moved) {
+      // Flick projects a bit, then snaps onto a hanger — feels intentional.
+      snapToNearest(velocity.current * 9);
+      return;
+    }
     bumpIdle();
     if (live == null && Math.abs(velocity.current) < 0.8) paused.current = false;
   };

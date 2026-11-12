@@ -3054,7 +3054,8 @@ textarea.checkout-field {
   left: 0;
   right: 0;
   z-index: 0;
-  height: min(62svh, 540px);
+  /* Taller mobile hero so more of the look stays on screen. */
+  height: min(78svh, 680px);
   overflow: hidden;
   background: #000000;
   /* Mobile copy is non-interactive; desktop split CTAs opt back in. */
@@ -3067,7 +3068,7 @@ textarea.checkout-field {
 
 .home-hero-spacer {
   width: 100%;
-  height: min(62svh, 540px);
+  height: min(78svh, 680px);
   pointer-events: none;
   visibility: hidden;
 }
@@ -3126,7 +3127,7 @@ textarea.checkout-field {
 
 .home-hero__img {
   object-fit: cover;
-  object-position: center top;
+  object-position: center 18%;
   image-rendering: auto;
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
@@ -3302,7 +3303,8 @@ textarea.checkout-field {
 .home-products {
   position: relative;
   z-index: 1;
-  margin-top: -36px;
+  /* Less overlap so more hero stays visible before the sheet covers it. */
+  margin-top: -20px;
   padding: 22px 14px 56px;
   border-radius: 28px 28px 0 0;
   background: #ffffff;
@@ -3452,6 +3454,7 @@ textarea.checkout-field {
   min-height: 440px;
   margin-top: 4px;
   overflow: hidden;
+  /* Allow vertical page scroll until a horizontal swipe locks in JS. */
   touch-action: pan-y;
   overscroll-behavior-x: contain;
   cursor: grab;
@@ -3459,6 +3462,12 @@ textarea.checkout-field {
   -webkit-user-select: none;
   outline: none;
   isolation: isolate;
+  -webkit-user-drag: none;
+}
+
+.cv-look__stage.is-swiping {
+  touch-action: none;
+  cursor: grabbing;
 }
 
 .cv-look__stage:active {
@@ -4066,10 +4075,12 @@ textarea.checkout-field {
   overflow: hidden;
   cursor: grab;
   user-select: none;
+  /* Vertical page scroll stays native until a horizontal drag locks. */
   touch-action: pan-y;
   overscroll-behavior-x: contain;
   -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 40px, #000 calc(100% - 40px), transparent 100%);
   mask-image: linear-gradient(90deg, transparent 0, #000 40px, #000 calc(100% - 40px), transparent 100%);
+  -webkit-user-drag: none;
 }
 
 .cv-rail__rack:focus-visible {
@@ -4079,6 +4090,7 @@ textarea.checkout-field {
 
 .cv-rail__rack.is-dragging {
   cursor: grabbing;
+  touch-action: none;
 }
 
 .cv-rail__track {
