@@ -238,11 +238,12 @@ export function HomeTryTheLook({ products }: { products: Product[] }) {
   const [paying, setPaying] = useState(false);
   const [playing, setPlaying] = useState(true);
   const pickedLen = useRef(0);
+  const playingRef = useRef(true);
+  const skipClick = useRef(false);
 
   const count = looks.length;
   const look = looks[index] ?? looks[0];
-  const playingRef = useRef(playing);
-  playingRef.current = playing;
+  // Never sync playingRef from React state each render — that undid pause mid-swipe.
   pickedLen.current = picked.length;
 
   const selected = look ? picked.map((pin) => look.pieces[pin]).filter(Boolean) : [];
@@ -309,7 +310,12 @@ export function HomeTryTheLook({ products }: { products: Product[] }) {
         Math.abs(cur.current - target.current) > 0.0008 ||
         Math.abs(vel.current) > 0.0008;
 
-      if (auto && pickedLen.current === 0 && !dragging.current && t >= autoplayAt.current) {
+      if (
+        playingRef.current &&
+        pickedLen.current === 0 &&
+        !dragging.current &&
+        t >= autoplayAt.current
+      ) {
         target.current += 1;
         autoplayAt.current = t + AUTOPLAY_MS;
         setHot(null);
@@ -318,7 +324,7 @@ export function HomeTryTheLook({ products }: { products: Product[] }) {
         setNeedSize(false);
       }
 
-      if (busy || auto) {
+      if (busy || playingRef.current) {
         raf.current = requestAnimationFrame(tick);
       } else {
         raf.current = 0;
@@ -345,6 +351,12 @@ export function HomeTryTheLook({ products }: { products: Product[] }) {
     };
   }, [kick, paint]);
 
+  const pauseAutoplay = useCallback(() => {
+    playingRef.current = false;
+    setPlaying(false);
+    autoplayAt.current = Number.POSITIVE_INFINITY;
+  }, []);
+
   useEffect(() => {
     const stage = stageRef.current;
     if (!stage) return;
@@ -358,22 +370,26 @@ export function HomeTryTheLook({ products }: { products: Product[] }) {
       if (event.deltaMode === 1) delta *= 18;
       if (event.deltaMode === 2) delta *= widthRef.current * 0.85;
       event.preventDefault();
-      const span = Math.max(120, widthRef.current * 0.162);
+      pauseAutoplay();
+      const span = Math.max(110, widthRef.current * 0.18);
       target.current += delta / span;
       cur.current = target.current;
       vel.current = 0;
-      autoplayAt.current = performance.now() + AUTOPLAY_MS;
       paint();
       kick();
       window.clearTimeout(wheelSnap.current);
       wheelSnap.current = window.setTimeout(() => {
-        target.current = Math.round(cur.current);
+        const next = Math.round(cur.current);
+        target.current = next;
+        cur.current = next;
+        const snapped = ((next % count) + count) % count;
+        setIndex(snapped);
         kick();
       }, 160);
     };
     stage.addEventListener("wheel", onWheel, { passive: false });
     return () => stage.removeEventListener("wheel", onWheel);
-  }, [kick, paint]);
+  }, [count, kick, paint, pauseAutoplay]);
 
   const nearest = (to: number) => {
     const from = target.current;
@@ -384,13 +400,18 @@ export function HomeTryTheLook({ products }: { products: Product[] }) {
     return from + delta;
   };
 
-  const go = (next: number) => {
+  const go = (next: number, pause = true) => {
     target.current = next;
-    autoplayAt.current = performance.now() + AUTOPLAY_MS;
+    cur.current = next;
+    vel.current = 0;
+    if (pause) pauseAutoplay();
     setHot(null);
     setPicked([]);
     setChosenSize({});
     setNeedSize(false);
+    const snapped = ((Math.round(next) % count) + count) % count;
+    setIndex(snapped);
+    paint();
     kick();
   };
 
@@ -410,8 +431,7 @@ export function HomeTryTheLook({ products }: { products: Product[] }) {
     });
     setHot(pin);
     setNeedSize(false);
-    setPlaying(false);
-    autoplayAt.current = performance.now() + AUTOPLAY_MS * 4;
+    pauseAutoplay();
   };
 
   const dropPin = (pin: number) => {
@@ -460,6 +480,10 @@ export function HomeTryTheLook({ products }: { products: Product[] }) {
 
   const onPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
     if (event.button !== 0) return;
+    skipClick.current = false;
+    pauseAutoplay();
+    vel.current = 0;
+    target.current = cur.current;
     dragging.current = true;
     event.currentTarget.classList.remove("is-swiping");
     const now = performance.now();
@@ -467,7 +491,7 @@ export function HomeTryTheLook({ products }: { products: Product[] }) {
       id: event.pointerId,
       x: event.clientX,
       y: event.clientY,
-      start: target.current,
+      start: cur.current,
       moved: false,
       lastX: event.clientX,
       lastT: now,
@@ -491,18 +515,22 @@ export function HomeTryTheLook({ products }: { products: Product[] }) {
         event.currentTarget.classList.remove("is-swiping");
         return;
       }
+      // Horizontal swipe — pause immediately so autoplay cannot yank the look back.
+      pauseAutoplay();
       event.currentTarget.classList.add("is-swiping");
       event.currentTarget.setPointerCapture(event.pointerId);
     }
     if (drag.axis !== "x") return;
     const now = performance.now();
-    if (Math.abs(dx) > 4) drag.moved = true;
+    if (Math.abs(dx) > 4) {
+      drag.moved = true;
+      skipClick.current = true;
+    }
     const dt = Math.max(8, now - drag.lastT);
     drag.vx = (event.clientX - drag.lastX) / dt;
     drag.lastX = event.clientX;
     drag.lastT = now;
-    // Wider span = less distance to move one look — snappier swipe.
-    const span = Math.max(96, widthRef.current * 0.128);
+    const span = Math.max(110, widthRef.current * 0.18);
     target.current = drag.start - dx / span;
     cur.current = target.current;
     vel.current = 0;
@@ -516,22 +544,41 @@ export function HomeTryTheLook({ products }: { products: Product[] }) {
     dragging.current = false;
     pointer.current = null;
     event.currentTarget.classList.remove("is-swiping");
-    const span = Math.max(96, widthRef.current * 0.128);
-    const flick = Math.max(-9, Math.min(9, (-drag.vx * 1000) / span));
+
+    if (drag.axis !== "x") return;
+
+    const span = Math.max(110, widthRef.current * 0.18);
+    // Looks per second from the release flick.
+    const flick = Math.max(-8, Math.min(8, (-drag.vx * 1000) / span));
     const from = Math.round(drag.start);
-    const intent = cur.current - drag.start + flick * 0.18;
-    // One swipe → one look (Instagram-style), otherwise snap back.
-    if (intent > 0.14) target.current = from + 1;
-    else if (intent < -0.14) target.current = from - 1;
-    else target.current = from;
-    vel.current = 0;
-    autoplayAt.current = performance.now() + AUTOPLAY_MS;
-    if (drag.moved) setHot(null);
+    const drifted = cur.current - drag.start;
+
+    // Free scroll: a strong flick glides past several looks, then settles on the
+    // nearest outfit and stays there.
+    let next = Math.round(cur.current + flick * 0.32);
+    if (next === from && Math.abs(drifted + flick * 0.2) > 0.12) {
+      next = drifted + flick * 0.2 > 0 ? from + 1 : from - 1;
+    }
+
+    target.current = next;
+    vel.current = flick * 0.6;
+    pauseAutoplay();
+    setHot(null);
+    setPicked([]);
+    setChosenSize({});
+    setNeedSize(false);
+    const snapped = ((Math.round(next) % count) + count) % count;
+    setIndex(snapped);
+    skipClick.current = true;
+    window.setTimeout(() => {
+      skipClick.current = false;
+    }, 280);
+    paint();
     kick();
   };
 
   const onModelClick = (i: number) => {
-    if (pointer.current?.moved) return;
+    if (skipClick.current) return;
     if (i !== index) go(nearest(i));
   };
 
@@ -540,7 +587,7 @@ export function HomeTryTheLook({ products }: { products: Product[] }) {
       <header className="cv-look__head">
         <h2 className="cv-look__title">Try the Look.</h2>
         <p className="cv-look__sub">
-          Tap 1 or 2 to pick. Pay one piece, or both when the set is complete.
+          Scroll the looks and stop on any outfit. Tap 1 or 2 to pick.
         </p>
       </header>
 
@@ -739,8 +786,14 @@ export function HomeTryTheLook({ products }: { products: Product[] }) {
           aria-pressed={playing}
           aria-label={playing ? "Pause autoplay" : "Play autoplay"}
           onClick={() => {
-            setPlaying((on) => !on);
-            autoplayAt.current = performance.now() + AUTOPLAY_MS;
+            const next = !playingRef.current;
+            playingRef.current = next;
+            setPlaying(next);
+            if (next) {
+              autoplayAt.current = performance.now() + AUTOPLAY_MS;
+            } else {
+              autoplayAt.current = Number.POSITIVE_INFINITY;
+            }
             kick();
           }}
         >

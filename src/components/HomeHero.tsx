@@ -5,8 +5,8 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { SITE } from "@/lib/site";
 
-/** Mobile-only hero frame (3:4) — already compressed WebP (~133KB vs 4.2MB JPEG). */
-const MOBILE_SRC = "/images/hero-mobile.webp";
+/** Mobile hero — full-res lifestyle frame (Next serves resized AVIF/WebP at quality 100). */
+const MOBILE_SRC = "/images/hero-mobile.jpg";
 /** Desktop split — left panel (duo look). */
 const DESKTOP_LEFT_SRC = "/images/MMS03446.jpg";
 /** Desktop split — right panel (solo look). */
@@ -16,7 +16,7 @@ const DESKTOP_MQ = "(min-width: 768px)";
 
 /**
  * Full-bleed home hero.
- * Mobile: single lifestyle frame only (no desktop assets in the DOM).
+ * Mobile: single lifestyle frame + always-visible drop copy.
  * Desktop: Represent-style dual panels with CTAs; products sheet still scrolls over it.
  */
 export function HomeHero() {
@@ -40,15 +40,20 @@ export function HomeHero() {
           fill
           priority={!desktop}
           fetchPriority={desktop ? "auto" : "high"}
-          sizes="(min-width: 768px) 1px, 100vw"
+          quality={100}
+          sizes="100vw"
           className="home-hero__img"
         />
         <div className="home-hero__shade" aria-hidden="true" />
+      </div>
+
+      {/* Copy lives outside the media box so it stays visible on the fixed hero. */}
+      {!desktop ? (
         <div className="home-hero__copy">
           <p className="home-hero__eyebrow">New drop: live now</p>
-          <h1 className="home-hero__title">{SITE.tagline}</h1>
+          <h1 className="home-hero__title">N4E</h1>
         </div>
-      </div>
+      ) : null}
 
       {/* Desktop only — never mounts the heavy campaign JPEGs on phones. */}
       {desktop ? (
@@ -61,6 +66,7 @@ export function HomeHero() {
                 fill
                 priority
                 fetchPriority="high"
+                quality={100}
                 sizes="50vw"
                 className="home-hero__img home-hero__img--left"
               />
@@ -86,6 +92,7 @@ export function HomeHero() {
                 src={DESKTOP_RIGHT_SRC}
                 alt={`${SITE.name} new collection`}
                 fill
+                quality={100}
                 sizes="50vw"
                 className="home-hero__img home-hero__img--right"
               />
