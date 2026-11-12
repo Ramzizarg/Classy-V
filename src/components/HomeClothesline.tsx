@@ -403,9 +403,9 @@ export function HomeClothesline({ products }: { products: Product[] }) {
       <div className="cv-rail__stage">
         <div className="cv-rail__rod" aria-hidden>
           <svg viewBox="0 0 1000 28" preserveAspectRatio="none">
-            <path d="M0 10 Q 500 26 1000 10" fill="none" stroke="#d7d0c6" strokeWidth="7" />
-            <path d="M0 8 Q 500 24 1000 8" fill="none" stroke="#f7f3ec" strokeWidth="2.2" />
-            <path d="M0 13 Q 500 28 1000 13" fill="none" stroke="rgba(80,70,58,0.18)" strokeWidth="1.4" />
+            <path d="M0 10 Q 500 26 1000 10" fill="none" stroke="#8a8a8a" strokeWidth="7" />
+            <path d="M0 8 Q 500 24 1000 8" fill="none" stroke="#d0d0d0" strokeWidth="2.2" />
+            <path d="M0 13 Q 500 28 1000 13" fill="none" stroke="rgba(0,0,0,0.28)" strokeWidth="1.4" />
           </svg>
         </div>
 
@@ -459,10 +459,10 @@ export function HomeClothesline({ products }: { products: Product[] }) {
               >
                 <span className="cv-rail__hook" aria-hidden>
                   <svg viewBox="0 0 36 30" fill="none">
-                    <path d="M18 2.5c0 3.2-2.2 5.2-4.4 5.2" stroke="#8a8378" strokeWidth="1.4" strokeLinecap="round" />
-                    <circle cx="18" cy="2.6" r="1.5" fill="#b9b2a6" />
-                    <path d="M4 20.5 L18 9.5 L32 20.5" stroke="#9a9388" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-                    <path d="M6.2 20.2 L18 11.2 L29.8 20.2" stroke="#e8e2d6" strokeWidth="0.8" />
+                    <path d="M18 2.5c0 3.2-2.2 5.2-4.4 5.2" stroke="#7a7a7a" strokeWidth="1.4" strokeLinecap="round" />
+                    <circle cx="18" cy="2.6" r="1.5" fill="#a8a8a8" />
+                    <path d="M4 20.5 L18 9.5 L32 20.5" stroke="#8a8a8a" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M6.2 20.2 L18 11.2 L29.8 20.2" stroke="#e6e6e6" strokeWidth="0.8" />
                   </svg>
                 </span>
                 <span className="cv-rail__garment">

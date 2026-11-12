@@ -407,25 +407,7 @@ html.product-light .btn--coming-soon:hover {
   color: #ffffff;
 }
 
-html.product-light .back-to-top {
-  background: transparent;
-  color: #111111;
-  box-shadow: none;
-}
-
-html.product-light .back-to-top__text {
-  fill: #111111;
-}
-
-html.product-light .back-to-top__core {
-  background: #111111;
-  color: #ffffff;
-  box-shadow: 0 0 0 1px rgb(17 17 17 / 0.15);
-}
-
-html.product-light .back-to-top:focus-visible {
-  outline-color: #111111;
-}
+/* Back-to-top stays brand red — no product-light ink override. */
 
 html.product-light ::selection {
   background: #111111;
@@ -3075,6 +3057,7 @@ textarea.checkout-field {
   height: min(62svh, 540px);
   overflow: hidden;
   background: #000000;
+  /* Mobile copy is non-interactive; desktop split CTAs opt back in. */
   pointer-events: none;
   contain: strict;
   transform: translateZ(0);
@@ -3108,7 +3091,34 @@ textarea.checkout-field {
   background: #000000;
 }
 
-.home-hero__media {
+.home-hero__media--mobile {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+
+.home-hero__split {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  width: 100%;
+  height: 100%;
+  /* Keep layout/position for fill images; hide on mobile without display:none. */
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.home-hero__panel {
+  position: relative;
+  flex: 1 1 50%;
+  min-width: 0;
+  height: 100%;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.home-hero__panel-media {
   position: absolute;
   inset: 0;
   display: block;
@@ -3123,20 +3133,26 @@ textarea.checkout-field {
   transform: translateZ(0);
 }
 
-.home-hero__img--desktop {
-  display: none !important;
+.home-hero__img--left {
+  object-position: center 28%;
+}
+
+.home-hero__img--right {
+  object-position: center 22%;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: high-quality;
 }
 
 @media (min-width: 768px) {
-  .home-hero__img--mobile {
-    display: none !important;
+  .home-hero__media--mobile {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
   }
 
-  .home-hero__img--desktop {
-    display: block !important;
-    object-position: center center;
-    image-rendering: -webkit-optimize-contrast;
-    image-rendering: high-quality;
+  .home-hero__split {
+    opacity: 1;
+    visibility: visible;
   }
 }
 
@@ -3147,6 +3163,11 @@ textarea.checkout-field {
   pointer-events: none;
   background:
     linear-gradient(180deg, rgb(0 0 0 / 0.28) 0%, transparent 28%, transparent 48%, rgb(0 0 0 / 0.55) 100%);
+}
+
+.home-hero__shade--panel {
+  background:
+    linear-gradient(180deg, rgb(0 0 0 / 0.22) 0%, transparent 32%, transparent 42%, rgb(0 0 0 / 0.62) 100%);
 }
 
 .home-hero__copy {
@@ -3160,24 +3181,25 @@ textarea.checkout-field {
   animation: home-hero-copy-in 900ms cubic-bezier(0.22, 1, 0.36, 1) 120ms both;
 }
 
-@media (min-width: 768px) {
-  .home-hero__copy {
-    left: 40px;
-    right: auto;
-    bottom: 56px;
-    max-width: min(52vw, 640px);
-  }
+.home-hero__panel-copy {
+  position: absolute;
+  left: clamp(28px, 3.2vw, 48px);
+  right: clamp(20px, 2.4vw, 36px);
+  /* Sit above the products sheet / cv-rail overlap (~40–48px) with clear air. */
+  bottom: clamp(150px, 20vh, 220px);
+  z-index: 3;
+  max-width: min(92%, 440px);
+  color: #ffffff;
+  pointer-events: auto;
+  animation: home-hero-copy-in 900ms cubic-bezier(0.22, 1, 0.36, 1) 120ms both;
 }
 
-@media (min-width: 1280px) {
-  .home-hero__copy {
-    left: 56px;
-    bottom: 64px;
-  }
+.home-hero__panel--right .home-hero__panel-copy {
+  animation-delay: 220ms;
 }
 
 .home-hero__eyebrow {
-  margin: 0 0 6px;
+  margin: 0 0 8px;
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   font-size: 11px;
   font-weight: 700;
@@ -3189,9 +3211,9 @@ textarea.checkout-field {
 
 @media (min-width: 768px) {
   .home-hero__eyebrow {
-    font-size: 13px;
+    font-size: 12px;
     letter-spacing: 0.16em;
-    color: #ffffff;
+    margin-bottom: 10px;
   }
 }
 
@@ -3207,6 +3229,63 @@ textarea.checkout-field {
   text-shadow: 0 2px 24px rgb(0 0 0 / 0.35);
 }
 
+.home-hero__panel-title {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: clamp(42px, 4.6vw, 72px);
+  font-weight: 800;
+  line-height: 0.92;
+  letter-spacing: -0.035em;
+  text-transform: uppercase;
+  color: #ffffff;
+  text-shadow: 0 2px 24px rgb(0 0 0 / 0.4);
+}
+
+.home-hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.home-hero__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 0 18px;
+  border: 1px solid transparent;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: #ffffff;
+  transition: background-color 160ms ease, border-color 160ms ease, transform 160ms ease;
+}
+
+.home-hero__btn--solid {
+  background: rgb(28 28 28 / 0.72);
+  border-color: rgb(255 255 255 / 0.08);
+  backdrop-filter: blur(6px);
+}
+
+.home-hero__btn--ghost {
+  background: transparent;
+  border-color: rgb(255 255 255 / 0.88);
+}
+
+.home-hero__btn:hover {
+  background: rgb(255 255 255 / 0.14);
+  border-color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.home-hero__btn--solid:hover {
+  background: rgb(18 18 18 / 0.88);
+}
+
 @keyframes home-hero-copy-in {
   from {
     opacity: 0;
@@ -3219,9 +3298,14 @@ textarea.checkout-field {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .home-hero__copy {
+  .home-hero__copy,
+  .home-hero__panel-copy {
     transition: none;
     animation: none;
+    transform: none;
+  }
+
+  .home-hero__btn:hover {
     transform: none;
   }
 }
@@ -3858,11 +3942,11 @@ textarea.checkout-field {
   margin: -22px -14px 28px;
   padding: 22px 0 22px;
   border-radius: 28px 28px 0 0;
-  color: #1c1b19;
+  color: #111111;
   background:
-    radial-gradient(120% 80% at 80% 0%, #e4d7f0 0%, transparent 52%),
-    radial-gradient(90% 70% at 12% 100%, #d7ecc8 0%, transparent 55%),
-    linear-gradient(180deg, #f3eadc 0%, #eee4d6 42%, #e7f0d8 100%);
+    radial-gradient(115% 70% at 78% -8%, #2a2a2a 0%, transparent 58%),
+    radial-gradient(95% 65% at 8% 110%, #cfcfcf 0%, transparent 52%),
+    linear-gradient(180deg, #1a1a1a 0%, #6b6b6b 38%, #d8d8d8 72%, #ffffff 100%);
 }
 
 @media (min-width: 768px) {
@@ -3883,15 +3967,21 @@ textarea.checkout-field {
 }
 
 .cv-rail__intro {
+  --brand-ink: #ffffff;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 8px;
   margin: 0 16px 14px;
+  color: #ffffff;
 }
 
 .cv-rail__logo {
   display: block;
+}
+
+.cv-rail__intro .brand-mark-tint {
+  background-color: #ffffff;
 }
 
 .cv-rail__cap {
@@ -3904,7 +3994,7 @@ textarea.checkout-field {
   font-weight: 700;
   letter-spacing: 0.22em;
   text-transform: uppercase;
-  color: #1a1917;
+  color: #ffffff;
 }
 
 .cv-rail__cap-sep {
@@ -4073,7 +4163,7 @@ textarea.checkout-field {
 
 .cv-rail__img.is-ready {
   opacity: 1;
-  filter: drop-shadow(0 18px 18px rgb(40 32 20 / 0.18));
+  filter: drop-shadow(0 18px 18px rgb(0 0 0 / 0.16));
   transform-origin: 50% 0;
   animation: cv-rail-fabric calc(var(--cv-wind-dur, 5.8s) * 0.82) ease-in-out infinite;
   animation-delay: calc(var(--cv-wind-delay, 0s) - 0.4s);
@@ -4094,7 +4184,7 @@ textarea.checkout-field {
   top: -16px;
   width: 1px;
   height: 18px;
-  background: rgba(70, 58, 44, 0.5);
+  background: rgba(55, 55, 55, 0.45);
 }
 
 .cv-rail__tag-face {
@@ -4104,9 +4194,9 @@ textarea.checkout-field {
   min-width: 42px;
   padding: 9px 7px 5px;
   border-radius: 3px 3px 5px 5px;
-  background: #fbf8f1;
-  color: #2b2b28;
-  box-shadow: 0 2px 5px rgb(0 0 0 / 0.16), inset 0 0 0 1px rgb(0 0 0 / 0.05);
+  background: #ffffff;
+  color: #1a1a1a;
+  box-shadow: 0 2px 5px rgb(0 0 0 / 0.14), inset 0 0 0 1px rgb(0 0 0 / 0.06);
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -4124,7 +4214,7 @@ textarea.checkout-field {
   height: 4px;
   margin-left: -2px;
   border-radius: 50%;
-  background: rgba(70, 58, 44, 0.35);
+  background: rgba(55, 55, 55, 0.35);
 }
 
 .cv-rail__tag-face {
@@ -4191,7 +4281,7 @@ textarea.checkout-field {
   gap: 10px;
   font-size: 12px;
   letter-spacing: 0.04em;
-  color: rgb(28 27 25 / 0.55);
+  color: rgb(20 20 20 / 0.52);
   transition: opacity 220ms ease, transform 220ms ease;
 }
 
@@ -4254,7 +4344,7 @@ textarea.checkout-field {
   margin: 4px 0 0;
   font-size: 13px;
   letter-spacing: 0.04em;
-  color: rgb(28 27 25 / 0.62);
+  color: rgb(20 20 20 / 0.58);
 }
 
 .cv-rail__prog {
@@ -4263,7 +4353,7 @@ textarea.checkout-field {
   height: 2px;
   margin-bottom: 8px;
   border-radius: 2px;
-  background: rgb(28 27 25 / 0.18);
+  background: rgb(20 20 20 / 0.16);
 }
 
 @media (min-width: 768px) {
@@ -4279,7 +4369,7 @@ textarea.checkout-field {
   bottom: 0;
   width: 100%;
   border-radius: inherit;
-  background: #1c1b19;
+  background: #141414;
   transform-origin: 0 50%;
   transform: scaleX(0.18);
   will-change: transform;
@@ -6829,7 +6919,7 @@ html.product-light .lb-shell {
   border: 0;
   border-radius: 50%;
   background: transparent;
-  color: #ffffff;
+  color: #e10600;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   box-shadow: none;
@@ -6848,34 +6938,6 @@ html.product-light .lb-shell {
   visibility: visible;
   pointer-events: auto;
   transform: translate3d(0, 0, 0) scale(1);
-}
-
-/* Home + night only — brand red ring / core. */
-html:not([data-theme="day"]) .back-to-top--home {
-  color: #e10600;
-}
-
-html:not([data-theme="day"]) .back-to-top--home .back-to-top__text {
-  fill: #e10600;
-}
-
-html:not([data-theme="day"]) .back-to-top--home .back-to-top__core {
-  background: #e10600;
-  color: #ffffff;
-  box-shadow:
-    0 0 0 1px rgb(225 6 0 / 0.35),
-    0 6px 18px rgb(225 6 0 / 0.28);
-}
-
-html:not([data-theme="day"]) .back-to-top--home:focus-visible {
-  outline-color: #e10600;
-}
-
-html:not([data-theme="day"]) .back-to-top--home[data-visible="true"]:hover .back-to-top__core {
-  background: #ff1a0a;
-  box-shadow:
-    0 0 0 1px rgb(225 6 0 / 0.45),
-    0 8px 22px rgb(225 6 0 / 0.35);
 }
 
 html[data-footer-help="open"] .back-to-top {
@@ -6902,7 +6964,7 @@ html[data-footer-help="open"] .back-to-top {
 }
 
 .back-to-top__text {
-  fill: #ffffff;
+  fill: #e10600;
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   font-size: 7.1px;
   font-weight: 700;
@@ -6918,11 +6980,11 @@ html[data-footer-help="open"] .back-to-top {
   width: 42%;
   height: 42%;
   border-radius: 50%;
-  background: #ffffff;
-  color: #000000;
+  background: #e10600;
+  color: #ffffff;
   box-shadow:
-    0 0 0 1px rgb(255 255 255 / 0.18),
-    0 6px 18px rgb(0 0 0 / 0.22);
+    0 0 0 1px rgb(225 6 0 / 0.35),
+    0 6px 18px rgb(225 6 0 / 0.28);
   transition:
     background-color 260ms ease,
     color 260ms ease,
@@ -6946,10 +7008,11 @@ html[data-footer-help="open"] .back-to-top {
 }
 
 .back-to-top[data-visible="true"]:hover .back-to-top__core {
+  background: #ff1a0a;
   transform: scale(1.05);
   box-shadow:
-    0 0 0 1px rgb(255 255 255 / 0.28),
-    0 10px 24px rgb(0 0 0 / 0.28);
+    0 0 0 1px rgb(225 6 0 / 0.45),
+    0 8px 22px rgb(225 6 0 / 0.35);
 }
 
 .back-to-top[data-visible="true"]:hover .back-to-top__icon {
@@ -6963,12 +7026,12 @@ html[data-footer-help="open"] .back-to-top {
 .back-to-top[data-visible="true"]:active .back-to-top__core {
   transform: scale(0.96);
   box-shadow:
-    0 0 0 1px rgb(255 255 255 / 0.16),
-    0 3px 10px rgb(0 0 0 / 0.2);
+    0 0 0 1px rgb(225 6 0 / 0.35),
+    0 3px 10px rgb(225 6 0 / 0.22);
 }
 
 .back-to-top:focus-visible {
-  outline: 2px solid #ffffff;
+  outline: 2px solid #e10600;
   outline-offset: 4px;
 }
 
@@ -7500,49 +7563,5 @@ html[data-theme="day"] .checkout-summary .checkout-field:focus {
   box-shadow: 0 0 0 3px rgb(23 23 23 / 0.08);
 }
 
-/* Footer. */
-html[data-theme="day"] .site-footer {
-  border-top-color: rgb(17 17 17 / 0.12);
-  background: #ffffff;
-  color: #111111;
-}
-
-html[data-theme="day"] .site-footer__social-link,
-html[data-theme="day"] .site-footer__help-btn,
-html[data-theme="day"] .site-footer__help-link {
-  color: #111111;
-}
-
-html[data-theme="day"] .site-footer .brand-mark-tint {
-  background-color: #111111;
-}
-
-html[data-theme="day"] .site-footer__copy {
-  color: rgb(17 17 17 / 0.55);
-}
-
-html[data-theme="day"] .site-footer__help-panel {
-  background: #ffffff;
-  border-color: rgb(17 17 17 / 0.22);
-}
-
-/* Back to top — opposite ink for day (black text on light page). */
-html[data-theme="day"] .back-to-top {
-  background: transparent;
-  color: #111111;
-  box-shadow: none;
-}
-
-html[data-theme="day"] .back-to-top__text {
-  fill: #111111;
-}
-
-html[data-theme="day"] .back-to-top__core {
-  background: #111111;
-  color: #ffffff;
-  box-shadow: 0 0 0 1px rgb(17 17 17 / 0.15);
-}
-
-html[data-theme="day"] .back-to-top:focus-visible {
-  outline-color: #111111;
-}
+/* Footer stays black in every theme — no day override. */
+/* Back-to-top stays brand red in every theme — no day override. */
