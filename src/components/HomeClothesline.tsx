@@ -251,11 +251,22 @@ export function HomeClothesline({ products }: { products: Product[] }) {
   useEffect(() => {
     if (baseItems.length === 0) return;
     let frame = 0;
+    let onScreen = true;
+    const root = document.documentElement;
     const CRUISE = 38;
+
     const tick = (ts: number) => {
+      frame = 0;
+      // Freeze while the page scrolls or the rail is off-screen — frees the main thread for touch scroll.
+      const pageScrolling = root.classList.contains("is-scrolling");
+      const draggingNow = Boolean(drag.current && drag.current.axis === "x");
+      if ((!onScreen || pageScrolling) && !draggingNow) {
+        lastTs.current = 0;
+        return;
+      }
+
       const dt = lastTs.current ? Math.min(0.048, (ts - lastTs.current) / 1000) : 0.016;
       lastTs.current = ts;
-      const draggingNow = Boolean(drag.current && drag.current.axis === "x");
       if (!draggingNow) {
         const target = paused.current || reduceMotion.current ? 0 : CRUISE;
         speed.current += (target - speed.current) * (1 - Math.exp(-dt * 7));
@@ -274,10 +285,39 @@ export function HomeClothesline({ products }: { products: Product[] }) {
         }
         paint();
       }
-      frame = requestAnimationFrame(tick);
+      if (onScreen) frame = requestAnimationFrame(tick);
     };
+
+    const resume = () => {
+      if (onScreen && !frame) frame = requestAnimationFrame(tick);
+    };
+
+    const io =
+      typeof IntersectionObserver !== "undefined"
+        ? new IntersectionObserver(
+            ([entry]) => {
+              onScreen = Boolean(entry?.isIntersecting);
+              if (onScreen) resume();
+            },
+            { rootMargin: "80px 0px", threshold: 0.01 },
+          )
+        : null;
+    if (io && rackRef.current) io.observe(rackRef.current);
+
+    let resumeTimer = 0;
+    const onScroll = () => {
+      window.clearTimeout(resumeTimer);
+      resumeTimer = window.setTimeout(resume, 180);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+
     frame = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(frame);
+    return () => {
+      cancelAnimationFrame(frame);
+      io?.disconnect();
+      window.clearTimeout(resumeTimer);
+      window.removeEventListener("scroll", onScroll);
+    };
   }, [baseItems.length, paint]);
 
   useEffect(() => {
@@ -529,11 +569,6 @@ export function HomeClothesline({ products }: { products: Product[] }) {
               </p>
             </div>
           </div>
-          <p className="cv-rail__blurb">
-            Crafted in heavyweight fleece.
-            <br />
-            Cut oversized. Made to last.
-          </p>
         </div>
 
         <div className="cv-rail__prog" aria-hidden>

@@ -3097,16 +3097,16 @@ textarea.checkout-field {
   display: block;
 }
 
+.home-hero__media--mobile.is-desktop-hide {
+  display: none !important;
+}
+
 .home-hero__split {
   position: absolute;
   inset: 0;
   display: flex;
   width: 100%;
   height: 100%;
-  /* Keep layout/position for fill images; hide on mobile without display:none. */
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
 }
 
 .home-hero__panel {
@@ -3143,18 +3143,7 @@ textarea.checkout-field {
   image-rendering: high-quality;
 }
 
-@media (min-width: 768px) {
-  .home-hero__media--mobile {
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none;
-  }
-
-  .home-hero__split {
-    opacity: 1;
-    visibility: visible;
-  }
-}
+/* Desktop split is mounted only on ≥768px via HomeHero — no CSS hide needed. */
 
 .home-hero__shade {
   position: absolute;
@@ -4375,15 +4364,6 @@ textarea.checkout-field {
   will-change: transform;
 }
 
-.cv-rail__blurb {
-  margin: 8px 0 0;
-  font-size: 15px;
-  font-weight: 600;
-  line-height: 1.3;
-  letter-spacing: 0.01em;
-  text-align: left;
-}
-
 .cv-rail__cta {
   display: inline-flex;
   align-items: center;
@@ -4450,6 +4430,32 @@ textarea.checkout-field {
   .cv-rail__img.is-ready {
     animation: none;
   }
+}
+
+/* Mobile page scroll: drop per-item sway / fabric / blend (big compositor win). */
+@media (max-width: 767px) {
+  .cv-rail__item,
+  .cv-rail__img.is-ready {
+    animation: none;
+  }
+
+  .cv-rail__img {
+    mix-blend-mode: normal;
+  }
+
+  .cv-rail__img.is-ready {
+    filter: drop-shadow(0 10px 12px rgb(0 0 0 / 0.14));
+  }
+}
+
+/* While the finger scrolls the page, freeze rail motion + hit-testing. */
+html.is-scrolling .cv-rail__item,
+html.is-scrolling .cv-rail__img.is-ready {
+  animation: none !important;
+}
+
+html.is-scrolling .cv-rail__rack {
+  pointer-events: none;
 }
 
 .home-products__grid {
