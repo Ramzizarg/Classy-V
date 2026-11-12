@@ -263,8 +263,6 @@ export function HomeTryTheLook({ products }: { products: Product[] }) {
 
   const paint = useCallback(() => {
     const width = widthRef.current;
-    const pageScrolling = document.documentElement.classList.contains("is-scrolling");
-    const softFilters = pageScrolling || window.innerWidth < 768;
     looks.forEach((_, i) => {
       const el = modelsRef.current[i];
       if (!el) return;
@@ -274,12 +272,7 @@ export function HomeTryTheLook({ products }: { products: Product[] }) {
       el.style.zIndex = String(p.z);
       el.style.visibility = p.opacity < 0.02 ? "hidden" : "visible";
       el.style.pointerEvents = p.front ? "auto" : p.opacity > 0.35 ? "auto" : "none";
-      // Blur filters force paint on every frame — skip on mobile / while scrolling.
-      el.style.filter = softFilters
-        ? p.front
-          ? "none"
-          : `brightness(${p.brightness.toFixed(3)})`
-        : `blur(${p.blur.toFixed(2)}px) brightness(${p.brightness.toFixed(3)})`;
+      el.style.filter = `blur(${p.blur.toFixed(2)}px) brightness(${p.brightness.toFixed(3)})`;
       el.classList.toggle("is-front", p.front);
     });
   }, [count, looks]);
@@ -310,18 +303,11 @@ export function HomeTryTheLook({ products }: { products: Product[] }) {
       const snapped = ((Math.round(target.current) % count) + count) % count;
       setIndex((prev) => (prev === snapped ? prev : snapped));
 
-      const pageScrolling = document.documentElement.classList.contains("is-scrolling");
-      const auto = playingRef.current && !pageScrolling;
+      const auto = playingRef.current;
       const busy =
         dragging.current ||
         Math.abs(cur.current - target.current) > 0.0008 ||
         Math.abs(vel.current) > 0.0008;
-
-      if (pageScrolling && !dragging.current) {
-        // Yield the main thread to touch scrolling; resume via scroll-end kick.
-        raf.current = 0;
-        return;
-      }
 
       if (auto && pickedLen.current === 0 && !dragging.current && t >= autoplayAt.current) {
         target.current += 1;
@@ -332,7 +318,7 @@ export function HomeTryTheLook({ products }: { products: Product[] }) {
         setNeedSize(false);
       }
 
-      if (busy || playingRef.current) {
+      if (busy || auto) {
         raf.current = requestAnimationFrame(tick);
       } else {
         raf.current = 0;
@@ -351,24 +337,11 @@ export function HomeTryTheLook({ products }: { products: Product[] }) {
     const ro = new ResizeObserver(measure);
     if (stageRef.current) ro.observe(stageRef.current);
     kick();
-
-    // Restart the look RAF after page scroll ends (ScrollPerf clears is-scrolling).
-    let resumeTimer = 0;
-    const onScroll = () => {
-      window.clearTimeout(resumeTimer);
-      resumeTimer = window.setTimeout(() => {
-        if (playingRef.current && !raf.current) kick();
-      }, 200);
-    };
-    window.addEventListener("scroll", onScroll, { passive: true });
-
     return () => {
       ro.disconnect();
       cancelAnimationFrame(raf.current);
       raf.current = 0;
       window.clearTimeout(wheelSnap.current);
-      window.clearTimeout(resumeTimer);
-      window.removeEventListener("scroll", onScroll);
     };
   }, [kick, paint]);
 

@@ -267,15 +267,13 @@ export function HomeClothesline({ products }: { products: Product[] }) {
     if (baseItems.length === 0) return;
     let frame = 0;
     let onScreen = true;
-    const root = document.documentElement;
     const CRUISE = 38;
 
     const tick = (ts: number) => {
       frame = 0;
-      // Freeze while the page scrolls or the rail is off-screen — frees the main thread for touch scroll.
-      const pageScrolling = root.classList.contains("is-scrolling");
+      // Freeze only when the rail is off-screen — keep the flow while the page scrolls.
       const draggingNow = Boolean(drag.current && drag.current.axis === "x");
-      if ((!onScreen || pageScrolling) && !draggingNow) {
+      if (!onScreen && !draggingNow) {
         lastTs.current = 0;
         return;
       }
@@ -319,19 +317,10 @@ export function HomeClothesline({ products }: { products: Product[] }) {
         : null;
     if (io && rackRef.current) io.observe(rackRef.current);
 
-    let resumeTimer = 0;
-    const onScroll = () => {
-      window.clearTimeout(resumeTimer);
-      resumeTimer = window.setTimeout(resume, 180);
-    };
-    window.addEventListener("scroll", onScroll, { passive: true });
-
     frame = requestAnimationFrame(tick);
     return () => {
       cancelAnimationFrame(frame);
       io?.disconnect();
-      window.clearTimeout(resumeTimer);
-      window.removeEventListener("scroll", onScroll);
     };
   }, [baseItems.length, paint]);
 

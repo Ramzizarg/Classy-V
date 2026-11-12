@@ -10,13 +10,13 @@ export function ScrollPerf() {
   useEffect(() => {
     const root = document.documentElement;
     let timer = 0;
-    let framed = false;
 
     const endScroll = () => {
       timer = 0;
       root.classList.remove("is-scrolling");
     };
 
+    /* Only real page scroll counts — sideways swipes on carousels must not flag it. */
     const onScroll = () => {
       if (!root.classList.contains("is-scrolling")) {
         root.classList.add("is-scrolling");
@@ -25,21 +25,9 @@ export function ScrollPerf() {
       timer = window.setTimeout(endScroll, 180);
     };
 
-    /* Also catch touch momentum on iOS where scroll events can throttle. */
-    const onTouchMove = () => {
-      if (framed) return;
-      framed = true;
-      window.requestAnimationFrame(() => {
-        framed = false;
-        onScroll();
-      });
-    };
-
     window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("touchmove", onTouchMove, { passive: true });
     return () => {
       window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("touchmove", onTouchMove);
       window.clearTimeout(timer);
       root.classList.remove("is-scrolling");
     };

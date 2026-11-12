@@ -3054,7 +3054,8 @@ textarea.checkout-field {
   left: 0;
   right: 0;
   z-index: 0;
-  /* Taller mobile hero so more of the look stays on screen. */
+  /* Stable small-viewport height only — never dvh (toolbar show/hide = zoom). */
+  height: min(78vh, 680px);
   height: min(78svh, 680px);
   overflow: hidden;
   background: #000000;
@@ -3068,6 +3069,7 @@ textarea.checkout-field {
 
 .home-hero-spacer {
   width: 100%;
+  height: min(78vh, 680px);
   height: min(78svh, 680px);
   pointer-events: none;
   visibility: hidden;
@@ -3094,8 +3096,20 @@ textarea.checkout-field {
 
 .home-hero__media--mobile {
   position: absolute;
-  inset: 0;
+  left: 0;
+  right: 0;
+  top: 0;
   display: block;
+  width: 100%;
+  /*
+   * Paint the photo at the large viewport size and clip it.
+   * When the mobile URL bar shows/hides, the window (svh) stays put while
+   * object-fit:cover would otherwise re-crop (= fake zoom).
+   */
+  height: 100%;
+  height: 100lvh;
+  max-height: 680px;
+  min-height: 100%;
 }
 
 .home-hero__media--mobile.is-desktop-hide {
@@ -3131,7 +3145,11 @@ textarea.checkout-field {
   image-rendering: auto;
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
-  transform: translateZ(0);
+  /* No scale — scroll / toolbar must not look like a zoom. */
+  transform: translate3d(0, 0, 0);
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none;
 }
 
 .home-hero__img--left {
@@ -4442,32 +4460,6 @@ textarea.checkout-field {
   .cv-rail__img.is-ready {
     animation: none;
   }
-}
-
-/* Mobile page scroll: drop per-item sway / fabric / blend (big compositor win). */
-@media (max-width: 767px) {
-  .cv-rail__item,
-  .cv-rail__img.is-ready {
-    animation: none;
-  }
-
-  .cv-rail__img {
-    mix-blend-mode: normal;
-  }
-
-  .cv-rail__img.is-ready {
-    filter: drop-shadow(0 10px 12px rgb(0 0 0 / 0.14));
-  }
-}
-
-/* While the finger scrolls the page, freeze rail motion + hit-testing. */
-html.is-scrolling .cv-rail__item,
-html.is-scrolling .cv-rail__img.is-ready {
-  animation: none !important;
-}
-
-html.is-scrolling .cv-rail__rack {
-  pointer-events: none;
 }
 
 .home-products__grid {
