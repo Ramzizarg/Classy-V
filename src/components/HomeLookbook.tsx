@@ -1,5 +1,6 @@
 import { HomeClothesline } from "@/components/HomeClothesline";
 import { HomeHero } from "@/components/HomeHero";
+import { HomeShopRow } from "@/components/HomeShopRow";
 import { HomeTryTheLook } from "@/components/HomeTryTheLook";
 import type { Product } from "@/lib/types";
 
@@ -21,6 +22,7 @@ export function HomeLookbook({ products }: { products: Product[] }) {
         <HomeClothesline products={products} />
         <div className="home-products__inner">
           <HomeTryTheLook products={products} />
+          <HomeShopRow products={products} />
         </div>
       </div>
     </section>

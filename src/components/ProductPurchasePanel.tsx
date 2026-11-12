@@ -19,6 +19,7 @@ import {
 } from "@/lib/joggerDuo";
 import { metaCatalogContentId, trackMeta } from "@/lib/metaPixel";
 import { effectivePrice, isComingSoon, isSoldOut, productHoverImage } from "@/lib/products";
+import { sortSizeStocks } from "@/lib/productSizesDisplay";
 import { chartSupportsFinder, recommendSize, type SizeChart } from "@/lib/sizeCharts";
 import type { CartLine, Product } from "@/lib/types";
 
@@ -335,7 +336,7 @@ export function ProductPurchasePanel({
                   )}
 
                   <div className="mt-2 flex flex-wrap justify-center gap-1.5 lg:justify-start">
-                    {slotProduct.sizes.map((entry) => {
+                    {sortSizeStocks(slotProduct.sizes).map((entry) => {
                       const other = slots[index === 0 ? 1 : 0]!;
                       const sameAsOther =
                         other.productId === slotProduct.id && other.size === entry.size;
@@ -382,7 +383,7 @@ export function ProductPurchasePanel({
           </div>
 
           <div className="mt-2 flex flex-wrap justify-center gap-1.5 lg:justify-start">
-            {product.sizes.map((entry) => {
+            {sortSizeStocks(product.sizes).map((entry) => {
               const disabled = entry.stock === 0;
               const recommended = yourSize === entry.size;
               return (

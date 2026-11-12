@@ -80,7 +80,7 @@ export async function POST(request: Request) {
 
   const total = Math.max(0, subtotal + shipping - discount);
 
-  const order = await saveOrder({
+  const saved = await saveOrder({
     reference: buildOrderReference(),
     createdAt: new Date().toISOString(),
     customer: {
@@ -103,6 +103,10 @@ export async function POST(request: Request) {
     paymentMethod: "cash-on-delivery",
     status: "pending",
   });
+  if (!saved.ok) {
+    return NextResponse.json({ error: saved.error }, { status: saved.status });
+  }
+  const { order } = saved;
 
   try {
     await sendMetaPurchase({

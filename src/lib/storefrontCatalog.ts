@@ -2,6 +2,7 @@ import { cache } from "react";
 import { resolveMediaUrl } from "@/lib/mediaUrl";
 import { neonQuery, resolveDatabaseUrl } from "@/lib/neon-db";
 import { parseSizeStocks } from "@/lib/productSizeStock";
+import { sortSizeStocks } from "@/lib/productSizesDisplay";
 import { slugifyProductName } from "@/lib/productUrl";
 import { parseProductSizeGuide } from "@/lib/sizeCharts";
 import { CATEGORIES } from "@/lib/products";
@@ -79,7 +80,7 @@ function toImages(raw: unknown): string[] {
 /** The purchase panel always needs at least one selectable size. */
 function toSizes(raw: unknown, stock: number): SizeStock[] {
   const parsed = parseSizeStocks(raw, stock) ?? [];
-  if (parsed.length > 0) return parsed;
+  if (parsed.length > 0) return sortSizeStocks(parsed);
   return [{ size: "One size", stock: Math.max(0, stock) }];
 }
 

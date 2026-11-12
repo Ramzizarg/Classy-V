@@ -1,14 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { neonQuery, resolveDatabaseUrl } from "@/lib/neon-db";
+import { isAdminAuthenticated } from "@/lib/adminAuth";
+import { commitWithStock } from "@/lib/inventory.server";
+import { resolveDatabaseUrl } from "@/lib/neon-db";
 import { isValidPhone, normalizePhoneInput, PHONE_ERROR } from "@/lib/phoneValidation";
-import { buildOrderReference } from "@/lib/store.server";
-import {
-  decrementSizeStock,
-  parseSizeStocks,
-  serializeSizeStocks,
-  totalSizeStock,
-  type SizeStock,
-} from "@/lib/productSizeStock";
+import { buildOrderReference, orderItemsRecordset } from "@/lib/store.server";
 import { sendOrderEmails, type OrderEmailPayload } from "@/lib/sendOrderEmails";
 import { matchDelegation, matchGovernorate } from "@/lib/xdeliveryLocations";
 
@@ -45,24 +40,12 @@ type PlaceOrderBody = {
   items?: PlaceOrderItem[];
 };
 
-type ProductStockRow = {
-  id: number;
-  name: string;
-  stock: number;
-  sizes: unknown;
-  coming_soon: boolean | null;
-  release_at: string | Date | null;
-};
-
-function productIsComingSoon(row: ProductStockRow): boolean {
-  if (!row.coming_soon) return false;
-  if (!row.release_at) return true;
-  const at = new Date(row.release_at).getTime();
-  if (Number.isNaN(at)) return true;
-  return at > Date.now();
-}
-
+/** Back office manual orders: prices and totals are set by staff, so only an admin may call this. */
 export async function POST(req: NextRequest) {
+  if (!(await isAdminAuthenticated())) {
+    return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  }
+
   try {
     if (!resolveDatabaseUrl()) {
       return NextResponse.json({ error: "DATABASE_URL is missing." }, { status: 503 });
@@ -115,128 +98,75 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const demand = new Map<string, { productId: number; size: string; qty: number; name: string }>();
-    for (const item of items) {
-      const productId = Number(item.productId);
-      const size = String(item.size).trim();
-      const key = `${productId}::${size.toUpperCase()}`;
-      const prev = demand.get(key);
-      const qty = Math.floor(Number(item.quantity) || 0);
-      if (prev) prev.qty += qty;
-      else {
-        demand.set(key, { productId, size, qty, name: item.product_name });
-      }
-    }
-
-    const productIds = [...new Set([...demand.values()].map((d) => d.productId))];
-    const placeholders = productIds.map((_, i) => `$${i + 1}`).join(", ");
-    const { rows: productRows } = await neonQuery<ProductStockRow>(
-      `SELECT id, name, stock, sizes, coming_soon, release_at FROM products WHERE id IN (${placeholders})`,
-      productIds
-    );
-
-    const byId = new Map(
-      (productRows ?? []).map((r) => [Number(r.id), r] as const).filter(([id]) => Number.isFinite(id) && id > 0)
-    );
-    const nextByProduct = new Map<number, { sizes: SizeStock[]; total: number; name: string }>();
-
-    for (const d of demand.values()) {
-      const row = byId.get(d.productId);
-      if (!row) {
-        return NextResponse.json({ error: `Product not found: ${d.name || d.productId}.` }, { status: 400 });
-      }
-      if (productIsComingSoon(row)) {
-        return NextResponse.json(
-          { error: `"${row.name}" is coming soon and cannot be ordered yet.` },
-          { status: 409 }
-        );
-      }
-
-      let state = nextByProduct.get(d.productId);
-      if (!state) {
-        const parsed = parseSizeStocks(row.sizes, Number(row.stock) || 0);
-        if (parsed == null || parsed.length === 0) {
-          return NextResponse.json({ error: `Out of stock for "${row.name}".` }, { status: 409 });
-        }
-        state = { sizes: parsed.map((s) => ({ ...s })), total: totalSizeStock(parsed), name: row.name };
-        nextByProduct.set(d.productId, state);
-      }
-
-      const decremented = decrementSizeStock(state.sizes, d.size, d.qty);
-      if (!decremented) {
-        return NextResponse.json(
-          { error: `Not enough stock for "${state.name}" (size ${d.size}).` },
-          { status: 409 }
-        );
-      }
-      state.sizes = decremented.sizes;
-      state.total = decremented.total;
-    }
-
     const total = Number(body.total ?? 0);
     const subtotal = Number(body.subtotal ?? 0);
     const shipping = Number(body.shipping ?? 0);
     const discountAmount = Number(body.discountAmount ?? 0);
 
     const reference = buildOrderReference();
-    const orderRes = await neonQuery<{ id: number }>(
-      `INSERT INTO shop_orders (
-        reference, full_name, email, phone_number, phone_number_2, address, city, governorate,
-        postal_code, country, note, coupon_code, discount_amount, subtotal,
-        shipping_price, total_price, payment_method, status
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
-      RETURNING id`,
-      [
-        reference,
-        fullName,
-        email || null,
-        phone,
-        phone2 || null,
-        address,
-        delegationName,
-        governorateName,
-        postalCode || null,
-        country,
-        note || null,
-        body.couponCode?.trim() || null,
-        discountAmount > 0 ? discountAmount : 0,
-        subtotal,
-        shipping,
-        total,
-        paymentMethod,
-        "pending",
-      ]
-    );
+    const orderItems = items.map((item) => ({
+      product_id: Number(item.productId),
+      product_name: item.product_name,
+      quantity: Math.floor(Number(item.quantity) || 0),
+      price: Number(item.price),
+      size: item.size ?? null,
+      color: item.color ?? null,
+    }));
 
-    const orderId = orderRes.rows[0]?.id;
+    const committed = await commitWithStock({
+      take: items.map((item) => ({
+        productId: Number(item.productId),
+        size: String(item.size),
+        qty: Number(item.quantity),
+        name: item.product_name,
+      })),
+      rejectComingSoon: true,
+      statements: [
+        {
+          text: `WITH o AS (
+                   INSERT INTO shop_orders (
+                     reference, full_name, email, phone_number, phone_number_2, address, city, governorate,
+                     postal_code, country, note, coupon_code, discount_amount, subtotal,
+                     shipping_price, total_price, payment_method, status
+                   ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
+                   RETURNING id
+                 ), i AS (
+                   INSERT INTO order_items (order_id, product_id, product_name, quantity, price, size, color)
+                   SELECT o.id, x.product_id, x.product_name, x.quantity, x.price, x.size, x.color
+                     FROM o, ${orderItemsRecordset("$19")}
+                 )
+                 SELECT id FROM o`,
+          params: [
+            reference,
+            fullName,
+            email || null,
+            phone,
+            phone2 || null,
+            address,
+            delegationName,
+            governorateName,
+            postalCode || null,
+            country,
+            note || null,
+            body.couponCode?.trim() || null,
+            discountAmount > 0 ? discountAmount : 0,
+            subtotal,
+            shipping,
+            total,
+            paymentMethod,
+            "pending",
+            JSON.stringify(orderItems),
+          ],
+        },
+      ],
+    });
+
+    if (!committed.ok) {
+      return NextResponse.json({ error: committed.error }, { status: committed.status });
+    }
+    const orderId = Number(committed.results[0]?.[0]?.id);
     if (!orderId) {
       return NextResponse.json({ error: "Order not created." }, { status: 500 });
-    }
-
-    for (const item of items) {
-      await neonQuery(
-        `INSERT INTO order_items (
-          order_id, product_id, product_name, quantity, price, size, color
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-        [
-          orderId,
-          Number(item.productId),
-          item.product_name,
-          Math.floor(Number(item.quantity) || 0),
-          Number(item.price),
-          item.size ?? null,
-          item.color ?? null,
-        ]
-      );
-    }
-
-    for (const [productId, state] of nextByProduct) {
-      const sizesJson = JSON.stringify(serializeSizeStocks(state.sizes));
-      await neonQuery(`UPDATE products SET sizes = $1::jsonb, stock = $2 WHERE id = $3`, [
-        sizesJson,
-        state.total,
-        productId,
-      ]);
     }
 
     const emailPayload: OrderEmailPayload = {

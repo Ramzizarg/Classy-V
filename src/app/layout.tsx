@@ -6,6 +6,7 @@ import { DeferredChrome } from "@/components/DeferredChrome";
 import { SiteBackground } from "@/components/SiteBackground";
 import { SiteEntryGate } from "@/components/SiteEntryGate";
 import { SiteLoadSplash } from "@/components/SiteLoadSplash";
+import { InAppScrollFix } from "@/components/InAppScrollFix";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import { ProductPageThemeSync } from "@/components/ProductPageThemeSync";
 import { SiteThemeSync } from "@/components/SiteThemeSync";
@@ -125,6 +126,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         <SiteBackground />
         <StoreProvider shippingRate={shippingRate}>
           <ScrollToTop />
+          <InAppScrollFix />
           <ProductPageThemeSync />
           <SiteThemeSync />
           <MetaPixel />

@@ -85,3 +85,12 @@ export async function neonQuery<T extends QueryResultRow = QueryResultRow>(
       : [];
   return { rows };
 }
+
+export type SqlStatement = { text: string; params?: unknown[] };
+
+/** Runs every statement in one Postgres transaction: all commit, or none do. */
+export async function neonTransaction(statements: SqlStatement[]): Promise<QueryResultRow[][]> {
+  const sql = getSql();
+  const results = await sql.transaction(statements.map((s) => sql.query(s.text, s.params ?? [])));
+  return results as QueryResultRow[][];
+}

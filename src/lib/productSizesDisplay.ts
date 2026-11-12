@@ -9,9 +9,25 @@ import {
 /** Display row for product detail (matches dashboard S / M / L / XL / XXL). */
 export const DEFAULT_DISPLAY_SIZES = ["XS", "S", "M", "L", "XL", "XXL"] as const;
 
-const SIZE_ORDER = ["XS", "S", "M", "L", "XL", "XXL", "STANDARD"] as const;
+const SIZE_ORDER = ["XXS", "XS", "S", "M", "L", "XL", "XXL", "XXXL", "3XL", "4XL", "STANDARD"] as const;
 
 export { normalizeSizeKey };
+
+/** Clothing size order: S always before M, out-of-stock sizes stay in place. */
+export function compareSizeLabels(a: string, b: string): number {
+  const aa = normalizeSizeKey(a);
+  const bb = normalizeSizeKey(b);
+  const ia = SIZE_ORDER.indexOf(aa as (typeof SIZE_ORDER)[number]);
+  const ib = SIZE_ORDER.indexOf(bb as (typeof SIZE_ORDER)[number]);
+  if (ia >= 0 && ib >= 0) return ia - ib;
+  if (ia >= 0) return -1;
+  if (ib >= 0) return 1;
+  return aa.localeCompare(bb, "en");
+}
+
+export function sortSizeStocks(sizes: SizeStock[]): SizeStock[] {
+  return [...sizes].sort((a, b) => compareSizeLabels(a.size, b.size));
+}
 
 type SizeInput = {
   sizes?: SizeStock[] | string[] | null;
@@ -33,18 +49,8 @@ export function getSizeOptionsForProduct(
   const stocks = toSizeStocks(p);
   const globalStock = Math.max(0, Math.floor(Number(p.stock ?? 0) || 0));
 
-  const order = new Map<string, number>(SIZE_ORDER.map((v, i) => [v, i]));
   const sortLabels = (labels: string[]) =>
-    Array.from(new Set(labels.map((x) => x.trim()).filter(Boolean))).sort((a, b) => {
-      const aa = normalizeSizeKey(a);
-      const bb = normalizeSizeKey(b);
-      const ia = order.get(aa);
-      const ib = order.get(bb);
-      if (ia != null && ib != null) return ia - ib;
-      if (ia != null) return -1;
-      if (ib != null) return 1;
-      return aa.localeCompare(bb, "en");
-    });
+    Array.from(new Set(labels.map((x) => x.trim()).filter(Boolean))).sort(compareSizeLabels);
 
   if (stocks == null) {
     return sortLabels([...DEFAULT_DISPLAY_SIZES]).map((label) => ({

@@ -10,6 +10,7 @@ import { BagGlyph, MenuGlyph, SearchGlyph } from "@/components/SocialGlyphs";
 import { SocialLinks } from "@/components/SocialLinks";
 import { useStore } from "@/components/StoreProvider";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { isInAppBrowser } from "@/lib/inAppBrowser";
 import { CATEGORIES, COLLECTIONS } from "@/lib/products";
 
 export function SiteHeader() {
@@ -54,7 +55,7 @@ export function SiteHeader() {
   const isHome = pathname === "/";
   const isProductPage = /^\/collection\/[^/]+/.test(pathname);
 
-  /** Home: slide the bar away once the products sheet reaches it (no scroll listeners). */
+  /** Home: slide the bar away once the products sheet reaches it. */
   useEffect(() => {
     if (!isHome) {
       setHomeRetreat(false);
@@ -67,12 +68,41 @@ export function SiteHeader() {
       return;
     }
 
+    const headerThreshold = () => {
+      const headerEl = document.querySelector<HTMLElement>(".site-header");
+      return (headerEl?.offsetHeight ?? 72) + 12;
+    };
+
+    /*
+     * Instagram's webview often skips the first IntersectionObserver update
+     * after a fling to the bottom, so the bar stays hidden on the way back up.
+     * Read the sentinel directly from scroll instead.
+     */
+    if (isInAppBrowser()) {
+      let frame = 0;
+      const sync = () => {
+        frame = 0;
+        setHomeRetreat(sentinel.getBoundingClientRect().top < headerThreshold());
+      };
+      const onScroll = () => {
+        if (frame) return;
+        frame = window.requestAnimationFrame(sync);
+      };
+      sync();
+      window.addEventListener("scroll", onScroll, { passive: true });
+      window.addEventListener("resize", onScroll);
+      return () => {
+        if (frame) window.cancelAnimationFrame(frame);
+        window.removeEventListener("scroll", onScroll);
+        window.removeEventListener("resize", onScroll);
+      };
+    }
+
     let observer: IntersectionObserver | null = null;
 
     const attach = () => {
       observer?.disconnect();
-      const headerEl = document.querySelector<HTMLElement>(".site-header");
-      const threshold = (headerEl?.offsetHeight ?? 72) + 12;
+      const threshold = headerThreshold();
       observer = new IntersectionObserver(
         ([entry]) => {
           if (!entry) return;

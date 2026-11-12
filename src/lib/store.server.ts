@@ -1,4 +1,5 @@
 import { getProductById, productHoverImage } from "@/lib/products";
+import { commitWithStock } from "@/lib/inventory.server";
 import { neonQuery, resolveDatabaseUrl } from "@/lib/neon-db";
 import { getCatalog } from "@/lib/storefrontCatalog";
 import type { CartLine, Order, Product } from "@/lib/types";
@@ -200,20 +201,54 @@ export function buildOrderReference(): string {
   return `CV-${stamp}${noise}`;
 }
 
-export async function saveOrder(order: Omit<Order, "id">): Promise<Order> {
+/** Order items passed as one jsonb parameter and expanded into rows `x` inside SQL. */
+export function orderItemsRecordset(param: string): string {
+  return `jsonb_to_recordset(${param}::jsonb) AS x(
+    product_id int, product_name text, quantity int, price numeric, size text, color text
+  )`;
+}
+
+export type SaveOrderResult = { ok: true; order: Order } | { ok: false; error: string; status: number };
+
+/** Saves the order, its items and the stock it takes in one transaction. */
+export async function saveOrder(order: Omit<Order, "id">): Promise<SaveOrderResult> {
   assertDb();
   const { customer } = order;
+  const items = order.lines.map((line) => ({
+    product_id: line.productId,
+    product_name: line.name,
+    quantity: line.quantity,
+    price: line.unitPrice,
+    size: line.size,
+    color: line.colorway || null,
+  }));
 
-  const { rows } = await neonQuery<{ id: number }>(
-    `INSERT INTO shop_orders (
-       reference, created_at, full_name, email, phone_number, phone_number_2, address, governorate, city,
-       postal_code, country, note, subtotal, shipping_price, discount_amount,
-       coupon_code, total_price, payment_method, status
-     ) VALUES (
-       $1, $2::timestamptz, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19
-     )
-     RETURNING id`,
-    [
+  const committed = await commitWithStock({
+    take: order.lines.map((line) => ({
+      productId: line.productId,
+      size: line.size,
+      qty: line.quantity,
+      name: line.name,
+    })),
+    rejectComingSoon: true,
+    statements: [
+      {
+        text: `WITH o AS (
+                 INSERT INTO shop_orders (
+                   reference, created_at, full_name, email, phone_number, phone_number_2, address, governorate,
+                   city, postal_code, country, note, subtotal, shipping_price, discount_amount,
+                   coupon_code, total_price, payment_method, status
+                 ) VALUES (
+                   $1, $2::timestamptz, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19
+                 )
+                 RETURNING id
+               ), i AS (
+                 INSERT INTO order_items (order_id, product_id, product_name, quantity, price, size, color)
+                 SELECT o.id, x.product_id, x.product_name, x.quantity, x.price, x.size, x.color
+                   FROM o, ${orderItemsRecordset("$20")}
+               )
+               SELECT id FROM o`,
+        params: [
       order.reference,
       order.createdAt,
       customer.fullName,
@@ -231,21 +266,16 @@ export async function saveOrder(order: Omit<Order, "id">): Promise<Order> {
       order.discount,
       order.couponCode ?? null,
       order.total,
-      order.paymentMethod,
-      order.status,
+          order.paymentMethod,
+          order.status,
+          JSON.stringify(items),
+        ],
+      },
     ],
-  );
+  });
 
-  const id = rows[0]?.id;
+  if (!committed.ok) return committed;
+  const id = committed.results[0]?.[0]?.id;
   if (!id) throw new Error("Order could not be saved.");
-
-  for (const line of order.lines) {
-    await neonQuery(
-      `INSERT INTO order_items (order_id, product_id, product_name, quantity, price, size, color)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-      [id, line.productId, line.name, line.quantity, line.unitPrice, line.size, line.colorway],
-    );
-  }
-
-  return { ...order, id: String(id) };
+  return { ok: true, order: { ...order, id: String(id) } };
 }
