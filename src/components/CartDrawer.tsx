@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect } from "react";
 import { OrderLineThumb } from "@/components/OrderLineThumb";
 import { BagGlyph, CloseGlyph } from "@/components/SocialGlyphs";
 import { useStore } from "@/components/StoreProvider";
@@ -8,7 +9,16 @@ import { cartCount, shippingCost } from "@/lib/cart";
 import { formatPrice } from "@/lib/format";
 
 export function CartDrawer() {
-  const { cartOpen, closeCart, lines, subtotal, shippingRate, setQuantity, removeLine } = useStore();
+  const { cartOpen, closeCart, lines, subtotal, shippingRate, setQuantity, removeLine, lineLimit } = useStore();
+
+  useEffect(() => {
+    if (!cartOpen) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") closeCart();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [cartOpen, closeCart]);
 
   if (!cartOpen) return null;
 
@@ -100,18 +110,19 @@ export function CartDrawer() {
                           type="button"
                           onClick={() => setQuantity(line, line.quantity - 1)}
                           aria-label="Decrease quantity"
-                          className="ui flex h-8 w-8 items-center justify-center hover:bg-surface sm:h-7 sm:w-7"
+                          className="ui flex h-10 w-10 items-center justify-center hover:bg-surface sm:h-8 sm:w-8"
                         >
                           −
                         </button>
-                        <span className="ui flex h-8 w-9 items-center justify-center border-x border-line tabular-nums sm:h-7 sm:w-8">
+                        <span className="ui flex h-10 w-9 items-center justify-center border-x border-line tabular-nums sm:h-8 sm:w-8">
                           {line.quantity}
                         </span>
                         <button
                           type="button"
                           onClick={() => setQuantity(line, line.quantity + 1)}
+                          disabled={line.quantity >= lineLimit(line)}
                           aria-label="Increase quantity"
-                          className="ui flex h-8 w-8 items-center justify-center hover:bg-surface sm:h-7 sm:w-7"
+                          className="ui flex h-10 w-10 items-center justify-center hover:bg-surface disabled:opacity-30 sm:h-8 sm:w-8"
                         >
                           +
                         </button>
@@ -121,7 +132,7 @@ export function CartDrawer() {
                         type="button"
                         onClick={() => removeLine(line)}
                         aria-label={`Remove ${line.name}`}
-                        className="-m-1 p-1 text-muted hover:text-foreground"
+                        className="-m-2.5 p-2.5 text-muted hover:text-foreground"
                       >
                         <CloseGlyph className="h-3.5 w-3.5" />
                       </button>
@@ -131,7 +142,7 @@ export function CartDrawer() {
               ))}
             </div>
 
-            <div className="border-t border-line px-3 py-3">
+            <div className="cart-drawer__foot border-t border-line px-3 pt-3">
               <div className="ui flex justify-between">
                 <span>Subtotal</span>
                 <span className="text-[13px] font-bold tabular-nums">{formatPrice(subtotal)}</span>
@@ -155,6 +166,7 @@ export function CartDrawer() {
                   Checkout
                 </Link>
               </div>
+              <p className="ui-sm mt-2 text-center text-muted">Pay cash on delivery</p>
             </div>
           </>
         )}

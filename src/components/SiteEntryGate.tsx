@@ -185,6 +185,8 @@ export function SiteEntryGate() {
               src={BRAND_LOGO_SRC}
               alt=""
               aria-hidden
+              width={600}
+              height={385}
               className="entry-gate__mark mx-auto h-auto w-[min(42vw,180px)]"
             />
 

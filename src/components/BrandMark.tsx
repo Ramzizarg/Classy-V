@@ -2,9 +2,10 @@ import Link from "next/link";
 import type { CSSProperties } from "react";
 import { SITE } from "@/lib/site";
 
-const BRAND_MARK_SRC = "/images/loogo.png";
+/** 600px-wide copies of images/loogo.png and brand/classy-v-4.png; the full-size originals stay for emails and icon generation. */
+const BRAND_MARK_SRC = "/images/logo-mark.png";
 /** Footer lockup — graffiti mark. */
-export const BRAND_MARK_FOOTER_SRC = "/brand/classy-v-4.png";
+export const BRAND_MARK_FOOTER_SRC = "/brand/classy-v-4-mark.png";
 /** Shared logo for header, sidebar, entry gate and splash. */
 export const BRAND_LOGO_SRC = BRAND_MARK_SRC;
 

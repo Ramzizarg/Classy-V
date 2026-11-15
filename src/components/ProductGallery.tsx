@@ -139,7 +139,7 @@ export function ProductGallery({ images, name }: { images: string[]; name: strin
                   /* Only the first slide is high-priority; avoid unused link-preload warnings. */
                   priority={index === 0}
                   fetchPriority={index === 0 ? "high" : "auto"}
-                  quality={index === 0 ? 90 : 75}
+                  quality={75}
                   sizes="(min-width: 1024px) 520px, 100vw"
                   onLoad={markTall(index)}
                   className={photoClass(index)}

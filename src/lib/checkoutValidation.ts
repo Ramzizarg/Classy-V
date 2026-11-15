@@ -1,3 +1,4 @@
+import { isValidPhone } from "@/lib/phoneValidation";
 import { matchDelegation, matchGovernorate } from "@/lib/xdeliveryLocations";
 
 export type CheckoutFormFields = {
@@ -48,6 +49,7 @@ export function validateCheckoutRequired(form: CheckoutFormFields): CheckoutFiel
 
   if (!address) errors.address = "Address is required.";
   if (!phone) errors.phone = "Phone is required.";
+  else if (!isValidPhone(phone)) errors.phone = "Enter a valid phone number, e.g. 22 123 456.";
 
   return errors;
 }

@@ -1,3 +1,4 @@
+import { MAX_LINE_QUANTITY } from "@/lib/cart";
 import { isJogger } from "@/lib/facebookCatalog";
 import { applyJoggerDuoPricing } from "@/lib/joggerDuo";
 import { getProductById, isComingSoon, productHoverImage } from "@/lib/products";
@@ -31,11 +32,18 @@ export async function priceCart(requested: CartLine[]): Promise<PricedCart> {
     }
 
     const sizeEntry = product.sizes.find((entry) => entry.size === line.size);
-    const quantity = Math.max(1, Math.min(10, Math.trunc(line.quantity)));
-    if (!sizeEntry || sizeEntry.stock < quantity) {
+    const quantity = Math.max(1, Math.min(MAX_LINE_QUANTITY, Math.trunc(line.quantity)));
+    if (!sizeEntry || sizeEntry.stock < 1) {
       return {
         ok: false,
         error: `${product.name} in size ${line.size} is no longer available.`,
+        status: 409,
+      };
+    }
+    if (sizeEntry.stock < quantity) {
+      return {
+        ok: false,
+        error: `Only ${sizeEntry.stock} left of ${product.name} in size ${line.size}. Lower the quantity to continue.`,
         status: 409,
       };
     }

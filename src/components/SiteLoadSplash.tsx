@@ -57,12 +57,12 @@ function clearBootSplash() {
   releaseScroll();
 }
 
+/**
+ * Home only. Ad and shared links land on product / collection URLs, and those must
+ * paint immediately — a branded hold there delays the buy button and LCP.
+ */
 function shouldShowSplash(pathname: string) {
-  if (pathname.startsWith("/dashboard")) return false;
-  if (pathname.startsWith("/admin")) return false;
-  if (pathname.startsWith("/login")) return false;
-  if (pathname.startsWith("/api")) return false;
-  return true;
+  return pathname === "/";
 }
 
 /** Call from logo clicks on home — replays the splash without navigating. */
@@ -181,6 +181,8 @@ function SiteLoadSplashInner() {
     if (!ready || !entryOk) return;
 
     if (!allowed) {
+      // Landing elsewhere counts as the boot: a later client navigation home must not replay it.
+      bootPlayed.current = true;
       clearTimers();
       finishSplash();
       return;

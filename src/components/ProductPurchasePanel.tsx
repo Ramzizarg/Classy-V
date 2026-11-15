@@ -1,13 +1,16 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { ProductBuyNowForm } from "@/components/ProductBuyNowForm";
 import { ProductColourVariants } from "@/components/ProductColourVariants";
 import { ProductCountdown } from "@/components/ProductCountdown";
 import { SizeGuideModal } from "@/components/SizeGuideModal";
 import { useStore } from "@/components/StoreProvider";
 import { useFitProfile } from "@/components/useFitProfile";
+import { MAX_LINE_QUANTITY } from "@/lib/cart";
 import { formatPrice } from "@/lib/format";
 import {
   JOGGER_DUO_PAIR_PRICE,
@@ -39,6 +42,7 @@ export function ProductPurchasePanel({
   variants?: Product[];
   sizeChart?: SizeChart | null;
 }) {
+  const router = useRouter();
   const { addLine, toggleWishlist, wishlist, hydrated, shippingRate } = useStore();
   const colourOptions = useMemo(
     () => (variants.length >= 2 ? variants : [product]),
@@ -168,14 +172,110 @@ export function ProductPurchasePanel({
     duoUnit,
   ]);
 
-  const addToCart = () => {
-    if (!orderLines) return;
-    orderLines.forEach((line, index) => {
-      addLine(line, { openCart: index === orderLines.length - 1 });
-    });
+  const sizesRef = useRef<HTMLDivElement>(null);
+  const buyRef = useRef<HTMLDivElement>(null);
+  const [attention, setAttention] = useState(false);
+  const [added, setAdded] = useState(false);
+  const [sizeSheetOpen, setSizeSheetOpen] = useState(false);
+  const addLock = useRef(false);
+  const checkoutLock = useRef(false);
+  const [buyInView, setBuyInView] = useState(true);
+
+  /** Bring the size picker on screen and pulse it — used by the in-page buy form. */
+  const focusSizes = () => {
+    setSizeSheetOpen(false);
+    const el = sizesRef.current;
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    setAttention(false);
+    window.requestAnimationFrame(() => setAttention(true));
+    window.setTimeout(() => setAttention(false), 1400);
   };
 
-  const actionReady = Boolean(orderLines);
+  const addToCart = () => {
+    if (!orderLines) {
+      focusSizes();
+      return;
+    }
+    if (addLock.current) return;
+    addLock.current = true;
+    let any = false;
+    orderLines.forEach((line, index) => {
+      if (addLine(line, { openCart: index === orderLines.length - 1 })) any = true;
+    });
+    if (any) setAdded(true);
+    window.setTimeout(() => {
+      addLock.current = false;
+      setAdded(false);
+    }, 1600);
+  };
+
+  /** Sticky bar: open the size popup, or checkout once a size is picked. */
+  const stickyCheckout = () => {
+    if (!orderLines) {
+      setSizeSheetOpen(true);
+      return;
+    }
+    if (checkoutLock.current) return;
+    checkoutLock.current = true;
+    setSizeSheetOpen(false);
+    orderLines.forEach((line) => {
+      addLine(line, { openCart: false });
+    });
+    router.push("/checkout");
+  };
+
+  const pickStickySize = (next: string) => {
+    selectSize(next);
+    setSizeSheetOpen(false);
+  };
+
+  useEffect(() => {
+    if (!sizeSheetOpen) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setSizeSheetOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = previous;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [sizeSheetOpen]);
+
+  useEffect(() => {
+    if (!duoMode) return;
+    if (slots.every((slot) => slot.size)) setSizeSheetOpen(false);
+  }, [duoMode, slots]);
+
+  useEffect(() => {
+    const el = buyRef.current;
+    if (!el || typeof IntersectionObserver === "undefined") return;
+    const observer = new IntersectionObserver(([entry]) => setBuyInView(entry.isIntersecting), {
+      rootMargin: "0px 0px -72px 0px",
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  const stickyVisible = !locked && !buyInView;
+  useEffect(() => {
+    const root = document.documentElement;
+    if (stickyVisible) root.setAttribute("data-sticky-buy", "1");
+    else root.removeAttribute("data-sticky-buy");
+    return () => root.removeAttribute("data-sticky-buy");
+  }, [stickyVisible]);
+
+  const selectionLabel = duoMode ? "Pick both sizes" : "Select a size";
+  const selectedSummary = duoMode
+    ? slots.every((slot) => slot.size)
+      ? `2 joggers · ${slots.map((slot) => slot.size).join(" + ")}`
+      : "2 joggers · pick sizes"
+    : size
+      ? `Size ${size}${quantity > 1 ? ` · ×${quantity}` : ""}`
+      : "Pick your size";
+  const stickyPrice = duoMode ? JOGGER_DUO_PAIR_PRICE : price * (size ? quantity : 1);
 
   return (
     <div>
@@ -297,7 +397,7 @@ export function ProductPurchasePanel({
             ) : null}
           </div>
 
-          <div className="duo-slots mt-3 space-y-4">
+          <div ref={sizesRef} className={`duo-slots mt-3 space-y-4${attention ? " size-picker--attention" : ""}`}>
             {([0, 1] as const).map((index) => {
               const slot = slots[index]!;
               const slotProduct = productById(slot.productId);
@@ -349,7 +449,7 @@ export function ProductPurchasePanel({
                           disabled={disabled}
                           onClick={() => updateSlot(index, { size: entry.size })}
                           aria-label={recommended ? `${entry.size}, your recommended size` : undefined}
-                          className={`ui relative min-w-11 border px-3 py-2 transition-colors lg:min-w-14 lg:py-3 ${
+                          className={`ui relative min-h-11 min-w-12 border px-3 py-2 transition-colors lg:min-h-0 lg:min-w-14 lg:py-3 ${
                             slot.size === entry.size
                               ? "border-selected bg-selected text-white"
                               : "border-foreground hover:bg-foreground hover:text-background"
@@ -382,7 +482,12 @@ export function ProductPurchasePanel({
             ) : null}
           </div>
 
-          <div className="mt-2 flex flex-wrap justify-center gap-1.5 lg:justify-start">
+          <div
+            ref={sizesRef}
+            role="group"
+            aria-label="Size"
+            className={`mt-2 flex flex-wrap justify-center gap-2 lg:justify-start lg:gap-1.5${attention ? " size-picker--attention" : ""}`}
+          >
             {sortSizeStocks(product.sizes).map((entry) => {
               const disabled = entry.stock === 0;
               const recommended = yourSize === entry.size;
@@ -392,8 +497,15 @@ export function ProductPurchasePanel({
                   type="button"
                   disabled={disabled}
                   onClick={() => selectSize(entry.size)}
-                  aria-label={recommended ? `${entry.size}, your recommended size` : undefined}
-                  className={`ui relative min-w-11 border px-3 py-2 transition-colors lg:min-w-16 lg:py-5 ${
+                  aria-pressed={size === entry.size}
+                  aria-label={
+                    disabled
+                      ? `${entry.size}, sold out`
+                      : recommended
+                        ? `${entry.size}, your recommended size`
+                        : undefined
+                  }
+                  className={`ui relative min-h-12 min-w-14 border px-3 py-2 transition-colors lg:min-h-0 lg:min-w-16 lg:py-5 ${
                     size === entry.size
                       ? "border-selected bg-selected text-white"
                       : "border-foreground hover:bg-foreground hover:text-background"
@@ -444,34 +556,35 @@ export function ProductPurchasePanel({
         </div>
       ) : null}
 
-      {orderLines ? (
-        <div id="product-buy-now">
+      {!locked ? (
+        <div id="product-buy-now" ref={buyRef}>
           <ProductBuyNowForm
-            key={orderLines.map((line) => `${line.productId}-${line.size}`).join("|")}
-            lines={orderLines}
+            lines={orderLines ?? []}
             shippingRate={shippingRate}
+            onNeedSelection={focusSizes}
+            selectionLabel={selectionLabel}
             afterPlaceOrder={
               <div className="flex items-stretch gap-2">
-                {!duoMode ? (
+                {!duoMode && size ? (
                   <div className="flex items-center border border-line">
                     <button
                       type="button"
                       onClick={() => setQuantity((value) => Math.max(1, value - 1))}
+                      disabled={quantity <= 1}
                       aria-label="Decrease quantity"
-                      className="ui h-10 w-8"
+                      className="ui h-11 w-10 disabled:opacity-30"
                     >
                       −
                     </button>
-                    <span className="ui w-7 text-center tabular-nums">{quantity}</span>
+                    <span className="ui w-7 text-center tabular-nums" aria-live="polite">
+                      {quantity}
+                    </span>
                     <button
                       type="button"
-                      onClick={() =>
-                        setQuantity((value) =>
-                          selectedStock ? Math.min(selectedStock, value + 1) : value + 1,
-                        )
-                      }
+                      onClick={() => setQuantity((value) => Math.min(Math.min(selectedStock, MAX_LINE_QUANTITY), value + 1))}
+                      disabled={quantity >= Math.min(selectedStock, MAX_LINE_QUANTITY)}
                       aria-label="Increase quantity"
-                      className="ui h-10 w-8"
+                      className="ui h-11 w-10 disabled:opacity-30"
                     >
                       +
                     </button>
@@ -481,15 +594,155 @@ export function ProductPurchasePanel({
                 <button
                   type="button"
                   onClick={addToCart}
-                  className="btn btn--solid min-w-[150px] flex-1"
+                  aria-live="polite"
+                  className={`btn btn--solid min-w-[150px] flex-1${added ? " btn--added" : ""}`}
                 >
-                  Add to cart
+                  {added ? "Added to cart ✓" : orderLines ? "Add to cart" : selectionLabel}
                 </button>
               </div>
             }
           />
         </div>
       ) : null}
+
+      {/* Portalled: a transformed ancestor would pin position:fixed to the page instead of the viewport. */}
+      {stickyVisible || sizeSheetOpen
+        ? createPortal(
+            <>
+              {sizeSheetOpen ? (
+                <div className="sticky-size-sheet lg:hidden" role="dialog" aria-modal="true" aria-label="Select a size">
+                  <button
+                    type="button"
+                    className="sticky-size-sheet__backdrop"
+                    aria-label="Close"
+                    tabIndex={-1}
+                    onClick={() => setSizeSheetOpen(false)}
+                  />
+                  <div className="sticky-size-sheet__panel">
+                    <div className="sticky-size-sheet__grab" aria-hidden>
+                      <span className="sticky-size-sheet__handle" />
+                    </div>
+                    <div className="sticky-size-sheet__head">
+                      <p className="sticky-size-sheet__title">{duoMode ? "Pick both sizes" : "Select a size"}</p>
+                      <button
+                        type="button"
+                        className="sticky-size-sheet__close"
+                        aria-label="Close"
+                        onClick={() => setSizeSheetOpen(false)}
+                      >
+                        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden>
+                          <path d="M5 5l14 14M19 5L5 19" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+                        </svg>
+                      </button>
+                    </div>
+
+                    {duoMode ? (
+                      <div className="sticky-size-sheet__duo">
+                        {([0, 1] as const).map((index) => {
+                          const slot = slots[index]!;
+                          const slotProduct = productById(slot.productId);
+                          return (
+                            <div key={index} className="sticky-size-sheet__duo-block">
+                              <p className="sticky-size-sheet__label">Jogger {index + 1}</p>
+                              {colourOptions.length > 1 ? (
+                                <div className="sticky-size-sheet__colours">
+                                  {colourOptions.map((option) => {
+                                    const current = option.id === slot.productId;
+                                    return (
+                                      <button
+                                        key={option.id}
+                                        type="button"
+                                        aria-label={option.colorway || option.name}
+                                        aria-pressed={current}
+                                        onClick={() => updateSlot(index, { productId: option.id, size: "" })}
+                                        className={`sticky-size-sheet__colour${current ? " is-on" : ""}`}
+                                      >
+                                        <Image
+                                          src={option.images[0]}
+                                          alt=""
+                                          fill
+                                          sizes="56px"
+                                          className="object-contain p-1"
+                                        />
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              ) : null}
+                              <div className="sticky-size-sheet__sizes" role="group" aria-label={`Jogger ${index + 1} size`}>
+                                {sortSizeStocks(slotProduct.sizes).map((entry) => {
+                                  const other = slots[index === 0 ? 1 : 0]!;
+                                  const sameAsOther =
+                                    other.productId === slotProduct.id && other.size === entry.size;
+                                  const disabled = entry.stock === 0 || (sameAsOther && entry.stock < 2);
+                                  return (
+                                    <button
+                                      key={entry.size}
+                                      type="button"
+                                      disabled={disabled}
+                                      aria-pressed={slot.size === entry.size}
+                                      className={`sticky-size-sheet__size${slot.size === entry.size ? " is-on" : ""}${
+                                        disabled ? " is-out" : ""
+                                      }`}
+                                      onClick={() => updateSlot(index, { size: entry.size })}
+                                    >
+                                      {entry.size}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="sticky-size-sheet__sizes" role="group" aria-label="Size">
+                        {sortSizeStocks(product.sizes).map((entry) => {
+                          const disabled = entry.stock === 0;
+                          return (
+                            <button
+                              key={entry.size}
+                              type="button"
+                              disabled={disabled}
+                              aria-pressed={size === entry.size}
+                              className={`sticky-size-sheet__size${size === entry.size ? " is-on" : ""}${
+                                disabled ? " is-out" : ""
+                              }`}
+                              onClick={() => pickStickySize(entry.size)}
+                            >
+                              {entry.size}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : null}
+
+              {stickyVisible ? (
+                <div className="product-sticky-buy lg:hidden" role="region" aria-label="Quick buy">
+                  <div className="product-sticky-buy__info">
+                    <span className="product-sticky-buy__name">{product.name}</span>
+                    <span className="product-sticky-buy__meta">
+                      <span className="product-price__current tabular-nums">{formatPrice(stickyPrice)}</span>
+                      <span aria-hidden> · </span>
+                      <span>{selectedSummary}</span>
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={stickyCheckout}
+                    className="btn btn--solid product-sticky-buy__cta"
+                  >
+                    {orderLines ? "Checkout" : selectionLabel}
+                  </button>
+                </div>
+              ) : null}
+            </>,
+            document.body,
+          )
+        : null}
 
       <button
         type="button"

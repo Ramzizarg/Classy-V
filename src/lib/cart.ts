@@ -4,6 +4,9 @@ import type { CartLine } from "@/lib/types";
 export const CART_STORAGE_KEY = "classyv.cart.v1";
 export const WISHLIST_STORAGE_KEY = "classyv.wishlist.v1";
 
+/** Same ceiling the order API applies per line. */
+export const MAX_LINE_QUANTITY = 10;
+
 export function cartLineKey(line: Pick<CartLine, "productId" | "size">): string {
   return `${line.productId}::${line.size}`;
 }

@@ -9,15 +9,15 @@ import { OrderLineThumb } from "@/components/OrderLineThumb";
 import { OrderPlacedModal } from "@/components/OrderPlacedModal";
 import { useStore } from "@/components/StoreProvider";
 import { shippingCost } from "@/lib/cart";
+import { clearCheckoutDraft, useCheckoutDraft } from "@/lib/checkoutDraft";
 import {
   CHECKOUT_FIELD_ORDER,
-  EMPTY_CHECKOUT_FORM,
   validateCheckoutRequired,
   type CheckoutFieldErrors,
   type CheckoutFieldKey,
 } from "@/lib/checkoutValidation";
 import { formatPrice } from "@/lib/format";
-import { metaCatalogContentId, trackMeta } from "@/lib/metaPixel";
+import { metaCatalogContentId, trackMeta, trackPurchase } from "@/lib/metaPixel";
 import { XDELIVERY_GOVERNORATES, delegationsFor } from "@/lib/xdeliveryLocations";
 
 type FieldKey = CheckoutFieldKey;
@@ -44,7 +44,7 @@ export function CheckoutForm() {
   const { lines, subtotal, shippingRate, clearCart, hydrated } = useStore();
 
   const [placed, setPlaced] = useState<PlacedOrder | null>(null);
-  const [form, setForm] = useState(EMPTY_CHECKOUT_FORM);
+  const [form, setForm] = useCheckoutDraft();
   const [submitting, setSubmitting] = useState(false);
   /** State updates are async; a ref blocks a second tap landing in the same frame. */
   const inFlight = useRef(false);
@@ -210,6 +210,7 @@ export function CheckoutForm() {
       const payload = (await response.json().catch(() => ({}))) as {
         reference?: string;
         total?: number;
+        eventId?: string;
         error?: string;
       };
       if (!response.ok || !payload.reference) {
@@ -219,15 +220,18 @@ export function CheckoutForm() {
         return;
       }
 
+      // The server total wins: a coupon that expired between preview and submit is dropped there.
+      const confirmedTotal = typeof payload.total === "number" ? payload.total : total;
+      trackPurchase({ reference: payload.reference, total: confirmedTotal, eventId: payload.eventId }, lines);
       setPlaced({
         reference: payload.reference,
         firstName: form.fullName.trim().split(/\s+/)[0] ?? "",
-        // The server total wins: a coupon that expired between preview and submit is dropped there.
-        total: typeof payload.total === "number" ? payload.total : total,
+        total: confirmedTotal,
       });
+      clearCheckoutDraft();
       clearCart();
     } catch {
-      setError("Network error. Try again.");
+      setError("Connection lost before we heard back. Check your connection and tap Place order again — a repeat tap will not create a second order.");
       setSubmitting(false);
       inFlight.current = false;
     }
@@ -278,6 +282,7 @@ export function CheckoutForm() {
                   id="co-name"
                   autoComplete="name"
                   autoCapitalize="words"
+                  enterKeyHint="next"
                   placeholder="Full name"
                   aria-invalid={Boolean(fieldErrors.fullName)}
                   value={form.fullName}
@@ -338,7 +343,8 @@ export function CheckoutForm() {
                 </label>
                 <input
                   id="co-address"
-                  autoComplete="street-address"
+                  autoComplete="address-line1"
+                  enterKeyHint="next"
                   placeholder="Address"
                   aria-invalid={Boolean(fieldErrors.address)}
                   value={form.address}
@@ -359,6 +365,8 @@ export function CheckoutForm() {
                   type="tel"
                   inputMode="tel"
                   autoComplete="tel"
+                  enterKeyHint="next"
+                  maxLength={20}
                   placeholder="Phone"
                   aria-invalid={Boolean(fieldErrors.phone)}
                   value={form.phone}
@@ -386,7 +394,10 @@ export function CheckoutForm() {
                   <input
                     id="co-email"
                     type="email"
+                    inputMode="email"
                     autoComplete="email"
+                    autoCapitalize="off"
+                    enterKeyHint="done"
                     placeholder="Email (optional)"
                     aria-invalid={Boolean(fieldErrors.email)}
                     value={form.email}
@@ -414,17 +425,30 @@ export function CheckoutForm() {
               </div>
             </div>
 
-            {error ? <p className="ui-sm mt-4 font-bold text-danger">{error}</p> : null}
+            <div className="checkout-payment mt-7">
+              <h2 className="ui font-bold">Payment</h2>
+              <p className="checkout-payment__method ui-sm mt-2">
+                <span className="checkout-payment__dot" aria-hidden />
+                Cash on delivery — pay the courier when your order arrives.
+              </p>
+            </div>
 
-            <div className="mt-7 flex flex-wrap items-center justify-between gap-3">
-              <Link href="/cart" className="ui-sm hover-underline text-muted">
+            {error ? (
+              <p role="alert" className="ui-sm mt-4 font-bold text-danger">
+                {error}
+              </p>
+            ) : null}
+
+            <div className="mt-5 flex flex-col-reverse items-stretch gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+              <Link href="/cart" className="ui-sm hover-underline py-2 text-center text-muted sm:text-left">
                 ‹ Return to cart
               </Link>
 
               <button
                 type="button"
                 disabled={submitting}
-                className="btn btn--buy"
+                aria-busy={submitting}
+                className="btn btn--buy w-full sm:w-auto"
                 onClick={(event) => {
                   event.preventDefault();
                   event.stopPropagation();

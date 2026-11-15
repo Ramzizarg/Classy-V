@@ -1,4 +1,5 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
+import { isValidPhone } from "@/lib/phoneValidation";
 import { isCartLine, shippingCost } from "@/lib/cart";
 import { sendOrderEmails } from "@/lib/sendOrderEmails";
 import { applyCoupon } from "@/lib/coupons.server";
@@ -9,7 +10,7 @@ import { getShippingRate } from "@/lib/shipping.server";
 import { sendMetaPurchase } from "@/lib/metaCapi.server";
 import { metaPurchaseEventId } from "@/lib/metaPixel";
 import { matchDelegation, matchGovernorate } from "@/lib/xdeliveryLocations";
-import type { OrderCustomer } from "@/lib/types";
+import type { CartLine, Order, OrderCustomer } from "@/lib/types";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -41,6 +42,10 @@ export async function POST(request: Request) {
       { error: `Missing required fields: ${missing.join(", ")}.` },
       { status: 400 }
     );
+  }
+
+  if (!isValidPhone(customer.phone!.toString())) {
+    return NextResponse.json({ error: "Enter a valid phone number." }, { status: 400 });
   }
 
   const email = customer.email?.toString().trim().toLowerCase() ?? "";
@@ -119,6 +124,18 @@ export async function POST(request: Request) {
     );
   }
 
+  // The order is committed; tracking and emails must not hold the shopper's spinner on a slow network.
+  after(async () => {
+    await notifyOrder(request, order, pricedLines);
+  });
+
+  return NextResponse.json(
+    { reference: order.reference, total: order.total, eventId: metaPurchaseEventId(order.reference) },
+    { status: 201 }
+  );
+}
+
+async function notifyOrder(request: Request, order: Order, pricedLines: CartLine[]) {
   try {
     await sendMetaPurchase({
       request,
@@ -172,9 +189,4 @@ export async function POST(request: Request) {
   } catch (err) {
     console.error("[orders] email threw", err);
   }
-
-  return NextResponse.json(
-    { reference: order.reference, total: order.total, eventId: metaPurchaseEventId(order.reference) },
-    { status: 201 }
-  );
 }

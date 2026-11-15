@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { useId, useRef, useState, type ReactNode } from "react";
 import { GovernorateSelect } from "@/components/GovernorateSelect";
 import { OrderPlacedModal } from "@/components/OrderPlacedModal";
 import { shippingCost } from "@/lib/cart";
+import { clearCheckoutDraft, useCheckoutDraft } from "@/lib/checkoutDraft";
 import {
   CHECKOUT_FIELD_ORDER,
   EMPTY_CHECKOUT_FORM,
@@ -13,7 +14,7 @@ import {
   type CheckoutFieldKey,
 } from "@/lib/checkoutValidation";
 import { formatPrice } from "@/lib/format";
-import { metaCatalogContentId, trackMeta } from "@/lib/metaPixel";
+import { metaCatalogContentId, trackMeta, trackPurchase } from "@/lib/metaPixel";
 import { XDELIVERY_GOVERNORATES, delegationsFor } from "@/lib/xdeliveryLocations";
 import type { CartLine } from "@/lib/types";
 
@@ -23,21 +24,30 @@ export function ProductBuyNowForm({
   lines,
   shippingRate,
   afterPlaceOrder,
+  onNeedSelection,
+  selectionLabel = "Select a size",
 }: {
+  /** Empty until the shopper has picked what to buy. */
   lines: CartLine[];
   shippingRate: number;
   /** Rendered directly under the Place order button (e.g. Add to cart). */
   afterPlaceOrder?: ReactNode;
+  /** Called when Place order is tapped before a size is chosen. */
+  onNeedSelection?: () => void;
+  selectionLabel?: string;
 }) {
   const uid = useId();
   const formRef = useRef<HTMLElement>(null);
-  const [form, setForm] = useState(EMPTY_CHECKOUT_FORM);
+  const [form, setForm] = useCheckoutDraft();
   const [fieldErrors, setFieldErrors] = useState<CheckoutFieldErrors>({});
   const [submitting, setSubmitting] = useState(false);
+  /** State updates are async; a ref blocks a second tap landing in the same frame. */
+  const inFlight = useRef(false);
   const [error, setError] = useState("");
   const [placed, setPlaced] = useState<PlacedOrder | null>(null);
   const tracked = useRef(false);
 
+  const ready = lines.length > 0;
   const subtotal = lines.reduce((sum, line) => sum + line.unitPrice * line.quantity, 0);
   const shipping = shippingCost(subtotal, shippingRate);
   const total = Math.max(0, subtotal + shipping);
@@ -45,8 +55,9 @@ export function ProductBuyNowForm({
 
   const fieldId = (key: CheckoutFieldKey) => `${uid}-${key}`;
 
-  useEffect(() => {
-    if (tracked.current) return;
+  /** Fired once, when the shopper actually starts filling in delivery details. */
+  const trackCheckoutStart = () => {
+    if (tracked.current || !ready) return;
     tracked.current = true;
     const contents = lines.flatMap((line) => {
       const id = metaCatalogContentId(line);
@@ -59,7 +70,7 @@ export function ProductBuyNowForm({
       value: total,
       num_items: itemCount,
     });
-  }, [lines, total, itemCount]);
+  };
 
   const update = (key: CheckoutFieldKey, value: string) => {
     setForm((current) => ({ ...current, [key]: value }));
@@ -86,6 +97,8 @@ export function ProductBuyNowForm({
       return;
     }
 
+    if (inFlight.current) return;
+    inFlight.current = true;
     setSubmitting(true);
     setError("");
 
@@ -108,26 +121,43 @@ export function ProductBuyNowForm({
         }),
       });
 
-      const payload = (await response.json()) as { reference?: string; error?: string };
+      const payload = (await response.json().catch(() => ({}))) as {
+        reference?: string;
+        total?: number;
+        eventId?: string;
+        error?: string;
+      };
       if (!response.ok || !payload.reference) {
         setError(payload.error ?? "We could not place the order. Try again.");
         setSubmitting(false);
+        inFlight.current = false;
         return;
       }
 
+      const confirmedTotal = typeof payload.total === "number" ? payload.total : total;
+      trackPurchase({ reference: payload.reference, total: confirmedTotal, eventId: payload.eventId }, lines);
+      clearCheckoutDraft();
+      setForm(EMPTY_CHECKOUT_FORM);
+      setSubmitting(false);
+      inFlight.current = false;
       setPlaced({
         reference: payload.reference,
         firstName: form.fullName.trim().split(/\s+/)[0] ?? "",
-        total,
+        total: confirmedTotal,
       });
     } catch {
-      setError("Network error. Try again.");
+      setError("Connection lost before we heard back. Check your connection and tap Place order again — a repeat tap will not create a second order.");
       setSubmitting(false);
+      inFlight.current = false;
     }
   };
 
   const tryPlaceOrder = () => {
     if (submitting) return;
+    if (!ready) {
+      onNeedSelection?.();
+      return;
+    }
     const errors = validateCheckoutRequired(form);
     setFieldErrors(errors);
     setError("");
@@ -159,6 +189,7 @@ export function ProductBuyNowForm({
       <form
         noValidate
         className="mt-3"
+        onFocusCapture={trackCheckoutStart}
         onSubmit={(event) => {
           event.preventDefault();
           event.stopPropagation();
@@ -174,6 +205,7 @@ export function ProductBuyNowForm({
               id={fieldId("fullName")}
               autoComplete="name"
               autoCapitalize="words"
+              enterKeyHint="next"
               placeholder="Full name"
               aria-invalid={Boolean(fieldErrors.fullName)}
               value={form.fullName}
@@ -194,6 +226,8 @@ export function ProductBuyNowForm({
               type="tel"
               inputMode="tel"
               autoComplete="tel"
+              enterKeyHint="next"
+              maxLength={20}
               placeholder="Phone"
               aria-invalid={Boolean(fieldErrors.phone)}
               value={form.phone}
@@ -255,7 +289,8 @@ export function ProductBuyNowForm({
           </label>
           <input
             id={fieldId("address")}
-            autoComplete="street-address"
+            autoComplete="address-line1"
+            enterKeyHint="next"
             placeholder="Address"
             aria-invalid={Boolean(fieldErrors.address)}
             value={form.address}
@@ -274,7 +309,10 @@ export function ProductBuyNowForm({
           <input
             id={fieldId("email")}
             type="email"
+            inputMode="email"
             autoComplete="email"
+            autoCapitalize="off"
+            enterKeyHint="done"
             placeholder="Email (optional)"
             aria-invalid={Boolean(fieldErrors.email)}
             value={form.email}
@@ -286,6 +324,7 @@ export function ProductBuyNowForm({
           ) : null}
         </div>
 
+        {ready ? (
         <div className="product-buy-now__totals ui-sm mt-3">
           {lines.map((line, index) => (
             <div
@@ -309,13 +348,24 @@ export function ProductBuyNowForm({
             <span className="tabular-nums">{formatPrice(total)}</span>
           </div>
         </div>
+        ) : null}
 
-        {error ? <p className="ui-sm mt-3 font-bold text-danger">{error}</p> : null}
+        <p className="checkout-payment__method ui-sm mt-3">
+          <span className="checkout-payment__dot" aria-hidden />
+          Cash on delivery — pay when it arrives
+        </p>
+
+        {error ? (
+          <p role="alert" className="ui-sm mt-3 font-bold text-danger">
+            {error}
+          </p>
+        ) : null}
 
         <button
           type="button"
           disabled={submitting}
-          className="btn btn--buy mt-3 w-full"
+          aria-busy={submitting}
+          className={`btn btn--buy mt-3 w-full${ready ? "" : " btn--buy-idle"}`}
           onClick={(event) => {
             event.preventDefault();
             event.stopPropagation();
@@ -324,6 +374,8 @@ export function ProductBuyNowForm({
         >
           {submitting ? (
             "Placing order…"
+          ) : !ready ? (
+            <span>{selectionLabel}</span>
           ) : (
             <>
               <span>Place order</span>

@@ -7,7 +7,7 @@ import { shippingCost } from "@/lib/cart";
 import { formatPrice } from "@/lib/format";
 
 export function CartView() {
-  const { lines, subtotal, shippingRate, setQuantity, removeLine, clearCart, hydrated } = useStore();
+  const { lines, subtotal, shippingRate, setQuantity, removeLine, clearCart, hydrated, lineLimit } = useStore();
 
   if (!hydrated) {
     return <div className="h-40" />;
@@ -31,7 +31,13 @@ export function CartView() {
       <div>
         <div className="ui flex items-center justify-between border-b border-line pb-2 text-muted">
           <span>Product</span>
-          <button type="button" onClick={clearCart} className="hover-underline">
+          <button
+            type="button"
+            onClick={() => {
+              if (window.confirm("Remove every item from your cart?")) clearCart();
+            }}
+            className="-my-2 py-2 hover-underline"
+          >
             Empty cart
           </button>
         </div>
@@ -69,18 +75,19 @@ export function CartView() {
                     type="button"
                     onClick={() => setQuantity(line, line.quantity - 1)}
                     aria-label="Decrease quantity"
-                    className="ui flex h-8 w-8 items-center justify-center"
+                    className="ui flex h-10 w-10 items-center justify-center sm:h-8 sm:w-8"
                   >
                     −
                   </button>
-                  <span className="ui flex h-8 w-9 items-center justify-center border-x border-line tabular-nums">
+                  <span className="ui flex h-10 w-9 items-center justify-center border-x border-line tabular-nums sm:h-8">
                     {line.quantity}
                   </span>
                   <button
                     type="button"
                     onClick={() => setQuantity(line, line.quantity + 1)}
+                    disabled={line.quantity >= lineLimit(line)}
                     aria-label="Increase quantity"
-                    className="ui flex h-8 w-8 items-center justify-center"
+                    className="ui flex h-10 w-10 items-center justify-center disabled:opacity-30 sm:h-8 sm:w-8"
                   >
                     +
                   </button>
@@ -90,7 +97,7 @@ export function CartView() {
                   <button
                     type="button"
                     onClick={() => removeLine(line)}
-                    className="ui-sm hover-underline text-muted"
+                    className="ui-sm -my-2 py-2 hover-underline text-muted"
                   >
                     Remove
                   </button>
@@ -128,7 +135,19 @@ export function CartView() {
         <Link href="/checkout" className="btn btn--solid mt-3 w-full">
           Checkout
         </Link>
+        <p className="ui-sm mt-2 text-center text-muted">Pay cash on delivery</p>
       </aside>
+
+      {/* Phones: the summary sits below the list, so keep the way to checkout on screen. */}
+      <div className="cart-page-bar lg:hidden">
+        <span className="cart-page-bar__total">
+          <span className="ui-sm text-muted">Total</span>
+          <span className="product-price__current tabular-nums">{formatPrice(subtotal + shipping)}</span>
+        </span>
+        <Link href="/checkout" className="btn btn--solid cart-page-bar__cta">
+          Checkout
+        </Link>
+      </div>
     </div>
   );
 }

@@ -32,8 +32,8 @@ export function ShopToolbar({ sizes, priceSteps }: { sizes: string[]; priceSteps
 
   return (
     <div className={`shop-toolbar${pending ? " is-pending" : ""}`} aria-busy={pending}>
-      {sizes.length > 0 ? (
-        <div className="shop-toolbar__group" role="group" aria-label="Filter by size">
+      <div className="shop-toolbar__inner">
+        <div className="shop-toolbar__rail shop-toolbar__rail--chips" role="group" aria-label="Filter by size and stock">
           {sizes.map((label) => {
             const on = size.toUpperCase() === label.toUpperCase();
             return (
@@ -48,49 +48,55 @@ export function ShopToolbar({ sizes, priceSteps }: { sizes: string[]; priceSteps
               </button>
             );
           })}
+          <button
+            type="button"
+            aria-pressed={inStock}
+            className={`shop-toolbar__chip shop-toolbar__chip--stock${inStock ? " is-on" : ""}`}
+            onClick={() => update({ stock: inStock ? null : "in" })}
+          >
+            In stock
+          </button>
         </div>
-      ) : null}
 
-      <div className="shop-toolbar__group">
-        <button
-          type="button"
-          aria-pressed={inStock}
-          className={`shop-toolbar__chip${inStock ? " is-on" : ""}`}
-          onClick={() => update({ stock: inStock ? null : "in" })}
-        >
-          In stock
-        </button>
+        <div className="shop-toolbar__rail shop-toolbar__rail--selects">
+          {priceSteps.length > 0 ? (
+            <label className="shop-toolbar__select">
+              <span className="sr-only">Maximum price</span>
+              <select value={max} onChange={(event) => update({ max: event.target.value || null })}>
+                <option value="">Any price</option>
+                {priceSteps.map((step) => (
+                  <option key={step} value={String(step)}>
+                    Up to {formatPrice(step)}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
 
-        {priceSteps.length > 0 ? (
           <label className="shop-toolbar__select">
-            <span className="sr-only">Maximum price</span>
-            <select value={max} onChange={(event) => update({ max: event.target.value || null })}>
-              <option value="">Any price</option>
-              {priceSteps.map((step) => (
-                <option key={step} value={String(step)}>
-                  Up to {formatPrice(step)}
+            <span className="sr-only">Sort by</span>
+            <select
+              value={sort}
+              onChange={(event) => update({ sort: event.target.value === "newest" ? null : event.target.value })}
+            >
+              {SORT_OPTIONS.map((option) => (
+                <option key={option.key} value={option.key}>
+                  {option.label}
                 </option>
               ))}
             </select>
           </label>
-        ) : null}
 
-        <label className="shop-toolbar__select">
-          <span className="sr-only">Sort by</span>
-          <select value={sort} onChange={(event) => update({ sort: event.target.value === "newest" ? null : event.target.value })}>
-            {SORT_OPTIONS.map((option) => (
-              <option key={option.key} value={option.key}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        {filtered ? (
-          <button type="button" className="shop-toolbar__clear hover-underline" onClick={() => update({ size: null, max: null, stock: null })}>
-            Clear
-          </button>
-        ) : null}
+          {filtered ? (
+            <button
+              type="button"
+              className="shop-toolbar__clear hover-underline"
+              onClick={() => update({ size: null, max: null, stock: null })}
+            >
+              Clear
+            </button>
+          ) : null}
+        </div>
       </div>
     </div>
   );

@@ -1,6 +1,22 @@
-import { CART_STORAGE_KEY, WISHLIST_STORAGE_KEY, cartLineKey, isCartLine } from "@/lib/cart";
-import { isPurchasable, productHoverImage } from "@/lib/products";
+import {
+  CART_STORAGE_KEY,
+  MAX_LINE_QUANTITY,
+  WISHLIST_STORAGE_KEY,
+  cartLineKey,
+  isCartLine,
+} from "@/lib/cart";
+import { isJogger } from "@/lib/facebookCatalog";
+import { effectivePrice, isPurchasable, productHoverImage } from "@/lib/products";
 import type { CartLine, Product } from "@/lib/types";
+
+/** What the live catalog says about lines in the bag — never persisted, refreshed on load. */
+export type CatalogFacts = {
+  /** Units available per `cartLineKey`. */
+  stock: Record<string, number>;
+  /** Base (pre-pair-deal) price per product id. */
+  price: Record<number, number>;
+  joggers: number[];
+};
 
 /**
  * localStorage-backed cart/wishlist exposed as an external store so components can
@@ -10,9 +26,10 @@ export type ShopState = {
   hydrated: boolean;
   lines: CartLine[];
   wishlist: number[];
+  catalog: CatalogFacts | null;
 };
 
-const SERVER_STATE: ShopState = { hydrated: false, lines: [], wishlist: [] };
+const SERVER_STATE: ShopState = { hydrated: false, lines: [], wishlist: [], catalog: null };
 
 let state: ShopState = SERVER_STATE;
 let initialized = false;
@@ -52,17 +69,17 @@ function persist(): void {
 function ensureInitialized(): void {
   if (initialized || typeof window === "undefined") return;
   initialized = true;
-  state = { hydrated: true, lines: readLines(), wishlist: readWishlist() };
+  state = { hydrated: true, lines: readLines(), wishlist: readWishlist(), catalog: null };
 }
 
 function emit(): void {
   for (const listener of listeners) listener();
 }
 
-function commit(next: Partial<Omit<ShopState, "hydrated">>): void {
+function commit(next: Partial<Omit<ShopState, "hydrated">>, save = true): void {
   ensureInitialized();
   state = { ...state, ...next };
-  persist();
+  if (save) persist();
   emit();
 }
 
@@ -88,7 +105,7 @@ export function subscribe(listener: () => void): () => void {
   /** Keep tabs in sync when the cart changes elsewhere. */
   const onStorage = (event: StorageEvent) => {
     if (event.key !== CART_STORAGE_KEY && event.key !== WISHLIST_STORAGE_KEY) return;
-    state = { hydrated: true, lines: readLines(), wishlist: readWishlist() };
+    state = { ...state, hydrated: true, lines: readLines(), wishlist: readWishlist() };
     emit();
   };
   window.addEventListener("storage", onStorage);
@@ -107,27 +124,41 @@ export function getServerSnapshot(): ShopState {
   return SERVER_STATE;
 }
 
-export function addLine(line: CartLine): void {
+/** Most units of this line the bag may hold (stock when known, else the API ceiling). */
+export function lineLimit(line: Pick<CartLine, "productId" | "size">, catalog = state.catalog): number {
+  const stock = catalog?.stock[cartLineKey(line)];
+  return stock === undefined ? MAX_LINE_QUANTITY : Math.min(MAX_LINE_QUANTITY, stock);
+}
+
+/** Returns how many units the line now holds, so callers can tell when stock capped the add. */
+export function addLine(line: CartLine): { quantity: number; capped: boolean } {
+  ensureInitialized();
   const key = cartLineKey(line);
+  const limit = lineLimit(line);
   const existing = state.lines.find((entry) => cartLineKey(entry) === key);
-  commit({
-    lines: existing
-      ? state.lines.map((entry) =>
-          cartLineKey(entry) === key ? { ...entry, quantity: entry.quantity + line.quantity } : entry
-        )
-      : [...state.lines, line],
-  });
+  const wanted = (existing?.quantity ?? 0) + line.quantity;
+  const quantity = Math.max(0, Math.min(limit, wanted));
+  // Pair deals are applied across the whole bag, so store the plain price.
+  const basePrice = state.catalog?.price[line.productId];
+  const stored = basePrice === undefined ? line : { ...line, unitPrice: basePrice };
+  if (quantity > 0) {
+    commit({
+      lines: existing
+        ? state.lines.map((entry) => (cartLineKey(entry) === key ? { ...entry, quantity } : entry))
+        : [...state.lines, { ...stored, quantity }],
+    });
+  }
+  return { quantity, capped: quantity < wanted };
 }
 
 export function setQuantity(target: Pick<CartLine, "productId" | "size">, quantity: number): void {
   const key = cartLineKey(target);
+  const next = Math.min(lineLimit(target), Math.trunc(quantity));
   commit({
     lines:
-      quantity <= 0
+      next <= 0
         ? state.lines.filter((entry) => cartLineKey(entry) !== key)
-        : state.lines.map((entry) =>
-            cartLineKey(entry) === key ? { ...entry, quantity } : entry
-          ),
+        : state.lines.map((entry) => (cartLineKey(entry) === key ? { ...entry, quantity: next } : entry)),
   });
 }
 
@@ -140,36 +171,54 @@ export function clearCart(): void {
   commit({ lines: [] });
 }
 
-/** Overlay live product names (and slug/image) from Neon onto stored cart lines. */
-export function refreshLinesFromCatalog(products: Product[]): void {
+/**
+ * Overlay the live catalog onto stored lines: names, images and prices follow the
+ * shop, quantities shrink to stock, and lines that can no longer be bought drop out.
+ * Returns the names of lines that were removed or reduced so the UI can say so.
+ */
+export function refreshLinesFromCatalog(products: Product[]): string[] {
+  ensureInitialized();
   const byId = new Map(products.map((product) => [product.id, product]));
+  const catalog: CatalogFacts = { stock: {}, price: {}, joggers: [] };
+  for (const product of products) {
+    catalog.price[product.id] = effectivePrice(product);
+    if (isJogger(product)) catalog.joggers.push(product.id);
+    for (const entry of product.sizes) {
+      catalog.stock[cartLineKey({ productId: product.id, size: entry.size })] = entry.stock;
+    }
+  }
+
+  const affected: string[] = [];
   let changed = false;
   const lines = state.lines.flatMap((line) => {
     const product = byId.get(line.productId);
     if (!product) return [line];
-    if (!isPurchasable(product)) {
+    const limit = lineLimit(line, catalog);
+    if (!isPurchasable(product) || limit < 1) {
       changed = true;
+      affected.push(line.name);
       return [];
     }
-    const sizeStock = product.sizes.find((entry) => entry.size === line.size)?.stock ?? 0;
-    if (sizeStock < 1) {
-      changed = true;
-      return [];
-    }
-    const image = product.images[0] ?? line.image;
-    const hoverImage = productHoverImage(product.images);
-    if (
-      product.name === line.name &&
-      product.slug === line.slug &&
-      image === line.image &&
-      hoverImage === line.hoverImage
-    ) {
-      return [line];
-    }
+    const price = effectivePrice(product);
+    const next: CartLine = {
+      ...line,
+      name: product.name,
+      slug: product.slug,
+      image: product.images[0] ?? line.image,
+      hoverImage: productHoverImage(product.images),
+      unitPrice: price,
+      compareAtPrice: price < product.price ? product.price : null,
+      quantity: Math.min(line.quantity, limit),
+    };
+    if (next.quantity < line.quantity) affected.push(line.name);
+    const same = (Object.keys(next) as (keyof CartLine)[]).every((key) => next[key] === line[key]);
+    if (same) return [line];
     changed = true;
-    return [{ ...line, name: product.name, slug: product.slug, image, hoverImage }];
+    return [next];
   });
-  if (changed) commit({ lines });
+  if (changed) commit({ lines, catalog });
+  else commit({ catalog }, false);
+  return affected;
 }
 
 /** Returns `true` when the product ended up saved. */

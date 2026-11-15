@@ -88,6 +88,32 @@ export function metaPurchaseEventId(reference: string) {
   return `purchase-${reference}`;
 }
 
+/**
+ * Browser Purchase after the API confirms the order. Shares its event id with the
+ * server-side CAPI Purchase so Meta counts the order once.
+ */
+export function trackPurchase(
+  order: { reference: string; total: number; eventId?: string },
+  lines: { slug?: string | null; productId?: number | null; quantity: number; unitPrice: number }[],
+) {
+  const contents = lines.flatMap((line) => {
+    const id = metaCatalogContentId(line);
+    return id ? [{ id, quantity: line.quantity, item_price: line.unitPrice }] : [];
+  });
+  trackMeta(
+    "Purchase",
+    {
+      content_ids: contents.map((entry) => entry.id),
+      content_type: "product",
+      contents,
+      value: order.total,
+      num_items: lines.reduce((sum, line) => sum + line.quantity, 0),
+      order_id: order.reference,
+    },
+    order.eventId || metaPurchaseEventId(order.reference),
+  );
+}
+
 export function trackMeta(event: string, params?: MetaPixelParams, eventID?: string) {
   if (typeof window === "undefined") return;
   if (isLocalPixelHost(window.location.hostname)) return;
