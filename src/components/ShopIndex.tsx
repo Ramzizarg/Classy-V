@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { LookbookCard } from "@/components/LookbookCard";
 import type { Product } from "@/lib/types";
 
@@ -8,12 +9,15 @@ export function ShopIndex({
   heading,
   note,
   count,
+  toolbar,
 }: {
   products: Product[];
   heading?: string;
   note?: string;
   /** Rendered as a badge with the number emphasised; takes precedence over `note`. */
   count?: number;
+  /** Sort / filter controls under the header. */
+  toolbar?: ReactNode;
 }) {
   return (
     <section className="lookbook">
@@ -36,9 +40,11 @@ export function ShopIndex({
             </div>
           ) : null}
 
+          {toolbar}
+
           {products.length === 0 ? (
             <div className="lookbook__empty">
-              <p>No products match.</p>
+              <p>No products match these filters.</p>
               <Link href="/collection" className="btn">
                 Shop all products
               </Link>

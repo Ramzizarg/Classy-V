@@ -208,9 +208,44 @@ export function orderItemsRecordset(param: string): string {
   )`;
 }
 
-export type SaveOrderResult = { ok: true; order: Order } | { ok: false; error: string; status: number };
+export type SaveOrderResult =
+  | { ok: true; order: Order; duplicate?: boolean }
+  | { ok: false; error: string; status: number };
 
-/** Saves the order, its items and the stock it takes in one transaction. */
+/** Window in which the same phone + total is treated as a resubmission, not a new order. */
+const DUPLICATE_WINDOW = "2 minutes";
+const DUPLICATE_MARKER = "DUPLICATE_ORDER:";
+
+/**
+ * Raises (by casting a reference to int) when a matching order was just placed. A cast on a
+ * row value is evaluated at run time, so it aborts the transaction only when a row matches.
+ */
+function duplicateGuard(phone: string, total: number) {
+  return {
+    text: `SELECT (
+             SELECT '${DUPLICATE_MARKER}' || reference
+               FROM shop_orders
+              WHERE phone_number = $1
+                AND total_price = $2
+                AND created_at > now() - interval '${DUPLICATE_WINDOW}'
+              ORDER BY id DESC
+              LIMIT 1
+           )::int IS NULL AS ok`,
+    params: [phone, total],
+  };
+}
+
+function duplicateReference(err: unknown): string | null {
+  const message = err instanceof Error ? err.message : String(err ?? "");
+  const at = message.indexOf(DUPLICATE_MARKER);
+  if (at < 0) return null;
+  return message.slice(at + DUPLICATE_MARKER.length).match(/^[A-Z0-9-]+/i)?.[0] ?? null;
+}
+
+/**
+ * Saves the order, its items and the stock it takes in one transaction.
+ * A double tap or a retry after a timeout returns the order already placed instead of a copy.
+ */
 export async function saveOrder(order: Omit<Order, "id">): Promise<SaveOrderResult> {
   assertDb();
   const { customer } = order;
@@ -223,59 +258,75 @@ export async function saveOrder(order: Omit<Order, "id">): Promise<SaveOrderResu
     color: line.colorway || null,
   }));
 
-  const committed = await commitWithStock({
-    take: order.lines.map((line) => ({
-      productId: line.productId,
-      size: line.size,
-      qty: line.quantity,
-      name: line.name,
-    })),
-    rejectComingSoon: true,
-    statements: [
-      {
-        text: `WITH o AS (
-                 INSERT INTO shop_orders (
-                   reference, created_at, full_name, email, phone_number, phone_number_2, address, governorate,
-                   city, postal_code, country, note, subtotal, shipping_price, discount_amount,
-                   coupon_code, total_price, payment_method, status
-                 ) VALUES (
-                   $1, $2::timestamptz, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19
+  let committed;
+  try {
+    committed = await commitWithStock({
+      take: order.lines.map((line) => ({
+        productId: line.productId,
+        size: line.size,
+        qty: line.quantity,
+        name: line.name,
+      })),
+      rejectComingSoon: true,
+      rejectInactive: true,
+      preStatements: [
+        // Serialises concurrent submits from the same phone so the duplicate check below is reliable.
+        { text: `SELECT pg_advisory_xact_lock(hashtext($1))`, params: [`order:${customer.phone}`] },
+        duplicateGuard(customer.phone, order.total),
+      ],
+      statements: [
+        {
+          text: `WITH o AS (
+                   INSERT INTO shop_orders (
+                     reference, created_at, full_name, email, phone_number, phone_number_2, address, governorate,
+                     city, postal_code, country, note, subtotal, shipping_price, discount_amount,
+                     coupon_code, total_price, payment_method, status
+                   ) VALUES (
+                     $1, $2::timestamptz, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19
+                   )
+                   RETURNING id
+                 ), i AS (
+                   INSERT INTO order_items (order_id, product_id, product_name, quantity, price, size, color)
+                   SELECT o.id, x.product_id, x.product_name, x.quantity, x.price, x.size, x.color
+                     FROM o, ${orderItemsRecordset("$20")}
                  )
-                 RETURNING id
-               ), i AS (
-                 INSERT INTO order_items (order_id, product_id, product_name, quantity, price, size, color)
-                 SELECT o.id, x.product_id, x.product_name, x.quantity, x.price, x.size, x.color
-                   FROM o, ${orderItemsRecordset("$20")}
-               )
-               SELECT id FROM o`,
-        params: [
-      order.reference,
-      order.createdAt,
-      customer.fullName,
-      customer.email || null,
-      customer.phone,
-      customer.phone2?.trim() || null,
-      customer.address,
-      customer.governorate,
-      customer.city ?? null,
-      customer.postalCode ?? null,
-      customer.country,
-      customer.note ?? null,
-      order.subtotal,
-      order.shipping,
-      order.discount,
-      order.couponCode ?? null,
-      order.total,
-          order.paymentMethod,
-          order.status,
-          JSON.stringify(items),
-        ],
-      },
-    ],
-  });
+                 SELECT id FROM o`,
+          params: [
+            order.reference,
+            order.createdAt,
+            customer.fullName,
+            customer.email || null,
+            customer.phone,
+            customer.phone2?.trim() || null,
+            customer.address,
+            customer.governorate,
+            customer.city ?? null,
+            customer.postalCode ?? null,
+            customer.country,
+            customer.note ?? null,
+            order.subtotal,
+            order.shipping,
+            order.discount,
+            order.couponCode ?? null,
+            order.total,
+            order.paymentMethod,
+            order.status,
+            JSON.stringify(items),
+          ],
+        },
+      ],
+    });
+  } catch (err) {
+    const existingRef = duplicateReference(err);
+    if (!existingRef) throw err;
+    const existing = await findOrder(existingRef);
+    if (!existing) throw err;
+    return { ok: true, order: existing, duplicate: true };
+  }
 
   if (!committed.ok) return committed;
   const id = committed.results[0]?.[0]?.id;
   if (!id) throw new Error("Order could not be saved.");
   return { ok: true, order: { ...order, id: String(id) } };
 }
+

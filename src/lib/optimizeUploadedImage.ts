@@ -19,11 +19,12 @@ const UPLOAD_QUALITY: Record<"product" | "home" | "sizeGuide", number> = {
   sizeGuide: 90,
 };
 
-const SKIP_OPTIMIZE_EXT = new Set(["svg", "gif", "ico"]);
+const SKIP_OPTIMIZE_EXT = new Set(["gif", "ico"]);
+const MAX_INPUT_PIXELS = 120_000_000;
 
 /**
  * Resize and encode uploads as high-quality WebP.
- * Returns original bytes only for formats we should not transform (svg/gif/ico).
+ * Returns original bytes only for formats we should not transform (gif/ico).
  */
 export async function optimizeUploadedImage(
   bytes: Buffer,
@@ -32,18 +33,13 @@ export async function optimizeUploadedImage(
 ): Promise<{ bytes: Buffer; ext: string; contentType: string }> {
   const normalized = ext.toLowerCase();
   if (SKIP_OPTIMIZE_EXT.has(normalized)) {
-    const contentType =
-      normalized === "svg"
-        ? "image/svg+xml"
-        : normalized === "gif"
-          ? "image/gif"
-          : "image/x-icon";
+    const contentType = normalized === "gif" ? "image/gif" : "image/x-icon";
     return { bytes, ext: normalized, contentType };
   }
 
   const maxEdge = MAX_EDGE[type];
   const quality = UPLOAD_QUALITY[type];
-  const optimized = await sharp(bytes, { failOn: "none", unlimited: true })
+  const optimized = await sharp(bytes, { failOn: "none", limitInputPixels: MAX_INPUT_PIXELS })
     .rotate()
     .resize({
       width: maxEdge,

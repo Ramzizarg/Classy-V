@@ -1,22 +1,55 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { ShopIndex } from "@/components/ShopIndex";
-import { COLLECTIONS, filterProducts, getCategory, type SortKey } from "@/lib/products";
+import { ShopToolbar } from "@/components/ShopToolbar";
+import { COLLECTIONS, effectivePrice, filterProducts, getCategory, type SortKey } from "@/lib/products";
+import { compareSizeLabels } from "@/lib/productSizesDisplay";
 import { getCatalog } from "@/lib/storefrontCatalog";
+import type { Product } from "@/lib/types";
 
 export const revalidate = 300;
 
-export const metadata: Metadata = {
-  title: "Shop all",
-  description: "The full Classy V range — t-shirts, jerseys, sweatshirts, jackets, denim, hats.",
-};
-
-type SearchParams = Promise<{
+type Params = {
   category?: string;
   collection?: string;
   q?: string;
   sort?: string;
   stock?: string;
-}>;
+  size?: string;
+  max?: string;
+};
+type SearchParams = Promise<Params>;
+
+export async function generateMetadata({ searchParams }: { searchParams: SearchParams }): Promise<Metadata> {
+  const params = await searchParams;
+  const category = params.category ? getCategory(params.category) : undefined;
+  const collection = COLLECTIONS.find((entry) => entry.key === params.collection);
+  const title = category?.name ?? collection?.label ?? "Shop all";
+  // Filters and sort are views of the same page; only category / collection deserve their own URL.
+  const canonicalQuery = category ? `?category=${category.slug}` : collection ? `?collection=${collection.key}` : "";
+  return {
+    title,
+    description: `${title} — Classy V streetwear. Hoodies, joggers and tees, delivered across Tunisia.`,
+    alternates: { canonical: `/collection${canonicalQuery}` },
+    robots: params.q || params.size || params.max || params.stock || params.sort ? { index: false } : undefined,
+  };
+}
+
+/** Sizes with stock somewhere in the current scope, in clothing order — a chip must never lead to zero results. */
+function catalogSizes(products: Product[]): string[] {
+  const labels = new Set<string>();
+  for (const product of products) {
+    for (const entry of product.sizes) if (entry.stock > 0) labels.add(entry.size.toUpperCase());
+  }
+  labels.delete("ONE SIZE");
+  return [...labels].sort(compareSizeLabels);
+}
+
+/** Every distinct price except the highest (that filter would change nothing). */
+function priceSteps(products: Product[]): number[] {
+  const prices = [...new Set(products.map((product) => Math.ceil(effectivePrice(product))))].sort((a, b) => a - b);
+  return prices.slice(0, -1).slice(0, 6);
+}
 
 export default async function CollectionPage({ searchParams }: { searchParams: SearchParams }) {
   const params = await searchParams;
@@ -24,13 +57,18 @@ export default async function CollectionPage({ searchParams }: { searchParams: S
   const collection = params.collection ?? null;
   const activeCategory = category ? getCategory(category) : undefined;
   const activeCollection = COLLECTIONS.find((entry) => entry.key === collection);
+  const catalog = await getCatalog();
+  const scope = filterProducts({ category, collection, source: catalog });
+  const maxPrice = params.max ? Number(params.max) : null;
   const products = filterProducts({
     category,
     collection,
     query: params.q ?? null,
     sort: (params.sort as SortKey) ?? "newest",
     inStockOnly: params.stock === "in",
-    source: await getCatalog(),
+    size: params.size ?? null,
+    maxPrice: Number.isFinite(maxPrice) ? maxPrice : null,
+    source: catalog,
   });
 
   const heading = params.q
@@ -42,7 +80,11 @@ export default async function CollectionPage({ searchParams }: { searchParams: S
       products={products}
       heading={heading}
       count={products.length}
+      toolbar={
+        <Suspense fallback={null}>
+          <ShopToolbar sizes={catalogSizes(scope)} priceSteps={priceSteps(scope)} />
+        </Suspense>
+      }
     />
   );
 }
-

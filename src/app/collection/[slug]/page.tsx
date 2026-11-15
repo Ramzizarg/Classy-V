@@ -19,6 +19,7 @@ import { getShippingRate } from "@/lib/shipping.server";
 import { resolveProductSizeChart } from "@/lib/sizeCharts";
 import { getTypeSizeChart } from "@/lib/sizeCharts.server";
 import { productDescriptionLines } from "@/lib/productDescription";
+import { jsonLdHtml } from "@/lib/jsonLd";
 import { SITE } from "@/lib/site";
 
 type Params = Promise<{ slug: string }>;
@@ -34,7 +35,9 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   return {
     title: product.name,
     description: product.shortDescription,
+    alternates: { canonical: `/collection/${product.slug}` },
     openGraph: {
+      url: `/collection/${product.slug}`,
       title: `${product.name} | ${SITE.name}`,
       description: product.shortDescription,
       images: [{ url: product.images[0], width: 880, height: 1100, alt: product.name }],
@@ -58,15 +61,24 @@ export default async function ProductPage({ params }: { params: Params }) {
 
   const comingSoon = isComingSoon(product);
   const descriptionLines = productDescriptionLines(product.description);
+  const productUrl = `${SITE.url}/collection/${product.slug}`;
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Product",
+    "@id": productUrl,
+    url: productUrl,
+    sku: String(product.id),
     name: product.name,
     description: product.description,
-    image: product.images,
+    image: product.images.map((src) => new URL(src, SITE.url).toString()),
+    ...(product.colorway ? { color: product.colorway } : {}),
+    ...(category ? { category: category.name } : {}),
     brand: { "@type": "Brand", name: SITE.name },
     offers: {
       "@type": "Offer",
+      url: productUrl,
+      itemCondition: "https://schema.org/NewCondition",
+      seller: { "@type": "Organization", name: SITE.name },
       ...(comingSoon ? {} : { price, priceCurrency: "TND" }),
       availability: comingSoon
         ? "https://schema.org/PreOrder"
@@ -78,13 +90,19 @@ export default async function ProductPage({ params }: { params: Params }) {
         : {}),
     },
   };
+  const breadcrumbLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { name: "Shop", url: `${SITE.url}/collection` },
+      ...(category ? [{ name: category.name, url: `${SITE.url}/collection?category=${category.slug}` }] : []),
+      { name: product.name, url: productUrl },
+    ].map((crumb, index) => ({ "@type": "ListItem", position: index + 1, name: crumb.name, item: crumb.url })),
+  };
 
   return (
     <div className="product-page px-3 pt-2 pb-6 sm:px-4 lg:pl-4 lg:pr-12 lg:pt-3 xl:pl-6 xl:pr-20">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdHtml([jsonLd, breadcrumbLd]) }} />
 
       <nav
         aria-label="Breadcrumb"

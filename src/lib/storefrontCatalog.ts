@@ -159,6 +159,7 @@ const getDatabaseProducts = cache(async (): Promise<Product[]> => {
               c.name AS category_name
          FROM products p
          LEFT JOIN categories c ON c.id = p.category_id
+        WHERE p.active IS NOT FALSE
         ORDER BY p.created_at DESC`
     );
     return (rows ?? []).map(rowToProduct);

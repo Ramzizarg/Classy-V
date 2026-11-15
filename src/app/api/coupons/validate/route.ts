@@ -2,12 +2,17 @@ import { NextResponse } from "next/server";
 import { isCartLine } from "@/lib/cart";
 import { applyCoupon } from "@/lib/coupons.server";
 import { priceCart } from "@/lib/pricing.server";
+import { allowRequest, clientIp } from "@/lib/rateLimit.server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /** Previews a discount code for the cart. The order endpoint re-checks it on submit. */
 export async function POST(request: Request) {
+  if (!allowRequest(`coupon:${clientIp(request)}`, 20, 10 * 60 * 1000)) {
+    return NextResponse.json({ error: "Too many attempts. Try again in a few minutes." }, { status: 429 });
+  }
+
   let payload: { code?: string; lines?: unknown };
   try {
     payload = (await request.json()) as { code?: string; lines?: unknown };

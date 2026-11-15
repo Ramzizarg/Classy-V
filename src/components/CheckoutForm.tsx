@@ -46,6 +46,8 @@ export function CheckoutForm() {
   const [placed, setPlaced] = useState<PlacedOrder | null>(null);
   const [form, setForm] = useState(EMPTY_CHECKOUT_FORM);
   const [submitting, setSubmitting] = useState(false);
+  /** State updates are async; a ref blocks a second tap landing in the same frame. */
+  const inFlight = useRef(false);
   const [error, setError] = useState("");
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
 
@@ -180,6 +182,8 @@ export function CheckoutForm() {
       return;
     }
 
+    if (inFlight.current) return;
+    inFlight.current = true;
     setSubmitting(true);
     setError("");
 
@@ -203,22 +207,29 @@ export function CheckoutForm() {
         }),
       });
 
-      const payload = (await response.json()) as { reference?: string; error?: string };
+      const payload = (await response.json().catch(() => ({}))) as {
+        reference?: string;
+        total?: number;
+        error?: string;
+      };
       if (!response.ok || !payload.reference) {
         setError(payload.error ?? "We could not place the order. Try again.");
         setSubmitting(false);
+        inFlight.current = false;
         return;
       }
 
       setPlaced({
         reference: payload.reference,
         firstName: form.fullName.trim().split(/\s+/)[0] ?? "",
-        total,
+        // The server total wins: a coupon that expired between preview and submit is dropped there.
+        total: typeof payload.total === "number" ? payload.total : total,
       });
       clearCart();
     } catch {
       setError("Network error. Try again.");
       setSubmitting(false);
+      inFlight.current = false;
     }
   };
 

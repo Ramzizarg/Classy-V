@@ -22,6 +22,7 @@ type ProductStockRow = {
   sizes: unknown;
   coming_soon: boolean | null;
   release_at: string | Date | null;
+  active: boolean | null;
 };
 
 /** Postgres `division_by_zero`, raised on purpose by a stock guard that matched no row. */
@@ -66,8 +67,13 @@ export async function commitWithStock(opts: {
   take: StockLine[];
   restore?: StockLine[];
   rejectComingSoon?: boolean;
+  /** Storefront orders: products unlisted in the back office cannot be bought. */
+  rejectInactive?: boolean;
+  /** Run before the stock guards in the same transaction (locks, duplicate checks). */
+  preStatements?: SqlStatement[];
   statements: SqlStatement[];
 }): Promise<StockCommit> {
+  const pre = opts.preStatements ?? [];
   const take = merge(opts.take);
   const restore = merge(opts.restore ?? []);
   const productIds = [...new Set([...take, ...restore].map((line) => line.productId))];
@@ -77,7 +83,7 @@ export async function commitWithStock(opts: {
     if (productIds.length > 0) {
       const placeholders = productIds.map((_, i) => `$${i + 1}`).join(", ");
       const { rows } = await neonQuery<ProductStockRow>(
-        `SELECT id, name, stock, sizes, coming_soon, release_at FROM products WHERE id IN (${placeholders})`,
+        `SELECT id, name, stock, sizes, coming_soon, release_at, active FROM products WHERE id IN (${placeholders})`,
         productIds,
       );
       for (const row of rows) byId.set(Number(row.id), row);
@@ -109,6 +115,9 @@ export async function commitWithStock(opts: {
       const row = byId.get(line.productId);
       if (!row) {
         return { ok: false, error: `Product not found: ${line.name || line.productId}.`, status: 400 };
+      }
+      if (opts.rejectInactive && row.active === false) {
+        return { ok: false, error: `"${row.name}" is no longer available.`, status: 409 };
       }
       if (opts.rejectComingSoon && comingSoon(row)) {
         return { ok: false, error: `"${row.name}" is coming soon and cannot be ordered yet.`, status: 409 };
@@ -143,8 +152,8 @@ export async function commitWithStock(opts: {
     });
 
     try {
-      const results = await neonTransaction([...guards, ...opts.statements]);
-      return { ok: true, results: results.slice(guards.length) };
+      const results = await neonTransaction([...pre, ...guards, ...opts.statements]);
+      return { ok: true, results: results.slice(pre.length + guards.length) };
     } catch (err) {
       if (!isStockConflict(err) || attempt >= MAX_ATTEMPTS) {
         if (isStockConflict(err)) {

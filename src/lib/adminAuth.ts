@@ -6,20 +6,28 @@ const SESSION_DURATION_SECONDS = 60 * 60 * 12; // 12h
 const PBKDF2_ITERATIONS = 210_000;
 const encoder = new TextEncoder();
 
-function getEnv(name: string, fallback: string) {
+const IS_PRODUCTION = process.env.NODE_ENV === "production";
+
+/** Dev-only defaults; production never falls back to a publicly known value. */
+function getEnv(name: string, devFallback: string): string | null {
   const value = process.env[name]?.trim();
-  return value && value.length > 0 ? value : fallback;
+  if (value) return value;
+  return IS_PRODUCTION ? null : devFallback;
 }
 
-export function getAdminCredentials() {
-  return {
-    email: getEnv("ADMIN_LOGIN_EMAIL", "admin@classyv.local"),
-    password: getEnv("ADMIN_PASSWORD", "classyv"),
-  };
+export function getAdminCredentials(): { email: string; password: string } | null {
+  const email = getEnv("ADMIN_LOGIN_EMAIL", "admin@classyv.local");
+  const password = getEnv("ADMIN_PASSWORD", "classyv");
+  return email && password ? { email, password } : null;
 }
 
-function getSessionSecret() {
-  return getEnv("ADMIN_SESSION_SECRET", "classyv-dev-secret-change-this-in-env");
+function getSessionSecret(): string | null {
+  const secret = getEnv("ADMIN_SESSION_SECRET", "classyv-dev-secret-change-this-in-env");
+  if (!secret) {
+    console.error("[adminAuth] ADMIN_SESSION_SECRET is not set; admin sessions are disabled.");
+    return null;
+  }
+  return secret;
 }
 
 async function hmacHex(message: string, secret: string) {
@@ -103,6 +111,7 @@ export async function verifyPasswordStoredHash(
 
 export function verifyAdminEnvCredentials(email: string, password: string): boolean {
   const expected = getAdminCredentials();
+  if (!expected) return false;
   const emailOk = timingSafeEqualString(email.trim().toLowerCase(), expected.email.toLowerCase());
   const passwordOk = timingSafeEqualString(password, expected.password);
   return emailOk && passwordOk;
@@ -151,7 +160,9 @@ export async function createAdminSessionToken() {
   const expiresAt = nowSeconds + SESSION_DURATION_SECONDS;
   const nonce = crypto.randomUUID();
   const payload = `${expiresAt}.${nowSeconds}.${nonce}`;
-  const signature = await hmacHex(payload, getSessionSecret());
+  const secret = getSessionSecret();
+  if (!secret) throw new Error("Admin sessions are not configured.");
+  const signature = await hmacHex(payload, secret);
   return `${payload}.${signature}`;
 }
 
@@ -169,8 +180,10 @@ export async function verifyAdminSessionToken(token?: string | null) {
   if (issuedAt > Math.floor(Date.now() / 1000) + 60) return false;
   if (expiresAt - issuedAt > SESSION_DURATION_SECONDS + 60) return false;
 
+  const secret = getSessionSecret();
+  if (!secret) return false;
   const payload = `${expiresAtRaw}.${issuedAtRaw}.${nonce}`;
-  const expected = await hmacHex(payload, getSessionSecret());
+  const expected = await hmacHex(payload, secret);
   return timingSafeEqualString(expected, signature);
 }
 

@@ -3,6 +3,7 @@ import { isCartLine, shippingCost } from "@/lib/cart";
 import { sendOrderEmails } from "@/lib/sendOrderEmails";
 import { applyCoupon } from "@/lib/coupons.server";
 import { priceCart } from "@/lib/pricing.server";
+import { allowRequest, clientIp } from "@/lib/rateLimit.server";
 import { buildOrderReference, saveOrder } from "@/lib/store.server";
 import { getShippingRate } from "@/lib/shipping.server";
 import { sendMetaPurchase } from "@/lib/metaCapi.server";
@@ -22,6 +23,10 @@ type Payload = {
 const REQUIRED_FIELDS: (keyof OrderCustomer)[] = ["fullName", "phone", "address", "governorate", "city"];
 
 export async function POST(request: Request) {
+  if (!allowRequest(`orders:${clientIp(request)}`, 10, 10 * 60 * 1000)) {
+    return NextResponse.json({ error: "Too many orders from this connection. Try again shortly." }, { status: 429 });
+  }
+
   let payload: Payload;
   try {
     payload = (await request.json()) as Payload;
@@ -107,6 +112,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: saved.error }, { status: saved.status });
   }
   const { order } = saved;
+  if (saved.duplicate) {
+    return NextResponse.json(
+      { reference: order.reference, total: order.total, eventId: metaPurchaseEventId(order.reference) },
+      { status: 200 }
+    );
+  }
 
   try {
     await sendMetaPurchase({

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { QueryResultRow } from "@neondatabase/serverless";
+import { isAdminAuthenticated } from "@/lib/adminAuth";
 import { neonQuery, resolveDatabaseUrl } from "@/lib/neon-db";
 import { ensureXDeliveryColumns } from "@/lib/xdelivery.server";
 
@@ -166,8 +167,15 @@ async function neonQueryWithHomeContentRecovery<T extends QueryResultRow = Query
   }
 }
 
+const MAX_SELECT_LIMIT = 5000;
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
+/** Back office table access. Admin session required: these tables hold customer PII and prices. */
 export async function POST(req: Request) {
+  if (!(await isAdminAuthenticated())) {
+    return NextResponse.json({ data: null, error: "Unauthorized." }, { status: 401 });
+  }
+
   try {
     if (!resolveDatabaseUrl()) {
       return NextResponse.json(
@@ -201,7 +209,9 @@ export async function POST(req: Request) {
       const order = body.orderBy
         ? ` ORDER BY ${safeIdent(String(body.orderBy))} ${body.ascending === false ? "DESC" : "ASC"}`
         : "";
-      const limit = Number.isFinite(body.limit) ? ` LIMIT ${Math.max(1, Number(body.limit))}` : "";
+      const limit = Number.isFinite(body.limit)
+        ? ` LIMIT ${Math.min(MAX_SELECT_LIMIT, Math.max(1, Math.floor(Number(body.limit))))}`
+        : "";
       const { rows } = await neonQueryWithHomeContentRecovery(
         `SELECT ${cols} FROM ${tableIdent}${where}${order}${limit}`,
         params,
@@ -295,6 +305,9 @@ export async function POST(req: Request) {
         })
         .join(", ");
       const where = buildWhere(body.filters || [], params);
+      if (!where) {
+        return NextResponse.json({ data: null, error: "Update needs a filter." }, { status: 400 });
+      }
       const { rows } = await neonQueryWithHomeContentRecovery(
         `UPDATE ${tableIdent} SET ${setSql}${where} RETURNING *`,
         params,
@@ -306,6 +319,9 @@ export async function POST(req: Request) {
     if (action === "delete") {
       const params: unknown[] = [];
       const where = buildWhere(body.filters || [], params);
+      if (!where) {
+        return NextResponse.json({ data: null, error: "Delete needs a filter." }, { status: 400 });
+      }
       const { rows } = await neonQueryWithHomeContentRecovery(
         `DELETE FROM ${tableIdent}${where} RETURNING *`,
         params,

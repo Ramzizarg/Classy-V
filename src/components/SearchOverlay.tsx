@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { LookbookCard } from "@/components/LookbookCard";
 import { CloseGlyph, SearchGlyph } from "@/components/SocialGlyphs";
@@ -9,6 +10,7 @@ import type { Product } from "@/lib/types";
 
 /** Full-screen illicitbloc-style search: bar on top, product grid below. */
 export function SearchOverlay({ onClose }: { onClose: () => void }) {
+  const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState("");
   const [catalog, setCatalog] = useState<Product[]>([]);
@@ -57,6 +59,9 @@ export function SearchOverlay({ onClose }: { onClose: () => void }) {
         className="search-overlay__bar"
         onSubmit={(event) => {
           event.preventDefault();
+          if (!term) return;
+          router.push(`/collection?q=${encodeURIComponent(term)}`);
+          onClose();
         }}
       >
         <SearchGlyph className="h-5 w-5 shrink-0" />
@@ -65,6 +70,8 @@ export function SearchOverlay({ onClose }: { onClose: () => void }) {
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           placeholder="Search"
+          enterKeyHint="search"
+          type="search"
           aria-label="Search products"
           className="search-overlay__input"
         />

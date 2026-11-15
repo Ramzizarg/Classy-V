@@ -80,7 +80,13 @@ export async function POST(request: Request) {
 
   attemptsByIp.delete(ip);
 
-  const token = await createAdminSessionToken();
+  let token: string;
+  try {
+    token = await createAdminSessionToken();
+  } catch (err) {
+    console.error("[admin/login]", err);
+    return NextResponse.redirect(new URL("/login?error=1", request.url), { status: 303 });
+  }
   const response = NextResponse.redirect(new URL("/dashboard", request.url), {
     status: 303,
   });

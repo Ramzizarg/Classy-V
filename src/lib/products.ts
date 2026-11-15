@@ -105,6 +105,10 @@ export function filterProducts(options: {
   query?: string | null;
   sort?: SortKey;
   inStockOnly?: boolean;
+  /** Only products with this size in stock (case-insensitive). */
+  size?: string | null;
+  /** Inclusive upper bound on the price actually paid. */
+  maxPrice?: number | null;
   /** Defaults to empty; pass the DB catalog from `getCatalog()`. */
   source?: Product[];
 }): Product[] {
@@ -114,12 +118,19 @@ export function filterProducts(options: {
     query,
     sort = "newest",
     inStockOnly = false,
+    size,
+    maxPrice,
     source = PRODUCTS,
   } = options;
   const needle = query?.trim().toLowerCase() ?? "";
+  const sizeKey = size?.trim().toUpperCase() || "";
 
   const filtered = source.filter((product) => {
     if (category && product.categorySlug !== category) return false;
+    if (sizeKey && !product.sizes.some((entry) => entry.size.toUpperCase() === sizeKey && entry.stock > 0)) {
+      return false;
+    }
+    if (maxPrice != null && Number.isFinite(maxPrice) && effectivePrice(product) > maxPrice) return false;
     if (collection === "best-sellers" && !product.featured) return false;
     if (collection === "classics" && !product.featured) return false;
     if (collection === "combos" && !(product.featured || product.categorySlug === "denim")) return false;

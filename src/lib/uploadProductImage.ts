@@ -21,7 +21,6 @@ export const IMAGE_UPLOAD_EXTS = new Set([
   "avif",
   "bmp",
   "dib",
-  "svg",
   "ico",
   "tif",
   "tiff",
@@ -32,7 +31,7 @@ export const IMAGE_UPLOAD_EXTS = new Set([
 
 /** File picker hint: any image, plus phone/camera formats browsers often hide behind `image/*`. */
 export const IMAGE_UPLOAD_ACCEPT =
-  "image/*,.heic,.heif,.tif,.tiff,.jfif,.bmp,.dib,.avif,.webp,.png,.jpg,.jpeg,.gif,.svg,.ico,.apng";
+  "image/*,.heic,.heif,.tif,.tiff,.jfif,.bmp,.dib,.avif,.webp,.png,.jpg,.jpeg,.gif,.ico,.apng";
 
 const SKIP_CLIENT_PREP_EXT = new Set(["svg", "gif", "ico"]);
 

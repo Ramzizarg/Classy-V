@@ -48,12 +48,16 @@ function looksLikeImageUpload(file: File): boolean {
   return false;
 }
 
-async function canDecodeImage(bytes: Buffer): Promise<boolean> {
+/** ~120 MP: plenty for 8000×12000 studio shots, blocks decompression bombs. */
+const MAX_INPUT_PIXELS = 120_000_000;
+
+/** Detected format from the bytes themselves, so a renamed file cannot pass as another type. */
+async function detectImageFormat(bytes: Buffer): Promise<string | null> {
   try {
-    const meta = await sharp(bytes, { failOn: "none", unlimited: true }).metadata();
-    return Boolean(meta.format || meta.width);
+    const meta = await sharp(bytes, { failOn: "none", limitInputPixels: MAX_INPUT_PIXELS }).metadata();
+    return meta.format && meta.width ? meta.format : null;
   } catch {
-    return false;
+    return null;
   }
 }
 
@@ -91,14 +95,19 @@ export async function POST(request: NextRequest) {
     }
 
     const rawBytes = Buffer.from(await file.arrayBuffer());
-    if (!(await canDecodeImage(rawBytes))) {
+    const format = await detectImageFormat(rawBytes);
+    if (!format) {
       return NextResponse.json(
         { error: "That file could not be read as an image. Try JPG, PNG, WebP, HEIC, or TIFF." },
         { status: 400 },
       );
     }
+    // SVG can carry scripts that run on our origin when the file is opened directly.
+    if (format === "svg") {
+      return NextResponse.json({ error: "SVG uploads are not allowed. Use PNG or WebP." }, { status: 400 });
+    }
 
-    const extIn = getExt(file.name, file.type);
+    const extIn = format === "gif" ? "gif" : getExt(file.name, file.type);
     const uploadType = type === "sizeGuide" ? "sizeGuide" : type === "home" ? "home" : "product";
     const { bytes, ext, contentType } = await optimizeUploadedImage(rawBytes, extIn, uploadType);
     const folder = type === "sizeGuide" ? "size-guides" : type === "home" ? "home" : "products";

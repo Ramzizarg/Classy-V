@@ -13,6 +13,7 @@ import { SiteThemeSync } from "@/components/SiteThemeSync";
 import { MetaPixel } from "@/components/MetaPixel";
 import { META_PIXEL_BOOT_SCRIPT, META_PIXEL_ID } from "@/lib/metaPixel";
 import { getShippingRate } from "@/lib/shipping.server";
+import { jsonLdHtml } from "@/lib/jsonLd";
 import { SITE } from "@/lib/site";
 import { SITE_THEME_BOOT_SCRIPT } from "@/lib/siteTheme";
 import "./globals.css";
@@ -89,6 +90,32 @@ export const metadata: Metadata = {
   },
 };
 
+const SITE_LD = [
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "@id": `${SITE.url}/#organization`,
+    name: SITE.name,
+    url: SITE.url,
+    logo: `${SITE.url}/og-image.png`,
+    email: SITE.email,
+    sameAs: [SITE.instagram],
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "@id": `${SITE.url}/#website`,
+    name: SITE.name,
+    url: SITE.url,
+    publisher: { "@id": `${SITE.url}/#organization` },
+    potentialAction: {
+      "@type": "SearchAction",
+      target: { "@type": "EntryPoint", urlTemplate: `${SITE.url}/collection?q={search_term_string}` },
+      "query-input": "required name=search_term_string",
+    },
+  },
+];
+
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const shippingRate = await getShippingRate();
 
@@ -120,6 +147,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
             __html: `html[data-boot-splash="1"],html[data-splash-on="1"]{background:#000!important}html[data-boot-splash="1"]:not([data-splash-reveal]) body,html[data-splash-on="1"]:not([data-splash-reveal]) body{background:#000!important;visibility:hidden!important}html[data-boot-splash="1"]::before{content:"";position:fixed;inset:0;z-index:2147483645;width:100%;height:var(--splash-cover-h,100lvh);min-height:var(--splash-cover-h,100lvh);background:#000;pointer-events:none;animation:boot-splash-cover 1500ms ease-in-out both}#boot-splash,.splash{visibility:visible!important;position:fixed;top:0;left:0;right:0;z-index:2147483646;width:100%;height:var(--splash-cover-h,100lvh);min-height:var(--splash-cover-h,100lvh);background:#000;pointer-events:none;animation:boot-splash-cover 1500ms ease-in-out both}#boot-splash .boot-splash-mark{position:absolute;top:var(--splash-mark-y,50dvh);left:50%;width:min(36vw,200px);aspect-ratio:1;margin:0;background:url("/images/loogo.png") center/contain no-repeat;filter:brightness(0) invert(1);transform-origin:center center;animation:boot-splash-mark 1500ms cubic-bezier(0.22,1,0.36,1) both}@keyframes boot-splash-mark{0%{transform:translate(-50%,-50%) scale(0.55);opacity:0}34%{transform:translate(-50%,-50%) scale(1);opacity:1}64%{transform:translate(-50%,-50%) scale(1);opacity:1}100%{transform:translate(-50%,-50%) scale(1.6);opacity:0}}@keyframes boot-splash-cover{0%,68%{opacity:1}100%{opacity:0;visibility:hidden}}`,
           }}
         />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdHtml(SITE_LD) }} />
       </head>
       {/* Extensions inject inline styles here before React loads, so ignore body attr drift. */}
       <body className="flex min-h-dvh flex-col" suppressHydrationWarning>
