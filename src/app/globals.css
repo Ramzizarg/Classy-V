@@ -5413,6 +5413,76 @@ textarea.checkout-field {
   backface-visibility: hidden;
 }
 
+/*
+ * Announcement strip (every store page except home). Its height lives in
+ * --announce-h so the fixed header and page offsets shift together.
+ */
+html:has(.site-announce) {
+  --announce-h: 30px;
+  scroll-padding-top: calc(var(--header-height) + var(--announce-h) + 20px);
+}
+
+.site-announce {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 101;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--announce-h, 30px);
+  padding: 0 16px;
+  overflow: hidden;
+  background: #000000;
+  color: #ffffff;
+  border-top: 3px solid #e10600;
+}
+
+.site-announce__text {
+  margin: 0;
+  overflow: hidden;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  line-height: 1;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+  animation: site-announce-in 420ms ease-out both;
+}
+
+@keyframes site-announce-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .site-announce__text {
+    animation: none;
+  }
+}
+
+html:has(.site-announce) .site-header {
+  top: var(--announce-h);
+}
+
+/* The strip carries the red brand line instead. */
+html:has(.site-announce) .site-header .site-top-line {
+  display: none;
+}
+
+html:has(.site-announce) .site-header-spacer,
+html:has(.site-announce) .lookbook__shop {
+  margin-top: var(--announce-h);
+}
+
 .site-header-spacer {
   /* Mobile bar is taller than --header-height (logo row). */
   height: calc(var(--header-height) + 4px);

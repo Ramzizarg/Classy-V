@@ -2,6 +2,7 @@
 
 import { Suspense } from "react";
 import { usePathname } from "next/navigation";
+import { AnnouncementBar } from "@/components/AnnouncementBar";
 import { CartDrawer } from "@/components/CartDrawer";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
@@ -17,7 +18,13 @@ function matchesPath(pathname: string, paths: string[]) {
   return paths.some((path) => pathname === path || pathname.startsWith(`${path}/`));
 }
 
-export function StoreShell({ children }: { children: React.ReactNode }) {
+export function StoreShell({
+  children,
+  announcements = [],
+}: {
+  children: React.ReactNode;
+  announcements?: string[];
+}) {
   const pathname = usePathname();
   /** Home is a full-bleed hero; collection keeps the lookbook chrome (no header spacer). */
   const isHome = pathname === "/";
@@ -48,6 +55,8 @@ export function StoreShell({ children }: { children: React.ReactNode }) {
         Header stays outside .site-pull so position:fixed is viewport-fixed on
         mobile (a parent transform would pin it to the pull layer instead).
       */}
+      {/* Home keeps its full-bleed hero untouched. */}
+      {!isHome ? <AnnouncementBar phrases={announcements} /> : null}
       <Suspense fallback={null}>
         <SiteHeader />
       </Suspense>

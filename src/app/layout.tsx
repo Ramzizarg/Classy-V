@@ -12,6 +12,7 @@ import { ProductPageThemeSync } from "@/components/ProductPageThemeSync";
 import { SiteThemeSync } from "@/components/SiteThemeSync";
 import { MetaPixel } from "@/components/MetaPixel";
 import { META_PIXEL_BOOT_SCRIPT, META_PIXEL_ID } from "@/lib/metaPixel";
+import { getHomeContentServer } from "@/lib/homeContent";
 import { getShippingRate } from "@/lib/shipping.server";
 import { jsonLdHtml } from "@/lib/jsonLd";
 import { SITE } from "@/lib/site";
@@ -117,7 +118,7 @@ const SITE_LD = [
 ];
 
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  const shippingRate = await getShippingRate();
+  const [shippingRate, homeContent] = await Promise.all([getShippingRate(), getHomeContentServer()]);
 
   return (
     <html
@@ -158,7 +159,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
           <ProductPageThemeSync />
           <SiteThemeSync />
           <MetaPixel />
-          <StoreShell>{children}</StoreShell>
+          <StoreShell announcements={homeContent.bannerPhrases}>{children}</StoreShell>
           <DeferredChrome />
           <SiteLoadSplash />
           <SiteEntryGate />
