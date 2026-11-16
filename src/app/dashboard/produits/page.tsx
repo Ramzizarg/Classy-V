@@ -13,6 +13,7 @@ import {
   type SizeChart,
 } from "@/lib/sizeCharts";
 import type { Product, Category, Coupon, SizeStock } from "@/lib/shop-db-types";
+import { parsePackDeals, serializePackDeals } from "@/lib/packDeals";
 import { isProductOutOfStock } from "@/lib/productSizesDisplay";
 import { parseSizeStocks, totalSizeStock } from "@/lib/productSizeStock";
 import {
@@ -303,6 +304,12 @@ export default function DashboardProduitsPage() {
   const [comingSoon, setComingSoon] = useState(false);
   const [releaseDate, setReleaseDate] = useState("");
   const [releaseTime, setReleaseTime] = useState("");
+  /** Multi-buy packs: label + optional totals for 2 / 3 units. */
+  const [packUnitLabel, setPackUnitLabel] = useState("item");
+  const [pack2Enabled, setPack2Enabled] = useState(false);
+  const [pack2Price, setPack2Price] = useState("");
+  const [pack3Enabled, setPack3Enabled] = useState(false);
+  const [pack3Price, setPack3Price] = useState("");
 
   const formTotalStock = Object.values(sizeStocks).reduce((sum, raw) => {
     return sum + Math.max(0, Math.floor(Number(raw) || 0));
@@ -412,6 +419,11 @@ export default function DashboardProduitsPage() {
     setComingSoon(false);
     setReleaseDate("");
     setReleaseTime("");
+    setPackUnitLabel("item");
+    setPack2Enabled(false);
+    setPack2Price("");
+    setPack3Enabled(false);
+    setPack3Price("");
     setFormOpen(true);
   };
 
@@ -464,6 +476,12 @@ export default function DashboardProduitsPage() {
     setComingSoon(Boolean(p.coming_soon));
     setReleaseDate(toLocalDateInput(p.release_at));
     setReleaseTime(toLocalTimeInput(p.release_at) || "12:00");
+    const packs = parsePackDeals(p.pack_deals);
+    setPackUnitLabel(packs?.unitLabel || "item");
+    setPack2Enabled(packs?.two != null);
+    setPack2Price(packs?.two != null ? String(packs.two) : "");
+    setPack3Enabled(packs?.three != null);
+    setPack3Price(packs?.three != null ? String(packs.three) : "");
     setFormOpen(true);
   };
 
@@ -600,6 +618,38 @@ export default function DashboardProduitsPage() {
         throw new Error("Invalid release date/time.");
       }
 
+      const unitPriceForDeal = salePrice != null && salePrice > 0 ? salePrice : regularPrice;
+      let pack2Total: number | null = null;
+      let pack3Total: number | null = null;
+      if (pack2Enabled) {
+        const raw = pack2Price.trim() ? parseFloat(pack2Price) : NaN;
+        if (!Number.isFinite(raw) || raw <= 0) {
+          throw new Error("Enter a valid total price for the 2-product pack.");
+        }
+        if (unitPriceForDeal > 0 && raw >= unitPriceForDeal * 2) {
+          throw new Error("2-product pack must cost less than buying 2 at the normal price.");
+        }
+        pack2Total = raw;
+      }
+      if (pack3Enabled) {
+        const raw = pack3Price.trim() ? parseFloat(pack3Price) : NaN;
+        if (!Number.isFinite(raw) || raw <= 0) {
+          throw new Error("Enter a valid total price for the 3-product pack.");
+        }
+        if (unitPriceForDeal > 0 && raw >= unitPriceForDeal * 3) {
+          throw new Error("3-product pack must cost less than buying 3 at the normal price.");
+        }
+        pack3Total = raw;
+      }
+      if (pack2Total != null && pack3Total != null && pack3Total / 3 > pack2Total / 2) {
+        throw new Error("3-product pack should be a better per-unit deal than the 2-product pack.");
+      }
+      const packDealsPayload = serializePackDeals({
+        unitLabel: packUnitLabel.trim() || "item",
+        two: pack2Total,
+        three: pack3Total,
+      });
+
       const payload: Record<string, unknown> = {
         name: name.trim(),
         description: hasDescription ? description : null,
@@ -618,6 +668,7 @@ export default function DashboardProduitsPage() {
         coming_soon: comingSoon,
         release_at: releaseAt,
         variant_group: variantGroup,
+        pack_deals: packDealsPayload,
       };
 
       if (editing) {
@@ -634,6 +685,15 @@ export default function DashboardProduitsPage() {
           .update({ variant_group: variantGroup })
           .eq("id", backfillGroupOn);
         if (groupErr) throw groupErr;
+      }
+
+      // Keep colour variants on the same multi-buy offer.
+      if (variantGroup) {
+        const { error: packErr } = await supabase
+          .from("products")
+          .update({ pack_deals: packDealsPayload })
+          .eq("variant_group", variantGroup);
+        if (packErr) throw packErr;
       }
 
       closeForm();
@@ -1548,6 +1608,123 @@ export default function DashboardProduitsPage() {
               </div>
             </div>
 
+            <div className="rounded-lg border border-zinc-200 bg-zinc-50/70 p-3 sm:p-4 space-y-3">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-black">Pack deals</p>
+                <p className="mt-0.5 text-[11px] text-zinc-500">
+                  Optional multi-buy offers on the product page (e.g. 2 baggy = 120 DT, 3 baggy = 170 DT).
+                  Colour variants share the same offer.
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-black mb-1.5">Unit label</label>
+                <input
+                  type="text"
+                  value={packUnitLabel}
+                  onChange={(e) => setPackUnitLabel(e.target.value)}
+                  placeholder="baggy, jogger, tee…"
+                  maxLength={40}
+                  className="w-full bg-white text-black text-xs border border-zinc-300 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-zinc-400 placeholder:text-zinc-500"
+                />
+                <p className="mt-1 text-[11px] text-zinc-500">
+                  Shown as “2 {packUnitLabel.trim() || "item"}” / “3 {packUnitLabel.trim() || "item"}” on the shop.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div
+                  className={`rounded-lg border p-3 space-y-2 ${
+                    pack2Enabled ? "border-zinc-300 bg-white shadow-sm" : "border-zinc-200 bg-zinc-50/80"
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-xs font-semibold text-black">2 products</p>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={pack2Enabled}
+                      onClick={() => setPack2Enabled((v) => !v)}
+                      className={`relative h-6 w-11 rounded-full transition-colors ${
+                        pack2Enabled ? "bg-zinc-900" : "bg-zinc-300"
+                      }`}
+                    >
+                      <span
+                        className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${
+                          pack2Enabled ? "left-5" : "left-1"
+                        }`}
+                      />
+                    </button>
+                  </div>
+                  {pack2Enabled ? (
+                    <>
+                      <label className="block text-[11px] font-medium text-zinc-600">Total price (DT)</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={pack2Price}
+                        onChange={(e) => setPack2Price(e.target.value)}
+                        placeholder="120"
+                        required={pack2Enabled}
+                        className="number-spin-design w-full bg-white text-black text-xs border border-zinc-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-zinc-400"
+                      />
+                      <p className="text-[11px] text-zinc-500">
+                        Example: 2 {packUnitLabel.trim() || "item"}s = {pack2Price.trim() || "…"} DT
+                      </p>
+                    </>
+                  ) : (
+                    <p className="text-[11px] text-zinc-500">Off — customers buy one at a time only.</p>
+                  )}
+                </div>
+
+                <div
+                  className={`rounded-lg border p-3 space-y-2 ${
+                    pack3Enabled ? "border-zinc-300 bg-white shadow-sm" : "border-zinc-200 bg-zinc-50/80"
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-xs font-semibold text-black">3 products</p>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={pack3Enabled}
+                      onClick={() => setPack3Enabled((v) => !v)}
+                      className={`relative h-6 w-11 rounded-full transition-colors ${
+                        pack3Enabled ? "bg-zinc-900" : "bg-zinc-300"
+                      }`}
+                    >
+                      <span
+                        className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${
+                          pack3Enabled ? "left-5" : "left-1"
+                        }`}
+                      />
+                    </button>
+                  </div>
+                  {pack3Enabled ? (
+                    <>
+                      <label className="block text-[11px] font-medium text-zinc-600">Total price (DT)</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={pack3Price}
+                        onChange={(e) => setPack3Price(e.target.value)}
+                        placeholder="170"
+                        required={pack3Enabled}
+                        className="number-spin-design w-full bg-white text-black text-xs border border-zinc-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-zinc-400"
+                      />
+                      <p className="text-[11px] text-zinc-500">
+                        Example: 3 {packUnitLabel.trim() || "item"}s = {pack3Price.trim() || "…"} DT
+                      </p>
+                    </>
+                  ) : (
+                    <p className="text-[11px] text-zinc-500">Off — no triple pack on this product.</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
             <div>
               <label className="block text-xs font-medium text-black mb-1.5">
                 Category <span className="text-red-500">*</span>
@@ -2205,6 +2382,19 @@ export default function DashboardProduitsPage() {
                         })()}
                       </p>
                     )}
+                    {(() => {
+                      const packs = parsePackDeals(p.pack_deals);
+                      if (!packs || (packs.two == null && packs.three == null)) return null;
+                      const bits = [
+                        packs.two != null ? `2=${formatDt(packs.two)}` : null,
+                        packs.three != null ? `3=${formatDt(packs.three)}` : null,
+                      ].filter(Boolean);
+                      return (
+                        <p className="mt-0.5 text-[11px] font-medium text-emerald-700">
+                          Pack {bits.join(" · ")} DT
+                        </p>
+                      );
+                    })()}
                     <p className="mt-0.5 text-[11px] text-zinc-500">
                       {isProductComingSoon(p) && p.release_at
                         ? `Drops ${new Date(p.release_at).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })} · `
@@ -2347,6 +2537,16 @@ export default function DashboardProduitsPage() {
                           (() => {
                             const sale = productSalePrice(p);
                             const regular = Number(p.price);
+                            const packs = parsePackDeals(p.pack_deals);
+                            const packBits =
+                              packs && (packs.two != null || packs.three != null)
+                                ? [
+                                    packs.two != null ? `2=${formatDt(packs.two)}` : null,
+                                    packs.three != null ? `3=${formatDt(packs.three)}` : null,
+                                  ]
+                                    .filter(Boolean)
+                                    .join(" · ")
+                                : null;
                             if (sale != null) {
                               return (
                                 <span
@@ -2359,12 +2559,22 @@ export default function DashboardProduitsPage() {
                                   <span className="line-through text-zinc-400 whitespace-nowrap text-[11px]">
                                     {formatDt(regular)} DT
                                   </span>
+                                  {packBits ? (
+                                    <span className="whitespace-nowrap text-[10px] font-medium text-emerald-700">
+                                      Pack {packBits}
+                                    </span>
+                                  ) : null}
                                 </span>
                               );
                             }
                             return (
-                              <span className="block whitespace-nowrap" title={`${formatDt(regular)} DT`}>
-                                {formatDt(regular)} DT
+                              <span className="flex flex-col gap-0.5 leading-tight" title={`${formatDt(regular)} DT`}>
+                                <span className="whitespace-nowrap">{formatDt(regular)} DT</span>
+                                {packBits ? (
+                                  <span className="whitespace-nowrap text-[10px] font-medium text-emerald-700">
+                                    Pack {packBits}
+                                  </span>
+                                ) : null}
                               </span>
                             );
                           })()

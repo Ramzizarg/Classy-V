@@ -70,6 +70,15 @@ export type Product = {
   color_2?: string | null;
   color_2_id?: number | null;
   color_2_hex?: string | null;
+  /**
+   * Multi-buy deals: `{ unitLabel, two?, three? }` totals in DT.
+   * Example: 2 baggy = 120 → `{ "unitLabel": "baggy", "two": 120 }`.
+   */
+  pack_deals?: {
+    unitLabel?: string;
+    two?: number | null;
+    three?: number | null;
+  } | null;
 };
 
 export type Coupon = {

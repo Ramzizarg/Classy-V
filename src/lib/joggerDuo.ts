@@ -1,82 +1,52 @@
+/**
+ * @deprecated Prefer `@/lib/packDeals`. Thin wrappers keep older imports compiling.
+ */
 import { isJogger } from "@/lib/facebookCatalog";
-import { effectivePrice, isComingSoon, isSoldOut, productHoverImage } from "@/lib/products";
+import {
+  LEGACY_JOGGER_DUO_PRICE,
+  applyPackPricing,
+  buildCartLine,
+  isPackDealEligible,
+  packCompareAt,
+  packSavings,
+  packUnitPrice,
+  resolvePackDeal,
+  type ResolvedPackDeal,
+} from "@/lib/packDeals";
 import type { CartLine, Product } from "@/lib/types";
 
-/** Fixed checkout total for any complete pair of joggers (2 × sale 65 → 120). */
-export const JOGGER_DUO_PAIR_PRICE = 120;
+export const JOGGER_DUO_PAIR_PRICE = LEGACY_JOGGER_DUO_PRICE;
+export { buildCartLine };
 
 export function isJoggerDuoEligible(product: Product): boolean {
-  return isJogger(product) && !isComingSoon(product) && !isSoldOut(product);
+  return isPackDealEligible(product) && isJogger(product);
 }
 
 export function joggerDuoUnitPrice(): number {
-  return JOGGER_DUO_PAIR_PRICE / 2;
+  return packUnitPrice(LEGACY_JOGGER_DUO_PRICE, 2);
 }
 
 export function joggerDuoCompareAt(unitPrice: number): number {
-  return unitPrice * 2;
+  return packCompareAt(unitPrice, 2);
 }
 
 export function joggerDuoSavings(unitPrice: number): number {
-  return Math.max(0, joggerDuoCompareAt(unitPrice) - JOGGER_DUO_PAIR_PRICE);
+  return packSavings(unitPrice, LEGACY_JOGGER_DUO_PRICE, 2);
 }
 
-function round2(value: number): number {
-  return Math.round(value * 100) / 100;
-}
-
-/**
- * Drop every complete pair of jogger units to the duo deal (120 DT / 2).
- * Leftover odd units keep their catalog sale price.
- */
-export function applyJoggerDuoPricing(
-  lines: CartLine[],
-  joggerByLine: boolean[],
-): CartLine[] {
-  const joggerQty = lines.reduce(
-    (sum, line, index) => sum + (joggerByLine[index] ? line.quantity : 0),
-    0,
+/** @deprecated Use applyPackPricing with resolvePackDeal per line. */
+export function applyJoggerDuoPricing(lines: CartLine[], joggerByLine: boolean[]): CartLine[] {
+  const dealByLine: Array<ResolvedPackDeal | null> = joggerByLine.map((isDuo) =>
+    isDuo
+      ? {
+          unitLabel: "jogger",
+          two: LEGACY_JOGGER_DUO_PRICE,
+          three: null,
+          poolKey: "legacy:joggers",
+        }
+      : null,
   );
-  let discountedLeft = Math.floor(joggerQty / 2) * 2;
-  if (discountedLeft <= 0) return lines;
-
-  const duoUnit = joggerDuoUnitPrice();
-
-  return lines.map((line, index) => {
-    if (!joggerByLine[index] || discountedLeft <= 0 || line.unitPrice <= duoUnit) {
-      return line;
-    }
-
-    const discountedQty = Math.min(line.quantity, discountedLeft);
-    discountedLeft -= discountedQty;
-    const fullQty = line.quantity - discountedQty;
-    const blended = (discountedQty * duoUnit + fullQty * line.unitPrice) / line.quantity;
-
-    return {
-      ...line,
-      unitPrice: round2(blended),
-      compareAtPrice: line.compareAtPrice ?? line.unitPrice,
-    };
-  });
+  return applyPackPricing(lines, dealByLine);
 }
 
-export function buildCartLine(
-  product: Product,
-  size: string,
-  quantity: number,
-  unitPrice: number,
-  compareAtPrice: number | null,
-): CartLine {
-  return {
-    productId: product.id,
-    slug: product.slug,
-    name: product.name,
-    unitPrice,
-    compareAtPrice,
-    image: product.images[0],
-    hoverImage: productHoverImage(product.images),
-    size,
-    colorway: product.colorway,
-    quantity,
-  };
-}
+export { resolvePackDeal };

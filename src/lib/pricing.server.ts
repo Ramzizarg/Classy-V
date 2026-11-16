@@ -1,6 +1,5 @@
 import { MAX_LINE_QUANTITY } from "@/lib/cart";
-import { isJogger } from "@/lib/facebookCatalog";
-import { applyJoggerDuoPricing } from "@/lib/joggerDuo";
+import { applyPackPricing, resolvePackDeal, type ResolvedPackDeal } from "@/lib/packDeals";
 import { getProductById, isComingSoon, productHoverImage } from "@/lib/products";
 import { getCatalog } from "@/lib/storefrontCatalog";
 import type { CartLine } from "@/lib/types";
@@ -16,7 +15,7 @@ export type PricedCart =
 export async function priceCart(requested: CartLine[]): Promise<PricedCart> {
   const catalog = await getCatalog();
   const lines: CartLine[] = [];
-  const joggerByLine: boolean[] = [];
+  const dealByLine: Array<ResolvedPackDeal | null> = [];
 
   for (const line of requested) {
     const product = getProductById(line.productId, catalog);
@@ -63,10 +62,10 @@ export async function priceCart(requested: CartLine[]): Promise<PricedCart> {
       colorway: product.colorway,
       quantity,
     });
-    joggerByLine.push(isJogger(product));
+    dealByLine.push(resolvePackDeal(product));
   }
 
-  const pricedLines = applyJoggerDuoPricing(lines, joggerByLine);
+  const pricedLines = applyPackPricing(lines, dealByLine);
   const subtotal = pricedLines.reduce((sum, line) => sum + line.unitPrice * line.quantity, 0);
   return { ok: true, lines: pricedLines, subtotal };
 }

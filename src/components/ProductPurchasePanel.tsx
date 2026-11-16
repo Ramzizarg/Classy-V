@@ -13,22 +13,23 @@ import { useFitProfile } from "@/components/useFitProfile";
 import { MAX_LINE_QUANTITY } from "@/lib/cart";
 import { formatPrice } from "@/lib/format";
 import {
-  JOGGER_DUO_PAIR_PRICE,
   buildCartLine,
-  isJoggerDuoEligible,
-  joggerDuoCompareAt,
-  joggerDuoSavings,
-  joggerDuoUnitPrice,
-} from "@/lib/joggerDuo";
+  isPackDealEligible,
+  packCompareAt,
+  packLabel,
+  packSavings,
+  packUnitPrice,
+  resolvePackDeal,
+} from "@/lib/packDeals";
 import { metaCatalogContentId, trackMeta } from "@/lib/metaPixel";
 import { effectivePrice, isComingSoon, isSoldOut, productHoverImage } from "@/lib/products";
 import { sortSizeStocks } from "@/lib/productSizesDisplay";
 import { chartSupportsFinder, recommendSize, type SizeChart } from "@/lib/sizeCharts";
 import type { CartLine, Product } from "@/lib/types";
 
-type Pack = 1 | 2;
+type PackQty = 1 | 2 | 3;
 
-type DuoSlot = {
+type PackSlot = {
   productId: number;
   size: string;
 };
@@ -52,8 +53,8 @@ export function ProductPurchasePanel({
   const available = product.sizes.filter((entry) => entry.stock > 0);
   const [size, setSize] = useState(available.length === 1 ? available[0].size : "");
   const [quantity, setQuantity] = useState(1);
-  const [pack, setPack] = useState<Pack>(1);
-  const [slots, setSlots] = useState<DuoSlot[]>(() => defaultSlots(product, colourOptions, ""));
+  const [pack, setPack] = useState<PackQty>(1);
+  const [slots, setSlots] = useState<PackSlot[]>(() => defaultSlots(product, colourOptions, "", 2));
   const [guideOpen, setGuideOpen] = useState(false);
   const { profile } = useFitProfile();
   const finder = sizeChart ? chartSupportsFinder(sizeChart) : false;
@@ -63,26 +64,37 @@ export function ProductPurchasePanel({
     return product.sizes.find((entry) => entry.size.toUpperCase() === recommended?.toUpperCase())?.size ?? null;
   }, [sizeChart, finder, profile, product.sizes]);
 
-  const duoEligible = isJoggerDuoEligible(product);
-  const duoMode = duoEligible && pack === 2;
-  const duoPreviewOther =
-    colourOptions.find((entry) => entry.id !== product.id) ?? product;
+  const deal = resolvePackDeal(product);
+  const packEligible = isPackDealEligible(product);
+  const packMode = packEligible && pack > 1;
+  const packQty = packMode ? (pack as 2 | 3) : null;
+  const packTotal = packQty === 2 ? deal?.two ?? null : packQty === 3 ? deal?.three ?? null : null;
+  const unitLabel = deal?.unitLabel || "item";
+
   const packOneImage = product.images[0];
-  const packTwoImages = [product.images[0], duoPreviewOther.images[0]].filter(Boolean) as string[];
+  const packPreviewImages = (count: 2 | 3) => {
+    const images: string[] = [];
+    for (let i = 0; i < count; i++) {
+      const option = colourOptions[i % colourOptions.length] ?? product;
+      const src = option.images[0];
+      if (src) images.push(src);
+    }
+    return images;
+  };
 
   const selectSize = (next: string) => {
     setSize(next);
     setQuantity(1);
   };
 
-  const setPackMode = (next: Pack) => {
+  const setPackMode = (next: PackQty) => {
     setPack(next);
-    if (next === 2) {
-      setSlots(defaultSlots(product, colourOptions, size));
+    if (next === 2 || next === 3) {
+      setSlots(defaultSlots(product, colourOptions, size, next));
     }
   };
 
-  const updateSlot = (index: 0 | 1, patch: Partial<DuoSlot>) => {
+  const updateSlot = (index: number, patch: Partial<PackSlot>) => {
     setSlots((current) =>
       current.map((slot, slotIndex) => (slotIndex === index ? { ...slot, ...patch } : slot)),
     );
@@ -110,10 +122,6 @@ export function ProductPurchasePanel({
   const selectedStock = product.sizes.find((entry) => entry.size === size)?.stock ?? 0;
   const locked = comingSoon || soldOut;
 
-  const duoUnit = joggerDuoUnitPrice();
-  const duoCompare = joggerDuoCompareAt(price);
-  const duoSave = joggerDuoSavings(price);
-
   const productById = (id: number) => colourOptions.find((entry) => entry.id === id) ?? product;
 
   const stockFor = (candidate: Product, sizeValue: string) =>
@@ -122,24 +130,28 @@ export function ProductPurchasePanel({
   const orderLines = useMemo((): CartLine[] | null => {
     if (locked) return null;
 
-    if (duoMode) {
-      if (!slots[0]?.size || !slots[1]?.size) return null;
+    if (packMode && packQty && packTotal != null && deal) {
+      if (slots.length !== packQty || slots.some((slot) => !slot.size)) return null;
 
-      const first = productById(slots[0].productId);
-      const second = productById(slots[1].productId);
-      if (stockFor(first, slots[0].size) < 1 || stockFor(second, slots[1].size) < 1) return null;
-
-      const sameSku = first.id === second.id && slots[0].size === slots[1].size;
-      if (sameSku && stockFor(first, slots[0].size) < 2) return null;
-
-      const compareAt = price < product.price ? product.price : price;
-      if (sameSku) {
-        return [buildCartLine(first, slots[0].size, 2, duoUnit, compareAt)];
+      const demand = new Map<string, { product: Product; size: string; count: number }>();
+      for (const slot of slots) {
+        const candidate = productById(slot.productId);
+        const key = `${candidate.id}::${slot.size}`;
+        const existing = demand.get(key);
+        if (existing) existing.count += 1;
+        else demand.set(key, { product: candidate, size: slot.size, count: 1 });
       }
-      return [
-        buildCartLine(first, slots[0].size, 1, duoUnit, compareAt),
-        buildCartLine(second, slots[1].size, 1, duoUnit, compareAt),
-      ];
+      for (const entry of demand.values()) {
+        if (stockFor(entry.product, entry.size) < entry.count) return null;
+      }
+
+      const unit = packUnitPrice(packTotal, packQty);
+      const compareAt = price < product.price ? product.price : price;
+      const lines: CartLine[] = [];
+      for (const entry of demand.values()) {
+        lines.push(buildCartLine(entry.product, entry.size, entry.count, unit, compareAt));
+      }
+      return lines;
     }
 
     if (!size) return null;
@@ -161,7 +173,10 @@ export function ProductPurchasePanel({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     locked,
-    duoMode,
+    packMode,
+    packQty,
+    packTotal,
+    deal,
     slots,
     colourOptions,
     size,
@@ -169,7 +184,6 @@ export function ProductPurchasePanel({
     price,
     onSale,
     product,
-    duoUnit,
   ]);
 
   const sizesRef = useRef<HTMLDivElement>(null);
@@ -245,9 +259,18 @@ export function ProductPurchasePanel({
   }, [sizeSheetOpen]);
 
   useEffect(() => {
-    if (!duoMode) return;
+    if (!packMode) return;
     if (slots.every((slot) => slot.size)) setSizeSheetOpen(false);
-  }, [duoMode, slots]);
+  }, [packMode, slots]);
+
+  useEffect(() => {
+    if (!packEligible) {
+      setPack(1);
+      return;
+    }
+    if (pack === 2 && deal?.two == null) setPack(deal?.three != null ? 3 : 1);
+    if (pack === 3 && deal?.three == null) setPack(deal?.two != null ? 2 : 1);
+  }, [packEligible, deal?.two, deal?.three, pack]);
 
   useEffect(() => {
     const el = buyRef.current;
@@ -267,15 +290,73 @@ export function ProductPurchasePanel({
     return () => root.removeAttribute("data-sticky-buy");
   }, [stickyVisible]);
 
-  const selectionLabel = duoMode ? "Pick both sizes" : "Select a size";
-  const selectedSummary = duoMode
+  const selectionLabel = packMode ? `Pick ${packQty} sizes` : "Select a size";
+  const selectedSummary = packMode
     ? slots.every((slot) => slot.size)
-      ? `2 joggers · ${slots.map((slot) => slot.size).join(" + ")}`
-      : "2 joggers · pick sizes"
+      ? `${packLabel(packQty!, unitLabel)} · ${slots.map((slot) => slot.size).join(" + ")}`
+      : `${packLabel(packQty!, unitLabel)} · pick sizes`
     : size
       ? `Size ${size}${quantity > 1 ? ` · ×${quantity}` : ""}`
       : "Pick your size";
-  const stickyPrice = duoMode ? JOGGER_DUO_PAIR_PRICE : price * (size ? quantity : 1);
+  const stickyPrice =
+    packMode && packTotal != null ? packTotal : price * (size ? quantity : 1);
+
+  const save2 = deal?.two != null ? packSavings(price, deal.two, 2) : 0;
+  const save3 = deal?.three != null ? packSavings(price, deal.three, 3) : 0;
+  const bestPack: 2 | 3 | null =
+    deal?.three != null && save3 >= save2 ? 3 : deal?.two != null ? 2 : deal?.three != null ? 3 : null;
+
+  const slotDisabled = (slotIndex: number, candidate: Product, sizeValue: string, stock: number) => {
+    if (stock === 0) return true;
+    let needed = 1;
+    slots.forEach((slot, index) => {
+      if (index === slotIndex) return;
+      if (slot.productId === candidate.id && slot.size === sizeValue) needed += 1;
+    });
+    return stock < needed;
+  };
+
+  const renderPackToggle = (qty: 2 | 3, total: number) => {
+    const images = packPreviewImages(qty);
+    const save = packSavings(price, total, qty);
+    const compare = packCompareAt(price, qty);
+    const active = pack === qty;
+    const isBest = bestPack === qty;
+    return (
+      <button
+        key={qty}
+        type="button"
+        role="radio"
+        aria-checked={active}
+        className={`pack-toggle__btn pack-toggle__btn--deal${active ? " pack-toggle__btn--active" : ""}`}
+        onClick={() => setPackMode(qty)}
+      >
+        {isBest ? <span className="pack-toggle__tag">Best deal</span> : null}
+        {images.length > 0 ? (
+          <span className={`pack-toggle__media pack-toggle__media--${qty === 2 ? "two" : "three"}`} aria-hidden>
+            {images.map((src, index) => (
+              <span key={`${src}-${index}`} className="pack-toggle__thumb">
+                <Image src={src} alt="" fill sizes="56px" className="pack-toggle__photo object-contain" />
+              </span>
+            ))}
+          </span>
+        ) : null}
+        <span className="pack-toggle__copy">
+          <span className="pack-toggle__label">{packLabel(qty, unitLabel)}</span>
+          {save > 0 ? (
+            <span className="pack-toggle__save">Save {formatPrice(save)}</span>
+          ) : (
+            <span className="pack-toggle__sub">Mix colours & sizes</span>
+          )}
+        </span>
+        <span className="pack-toggle__prices">
+          <span className="pack-toggle__price tabular-nums">{formatPrice(total)}</span>
+          <span className="pack-toggle__was tabular-nums">{formatPrice(compare)}</span>
+        </span>
+        <span className="pack-toggle__radio" aria-hidden />
+      </button>
+    );
+  };
 
   return (
     <div>
@@ -297,11 +378,11 @@ export function ProductPurchasePanel({
             </p>
           ) : null}
         </div>
-      ) : duoMode ? (
+      ) : packMode && packTotal != null ? (
         <p className="product-price mt-2 text-center lg:text-right">
-          <span className="text-muted line-through">{formatPrice(duoCompare)}</span>{" "}
-          <span className="product-price__current">{formatPrice(JOGGER_DUO_PAIR_PRICE)}</span>
-          <span className="product-price__pack ui-sm text-muted"> · 2 joggers</span>
+          <span className="text-muted line-through">{formatPrice(packCompareAt(price, packQty!))}</span>{" "}
+          <span className="product-price__current">{formatPrice(packTotal)}</span>
+          <span className="product-price__pack ui-sm text-muted"> · {packLabel(packQty!, unitLabel)}</span>
         </p>
       ) : (
         <p className="product-price mt-2 text-center lg:text-right">
@@ -317,7 +398,7 @@ export function ProductPurchasePanel({
         </p>
       )}
 
-      {duoEligible && !comingSoon && !soldOut ? (
+      {packEligible && !comingSoon && !soldOut && deal ? (
         <div className="pack-toggle mt-4" role="radiogroup" aria-label="Choose pack">
           <button
             type="button"
@@ -334,7 +415,7 @@ export function ProductPurchasePanel({
               </span>
             ) : null}
             <span className="pack-toggle__copy">
-              <span className="pack-toggle__label">1 jogger</span>
+              <span className="pack-toggle__label">{packLabel(1, unitLabel)}</span>
               <span className="pack-toggle__sub">Standard price</span>
             </span>
             <span className="pack-toggle__prices">
@@ -345,43 +426,14 @@ export function ProductPurchasePanel({
             </span>
             <span className="pack-toggle__radio" aria-hidden />
           </button>
-          <button
-            type="button"
-            role="radio"
-            aria-checked={pack === 2}
-            className={`pack-toggle__btn pack-toggle__btn--deal${pack === 2 ? " pack-toggle__btn--active" : ""}`}
-            onClick={() => setPackMode(2)}
-          >
-            <span className="pack-toggle__tag">Best deal</span>
-            {packTwoImages.length > 0 ? (
-              <span className="pack-toggle__media pack-toggle__media--two" aria-hidden>
-                {packTwoImages.map((src, index) => (
-                  <span key={`${src}-${index}`} className="pack-toggle__thumb">
-                    <Image src={src} alt="" fill sizes="56px" className="pack-toggle__photo object-contain" />
-                  </span>
-                ))}
-              </span>
-            ) : null}
-            <span className="pack-toggle__copy">
-              <span className="pack-toggle__label">2 joggers</span>
-              {duoSave > 0 ? (
-                <span className="pack-toggle__save">Save {formatPrice(duoSave)}</span>
-              ) : (
-                <span className="pack-toggle__sub">Mix colours & sizes</span>
-              )}
-            </span>
-            <span className="pack-toggle__prices">
-              <span className="pack-toggle__price tabular-nums">{formatPrice(JOGGER_DUO_PAIR_PRICE)}</span>
-              <span className="pack-toggle__was tabular-nums">{formatPrice(duoCompare)}</span>
-            </span>
-            <span className="pack-toggle__radio" aria-hidden />
-          </button>
+          {deal.two != null ? renderPackToggle(2, deal.two) : null}
+          {deal.three != null ? renderPackToggle(3, deal.three) : null}
         </div>
       ) : null}
 
-      {!duoMode ? <ProductColourVariants variants={variants} activeId={product.id} /> : null}
+      {!packMode ? <ProductColourVariants variants={variants} activeId={product.id} /> : null}
 
-      {duoMode ? (
+      {packMode ? (
         <div className={`mt-5${comingSoon ? " pointer-events-none opacity-40" : ""}`}>
           <div className="flex items-baseline justify-center gap-3 lg:justify-between lg:gap-0">
             <p className="ui-sm text-muted">Pick colour & size for each</p>
@@ -398,12 +450,13 @@ export function ProductPurchasePanel({
           </div>
 
           <div ref={sizesRef} className={`duo-slots mt-3 space-y-4${attention ? " size-picker--attention" : ""}`}>
-            {([0, 1] as const).map((index) => {
-              const slot = slots[index]!;
+            {slots.map((slot, index) => {
               const slotProduct = productById(slot.productId);
               return (
                 <div key={index} className="duo-slot">
-                  <p className="ui-sm font-bold">Jogger {index + 1}</p>
+                  <p className="ui-sm font-bold">
+                    {unitLabel.charAt(0).toUpperCase() + unitLabel.slice(1)} {index + 1}
+                  </p>
 
                   {colourOptions.length > 1 ? (
                     <div className="mt-2 flex flex-wrap justify-center gap-1.5 lg:justify-start">
@@ -437,10 +490,7 @@ export function ProductPurchasePanel({
 
                   <div className="mt-2 flex flex-wrap justify-center gap-1.5 lg:justify-start">
                     {sortSizeStocks(slotProduct.sizes).map((entry) => {
-                      const other = slots[index === 0 ? 1 : 0]!;
-                      const sameAsOther =
-                        other.productId === slotProduct.id && other.size === entry.size;
-                      const disabled = entry.stock === 0 || (sameAsOther && entry.stock < 2);
+                      const disabled = slotDisabled(index, slotProduct, entry.size, entry.stock);
                       const recommended = yourSize === entry.size;
                       return (
                         <button
@@ -565,7 +615,7 @@ export function ProductPurchasePanel({
             selectionLabel={selectionLabel}
             afterPlaceOrder={
               <div className="flex items-stretch gap-2">
-                {!duoMode && size ? (
+                {!packMode && size ? (
                   <div className="flex items-center border border-line">
                     <button
                       type="button"
@@ -623,7 +673,9 @@ export function ProductPurchasePanel({
                       <span className="sticky-size-sheet__handle" />
                     </div>
                     <div className="sticky-size-sheet__head">
-                      <p className="sticky-size-sheet__title">{duoMode ? "Pick both sizes" : "Select a size"}</p>
+                      <p className="sticky-size-sheet__title">
+                        {packMode ? `Pick ${packQty} sizes` : "Select a size"}
+                      </p>
                       <button
                         type="button"
                         className="sticky-size-sheet__close"
@@ -636,14 +688,15 @@ export function ProductPurchasePanel({
                       </button>
                     </div>
 
-                    {duoMode ? (
+                    {packMode ? (
                       <div className="sticky-size-sheet__duo">
-                        {([0, 1] as const).map((index) => {
-                          const slot = slots[index]!;
+                        {slots.map((slot, index) => {
                           const slotProduct = productById(slot.productId);
                           return (
                             <div key={index} className="sticky-size-sheet__duo-block">
-                              <p className="sticky-size-sheet__label">Jogger {index + 1}</p>
+                              <p className="sticky-size-sheet__label">
+                                {unitLabel.charAt(0).toUpperCase() + unitLabel.slice(1)} {index + 1}
+                              </p>
                               {colourOptions.length > 1 ? (
                                 <div className="sticky-size-sheet__colours">
                                   {colourOptions.map((option) => {
@@ -669,12 +722,13 @@ export function ProductPurchasePanel({
                                   })}
                                 </div>
                               ) : null}
-                              <div className="sticky-size-sheet__sizes" role="group" aria-label={`Jogger ${index + 1} size`}>
+                              <div
+                                className="sticky-size-sheet__sizes"
+                                role="group"
+                                aria-label={`${unitLabel} ${index + 1} size`}
+                              >
                                 {sortSizeStocks(slotProduct.sizes).map((entry) => {
-                                  const other = slots[index === 0 ? 1 : 0]!;
-                                  const sameAsOther =
-                                    other.productId === slotProduct.id && other.size === entry.size;
-                                  const disabled = entry.stock === 0 || (sameAsOther && entry.stock < 2);
+                                  const disabled = slotDisabled(index, slotProduct, entry.size, entry.stock);
                                   return (
                                     <button
                                       key={entry.size}
@@ -761,7 +815,7 @@ export function ProductPurchasePanel({
           chart={sizeChart}
           productSizes={product.sizes}
           onSelectSize={(next) => {
-            if (duoMode) {
+            if (packMode) {
               setSlots((current) => current.map((slot) => ({ ...slot, size: next })));
             } else {
               selectSize(next);
@@ -774,12 +828,21 @@ export function ProductPurchasePanel({
   );
 }
 
-function defaultSlots(product: Product, colourOptions: Product[], seedSize: string): DuoSlot[] {
-  const other = colourOptions.find((entry) => entry.id !== product.id) ?? product;
-  return [
-    { productId: product.id, size: seedSize },
-    { productId: other.id, size: "" },
-  ];
+function defaultSlots(
+  product: Product,
+  colourOptions: Product[],
+  seedSize: string,
+  count: 2 | 3,
+): PackSlot[] {
+  const slots: PackSlot[] = [];
+  for (let i = 0; i < count; i++) {
+    const option = colourOptions[i % colourOptions.length] ?? product;
+    slots.push({
+      productId: option.id,
+      size: i === 0 ? seedSize : "",
+    });
+  }
+  return slots;
 }
 
 function RulerGlyph() {

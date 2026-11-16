@@ -5,7 +5,7 @@ import {
   cartLineKey,
   isCartLine,
 } from "@/lib/cart";
-import { isJogger } from "@/lib/facebookCatalog";
+import { resolvePackDeal, type ResolvedPackDeal } from "@/lib/packDeals";
 import { effectivePrice, isPurchasable, productHoverImage } from "@/lib/products";
 import type { CartLine, Product } from "@/lib/types";
 
@@ -13,9 +13,10 @@ import type { CartLine, Product } from "@/lib/types";
 export type CatalogFacts = {
   /** Units available per `cartLineKey`. */
   stock: Record<string, number>;
-  /** Base (pre-pair-deal) price per product id. */
+  /** Base (pre-pack-deal) price per product id. */
   price: Record<number, number>;
-  joggers: number[];
+  /** Active multi-buy deals per product id. */
+  packs: Record<number, ResolvedPackDeal>;
 };
 
 /**
@@ -179,10 +180,11 @@ export function clearCart(): void {
 export function refreshLinesFromCatalog(products: Product[]): string[] {
   ensureInitialized();
   const byId = new Map(products.map((product) => [product.id, product]));
-  const catalog: CatalogFacts = { stock: {}, price: {}, joggers: [] };
+  const catalog: CatalogFacts = { stock: {}, price: {}, packs: {} };
   for (const product of products) {
     catalog.price[product.id] = effectivePrice(product);
-    if (isJogger(product)) catalog.joggers.push(product.id);
+    const deal = resolvePackDeal(product);
+    if (deal) catalog.packs[product.id] = deal;
     for (const entry of product.sizes) {
       catalog.stock[cartLineKey({ productId: product.id, size: entry.size })] = entry.stock;
     }

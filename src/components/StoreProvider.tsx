@@ -11,8 +11,8 @@ import {
   useSyncExternalStore,
 } from "react";
 import { cartCount, cartSubtotal } from "@/lib/cart";
-import { applyJoggerDuoPricing } from "@/lib/joggerDuo";
 import * as shopStore from "@/lib/clientStore";
+import { applyPackPricing } from "@/lib/packDeals";
 import { metaCatalogContentId, trackMeta } from "@/lib/metaPixel";
 import type { CartLine, Product } from "@/lib/types";
 
@@ -53,11 +53,13 @@ export function StoreProvider({
     shopStore.getSnapshot,
     shopStore.getServerSnapshot
   );
-  /** Same pair-deal pass the order API runs, so the bag total matches what is charged. */
+  /** Same pack-deal pass the order API runs, so the bag total matches what is charged. */
   const lines = useMemo(() => {
     if (!catalog) return storedLines;
-    const joggers = new Set(catalog.joggers);
-    return applyJoggerDuoPricing(storedLines, storedLines.map((line) => joggers.has(line.productId)));
+    return applyPackPricing(
+      storedLines,
+      storedLines.map((line) => catalog.packs[line.productId] ?? null),
+    );
   }, [storedLines, catalog]);
 
   const [cartOpen, setCartOpen] = useState(false);

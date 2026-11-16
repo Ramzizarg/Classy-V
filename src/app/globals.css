@@ -1613,6 +1613,35 @@ html[data-theme="day"] .product-coming-soon__hint {
   margin-left: -20px;
 }
 
+.pack-toggle__media--three {
+  flex-direction: row;
+  width: 78px;
+  height: 70px;
+}
+
+.pack-toggle__media--three .pack-toggle__thumb {
+  width: 40px;
+  height: 100%;
+}
+
+.pack-toggle__media--three .pack-toggle__photo {
+  transform: scale(1.28);
+}
+
+.pack-toggle__media--three .pack-toggle__thumb:nth-child(1) {
+  z-index: 3;
+}
+
+.pack-toggle__media--three .pack-toggle__thumb:nth-child(2) {
+  z-index: 2;
+  margin-left: -18px;
+}
+
+.pack-toggle__media--three .pack-toggle__thumb:nth-child(3) {
+  z-index: 1;
+  margin-left: -18px;
+}
+
 .pack-toggle__thumb {
   position: relative;
   display: block;

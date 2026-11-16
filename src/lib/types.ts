@@ -61,6 +61,15 @@ export type Product = {
   comingSoon?: boolean;
   /** ISO datetime when the drop goes live; countdown target while coming soon. */
   releaseAt?: string | null;
+  /**
+   * Optional multi-buy deals managed in the back office.
+   * Example: `{ unitLabel: "baggy", two: 120, three: 170 }`.
+   */
+  packDeals?: {
+    unitLabel: string;
+    two?: number | null;
+    three?: number | null;
+  } | null;
 };
 
 export type CartLine = {

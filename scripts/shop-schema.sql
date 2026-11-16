@@ -57,6 +57,9 @@ ALTER TABLE products ADD COLUMN IF NOT EXISTS materials TEXT;
 ALTER TABLE products ADD COLUMN IF NOT EXISTS care TEXT;
 ALTER TABLE products ADD COLUMN IF NOT EXISTS shipping_returns TEXT;
 
+-- Multi-buy packs managed in the back office, e.g. { "unitLabel": "baggy", "two": 120, "three": 170 }.
+ALTER TABLE products ADD COLUMN IF NOT EXISTS pack_deals JSONB;
+
 -- Coupons -------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS coupons (
   id             SERIAL PRIMARY KEY,

@@ -5,6 +5,7 @@ import { parseSizeStocks } from "@/lib/productSizeStock";
 import { sortSizeStocks } from "@/lib/productSizesDisplay";
 import { slugifyProductName } from "@/lib/productUrl";
 import { parseProductSizeGuide } from "@/lib/sizeCharts";
+import { parsePackDeals } from "@/lib/packDeals";
 import { CATEGORIES } from "@/lib/products";
 import type { CategorySlug, Product, SizeStock } from "@/lib/types";
 
@@ -31,6 +32,7 @@ type ProductRow = {
   measurement_table: unknown;
   coming_soon: boolean | null;
   release_at: string | Date | null;
+  pack_deals: unknown;
   category_slug: string | null;
   category_name: string | null;
 };
@@ -130,6 +132,7 @@ function rowToProduct(row: ProductRow): Product {
     releasedAt: toIsoDate(row.created_at),
     comingSoon: Boolean(row.coming_soon),
     releaseAt: row.release_at != null ? toIsoDate(row.release_at) : null,
+    packDeals: parsePackDeals(row.pack_deals),
   };
 }
 
@@ -155,6 +158,7 @@ const getDatabaseProducts = cache(async (): Promise<Product[]> => {
               p.measurement_table,
               p.coming_soon,
               p.release_at,
+              p.pack_deals,
               c.slug AS category_slug,
               c.name AS category_name
          FROM products p
