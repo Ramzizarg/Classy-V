@@ -15,6 +15,14 @@ import * as shopStore from "@/lib/clientStore";
 import { applyPackPricing } from "@/lib/packDeals";
 import { metaCatalogContentId, trackMeta } from "@/lib/metaPixel";
 import type { CartLine, Product } from "@/lib/types";
+import { flyProductToWishlist, wishlistFlyOrigin } from "@/lib/wishlistFly";
+
+export type WishlistToggleOptions = {
+  /** Product image shown flying into the header wishlist. */
+  image?: string | null;
+  /** Clicked control — origin is inferred from nearby product media. */
+  from?: HTMLElement | null;
+};
 
 type StoreContextValue = {
   lines: CartLine[];
@@ -35,7 +43,8 @@ type StoreContextValue = {
   clearCart: () => void;
   openCart: () => void;
   closeCart: () => void;
-  toggleWishlist: (productId: number) => void;
+  /** Returns `true` when the product is now on the wishlist. */
+  toggleWishlist: (productId: number, options?: WishlistToggleOptions) => boolean;
   showToast: (message: string) => void;
 };
 
@@ -154,9 +163,18 @@ export function StoreProvider({
   );
 
   const toggleWishlist = useCallback(
-    (productId: number) => {
+    (productId: number, options?: WishlistToggleOptions) => {
       const saved = shopStore.toggleWishlist(productId);
-      showToast(saved ? "Saved to wishlist" : "Removed from wishlist");
+      if (saved) {
+        const from =
+          wishlistFlyOrigin(options?.from ?? null) ?? options?.from?.getBoundingClientRect() ?? null;
+        const image = options?.image?.trim() || "";
+        const flew = Boolean(from && image && flyProductToWishlist({ image, from }));
+        showToast(flew ? "Added to wishlist" : "Saved to wishlist");
+      } else {
+        showToast("Removed from wishlist");
+      }
+      return saved;
     },
     [showToast]
   );

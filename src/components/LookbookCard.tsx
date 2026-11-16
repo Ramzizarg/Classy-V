@@ -3,10 +3,15 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { ProductCountdown } from "@/components/ProductCountdown";
 import { useStore } from "@/components/StoreProvider";
 import { formatPrice } from "@/lib/format";
+import {
+  detectProductImageKindFromImg,
+  readCachedProductImageKind,
+  type ProductImageKind,
+} from "@/lib/productImageKind";
 import { getSizeOptionsForProduct, isProductOutOfStock } from "@/lib/productSizesDisplay";
 import { effectivePrice, isComingSoon, productHoverImage } from "@/lib/products";
 import type { Product } from "@/lib/types";
@@ -18,16 +23,21 @@ const TAP_PX = 10;
 export function LookbookCard({
   product,
   priority = false,
+  removable = false,
 }: {
   product: Product;
   priority?: boolean;
+  /** Wishlist page: heart becomes a clear × remove control. */
+  removable?: boolean;
 }) {
   const router = useRouter();
-  const { addLine } = useStore();
+  const { addLine, toggleWishlist, wishlist, hydrated } = useStore();
   const comingSoon = isComingSoon(product);
   const soldOut = !comingSoon && isProductOutOfStock(product);
   const price = effectivePrice(product);
   const onSale = price < product.price;
+  const salePct = onSale ? Math.round(((product.price - price) / product.price) * 100) : 0;
+  const saved = hydrated && wishlist.includes(product.id);
   const images = product.images.length > 0 ? product.images : ["/images/logo.png"];
   const multi = images.length > 1;
   const href = `/collection/${product.slug}`;
@@ -36,10 +46,32 @@ export function LookbookCard({
   const [active, setActive] = useState(0);
   const [sizesOpen, setSizesOpen] = useState(false);
   const [dropUrgent, setDropUrgent] = useState(false);
+  /**
+   * Default to cutout (object-fit: contain) so packshots are not painted oversized
+   * as lifestyle/cover, then snap. Cache is applied in useLayoutEffect before paint.
+   */
+  const [imageKind, setImageKind] = useState<ProductImageKind>("cutout");
   const touch = useRef<{ x: number; y: number; axis: "none" | "x" | "y" } | null>(null);
   const suppressClick = useRef(false);
   const sizesAttr = "(min-width: 1280px) 25vw, (min-width: 768px) 33vw, 50vw";
   const onDropUrgent = useCallback((urgent: boolean) => setDropUrgent(urgent), []);
+
+  const activeSrc = images[active] ?? images[0] ?? "";
+
+  useLayoutEffect(() => {
+    const cached = readCachedProductImageKind(activeSrc);
+    setImageKind(cached ?? "cutout");
+  }, [activeSrc]);
+
+  const onImageLoad = useCallback(
+    (src: string, index: number, event: React.SyntheticEvent<HTMLImageElement>) => {
+      const img = event.currentTarget;
+      if (!img.naturalWidth) return;
+      const kind = detectProductImageKindFromImg(src, img);
+      if (index === active) setImageKind(kind);
+    },
+    [active],
+  );
 
   const goTo = useCallback(
     (index: number) => {
@@ -143,11 +175,16 @@ export function LookbookCard({
     (event.currentTarget as HTMLButtonElement).blur();
   };
 
+  const isCutout = imageKind === "cutout";
+
   return (
     <article
-      className={`lookbook-card${sizesOpen ? " lookbook-card--sizes-open" : ""}${
-        comingSoon ? " lookbook-card--coming-soon" : ""
-      }${comingSoon && dropUrgent ? " lookbook-card--drop-urgent" : ""}`}
+      className={`lookbook-card${isCutout ? " lookbook-card--cutout" : " lookbook-card--lifestyle"}${
+        sizesOpen ? " lookbook-card--sizes-open" : ""
+      }${comingSoon ? " lookbook-card--coming-soon" : ""}${
+        comingSoon && dropUrgent ? " lookbook-card--drop-urgent" : ""
+      }`}
+      data-image-kind={isCutout ? "cutout" : "lifestyle"}
       onMouseLeave={(event) => {
         const activeEl = document.activeElement;
         if (activeEl instanceof HTMLElement && event.currentTarget.contains(activeEl)) {
@@ -218,15 +255,37 @@ export function LookbookCard({
               decoding="async"
               className={`lookbook-card__img${index === active ? " lookbook-card__img--active" : ""}`}
               draggable={false}
+              onLoad={(event) => onImageLoad(src, index, event)}
             />
             );
           })}
         </div>
 
+        <button
+          type="button"
+          className={`lookbook-card__wish${saved || removable ? " is-on" : ""}`}
+          aria-label={removable || saved ? "Remove from wishlist" : "Save to wishlist"}
+          aria-pressed={removable ? true : saved}
+          onClick={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            toggleWishlist(product.id, removable ? undefined : {
+              image: images[0],
+              from: event.currentTarget,
+            });
+          }}
+        >
+          <HeartIcon filled={saved || removable} />
+        </button>
+
         {comingSoon ? (
-          <span className="lookbook-card__badge lookbook-card__badge--coming-soon">Coming soon</span>
+          <span className="lookbook-card__badge lookbook-card__badge--status lookbook-card__badge--coming-soon">
+            Coming soon
+          </span>
         ) : soldOut ? (
-          <span className="lookbook-card__badge">Sold out</span>
+          <span className="lookbook-card__badge lookbook-card__badge--status">Sold out</span>
+        ) : salePct >= 5 ? (
+          <span className="lookbook-card__badge">{salePct}% Off</span>
         ) : null}
 
         {showSizes ? (
@@ -311,5 +370,13 @@ export function LookbookCard({
         </div>
       ) : null}
     </article>
+  );
+}
+
+function HeartIcon({ filled }: { filled: boolean }) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden fill={filled ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.7">
+      <path d="M12 20s-7-4.35-7-9.2A3.8 3.8 0 0 1 12 7.6a3.8 3.8 0 0 1 7 3.2C19 15.65 12 20 12 20z" />
+    </svg>
   );
 }

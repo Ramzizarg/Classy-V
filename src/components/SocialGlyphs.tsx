@@ -128,12 +128,13 @@ export function HeartGlyph({ className = "h-4 w-4" }: GlyphProps) {
   return (
     <svg
       viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
+      fill="#e11d2e"
+      stroke="#e11d2e"
       strokeWidth="1.8"
       strokeLinejoin="round"
       aria-hidden
       className={className}
+      style={{ color: "#e11d2e" }}
     >
       <path d="M12 20.4S3.5 15.2 3.5 9.6A4.4 4.4 0 0 1 12 7.2a4.4 4.4 0 0 1 8.5 2.4C20.5 15.2 12 20.4 12 20.4Z" />
     </svg>

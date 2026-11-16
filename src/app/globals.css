@@ -5000,10 +5000,20 @@ textarea.checkout-field {
   color: var(--price-ink);
 }
 
-.home-products .lookbook-card__badge {
+.home-products .lookbook-card__badge:not(.lookbook-card__badge--status) {
+  color: #111111;
+  background: #ffffff;
+  border: 0;
+}
+
+html[data-theme="day"] .home-products .lookbook-card__badge:not(.lookbook-card__badge--status) {
+  color: #ffffff;
+  background: #111111;
+}
+
+.home-products .lookbook-card__badge--status {
   color: #ffffff;
   background: #e11d2e;
-  border: 0;
 }
 
 .home-products .lookbook-card__badge--coming-soon {
@@ -5016,8 +5026,23 @@ textarea.checkout-field {
   text-align: center;
 }
 
-.home-products .lookbook-card__img {
+.home-products .lookbook-card--lifestyle .lookbook-card__img {
   filter: none;
+}
+
+.home-products .lookbook-card--cutout .lookbook-card__img {
+  filter: drop-shadow(0 10px 16px rgb(0 0 0 / 0.14));
+}
+
+.home-products .lookbook-card__frame,
+.home-products .lookbook-card__media {
+  overflow: hidden;
+  background: #eceae6;
+}
+
+.home-products .lookbook-card--cutout .lookbook-card__frame,
+.home-products .lookbook-card--cutout .lookbook-card__media {
+  background: #eceae6;
 }
 
 .home-products .lookbook-card--drop-urgent .lookbook-card__img--active {
@@ -5259,33 +5284,34 @@ textarea.checkout-field {
     z-index: 4;
     align-items: center;
     justify-content: center;
-    width: 32px;
-    height: 40px;
+    width: 28px;
+    height: 28px;
     margin: 0;
     padding: 0;
     border: 0;
-    background: transparent;
+    border-radius: 999px;
+    background: rgb(255 255 255 / 0.92);
     color: #111111;
-    font-size: 30px;
+    font-size: 18px;
     line-height: 1;
     cursor: pointer;
-    opacity: 0;
+    opacity: 1;
     transform: translateY(-50%);
-    transition: opacity 180ms ease, transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
+    transition: transform 180ms cubic-bezier(0.22, 1, 0.36, 1), background 160ms ease;
     outline: none;
   }
 
   .lookbook-card__nav:hover {
-    transform: translateY(-50%) scale(1.08);
+    background: #ffffff;
+    transform: translateY(-50%) scale(1.06);
   }
 
-  /* Hug the photo edges so the control sits with the image. */
   .lookbook-card__nav--prev {
-    left: 2px;
+    left: 8px;
   }
 
   .lookbook-card__nav--next {
-    right: 2px;
+    right: 8px;
   }
 
   .lookbook-card__sizes {
@@ -5311,10 +5337,6 @@ textarea.checkout-field {
   }
 
   /* Hover only — not :focus-within, so sizes hide as soon as the mouse leaves. */
-  .lookbook-card:hover .lookbook-card__nav {
-    opacity: 1;
-  }
-
   .lookbook-card:hover .lookbook-card__sizes {
     grid-template-rows: 1fr;
     margin: 6px 0 0;
@@ -5334,9 +5356,13 @@ textarea.checkout-field {
   .lookbook-card:hover .lookbook-card__size:nth-child(6) { animation-delay: 120ms; }
   .lookbook-card:hover .lookbook-card__size:nth-child(n + 7) { animation-delay: 140ms; }
 
-  .lookbook-hero .lookbook-card__nav,
+  /* Sizes stay light on the black lookbook; arrows stay black on the white pill. */
   .lookbook-hero .lookbook-card__size {
     color: #ffffff;
+  }
+
+  .lookbook-hero .lookbook-card__nav {
+    color: #111111;
   }
 
   .lookbook-hero .lookbook-card__size--gone {
@@ -5943,6 +5969,10 @@ html:has(.site-announce) .lookbook__shop {
   .shop-toolbar__slider input[type="range"]::-moz-range-thumb {
     transition: none;
   }
+
+  .lookbook-card--lifestyle:hover .lookbook-card__img--active {
+    transform: none;
+  }
 }
 
 .lookbook__empty {
@@ -5981,10 +6011,20 @@ html:has(.site-announce) .lookbook__shop {
   color: var(--price-ink);
 }
 
-.lookbook-hero .lookbook-card__badge {
+.lookbook-hero .lookbook-card__badge:not(.lookbook-card__badge--status) {
+  color: #111111;
+  background: #ffffff;
+  border: 0;
+}
+
+html[data-theme="day"] .lookbook-hero .lookbook-card__badge:not(.lookbook-card__badge--status) {
+  color: #ffffff;
+  background: #111111;
+}
+
+.lookbook-hero .lookbook-card__badge--status {
   color: #ffffff;
   background: #e11d2e;
-  border: 0;
 }
 
 .lookbook-hero .lookbook-card__badge--coming-soon {
@@ -5992,31 +6032,28 @@ html:has(.site-announce) .lookbook__shop {
   color: #ffffff;
 }
 
-/*
- * Soft white silhouette halo so dark cutouts read on black.
- * Must NOT clip (overflow/contain/content-visibility) — clipping draws a white square.
- */
+/* Same cadre on the shop; cutout only gets a soft silhouette read on dark. */
 .lookbook-hero .lookbook-card,
 .lookbook-hero .lookbook-card__frame,
 .lookbook-hero .lookbook-card__media {
-  overflow: visible;
-  content-visibility: visible;
-  contain: none;
+  overflow: hidden;
 }
 
-.lookbook-hero .lookbook-card__img {
-  /* Glow follows PNG alpha — product shape only, not the media box. */
+.lookbook-hero .lookbook-card--lifestyle .lookbook-card__img {
+  filter: none;
+}
+
+.lookbook-hero .lookbook-card--cutout .lookbook-card__img {
   filter:
-    drop-shadow(0 0 6px rgb(255 255 255 / 0.55))
-    drop-shadow(0 0 16px rgb(255 255 255 / 0.35))
-    drop-shadow(0 0 28px rgb(255 255 255 / 0.18));
+    drop-shadow(0 0 5px rgb(255 255 255 / 0.45))
+    drop-shadow(0 0 14px rgb(255 255 255 / 0.28));
 }
 
 .lookbook__grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  column-gap: 20px;
-  row-gap: 40px;
+  column-gap: 8px;
+  row-gap: 28px;
 }
 
 /* Collection / shop grids — skip hit-testing while the finger moves (big FPS win). */
@@ -6035,15 +6072,15 @@ html.is-scrolling .lookbook__grid--scroll .lookbook-card__sizes {
 @media (min-width: 768px) {
   .lookbook__grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    column-gap: 40px;
-    row-gap: 52px;
+    column-gap: 10px;
+    row-gap: 36px;
   }
 }
 
 @media (min-width: 1280px) {
   .lookbook__grid {
-    column-gap: 48px;
-    row-gap: 60px;
+    column-gap: 12px;
+    row-gap: 40px;
   }
 }
 
@@ -6052,34 +6089,49 @@ html.is-scrolling .lookbook__grid--scroll .lookbook-card__sizes {
   flex-direction: column;
   min-width: 0;
   height: 100%;
-  overflow: visible;
-  /* Avoid paint containment here — it squares off silhouette drop-shadows. */
+  overflow: hidden;
   -webkit-touch-callout: none;
   -webkit-user-select: none;
   user-select: none;
 }
 
-/* Home white sheet: no silhouette glow, safe to skip offscreen tiles. */
+/* Same fixed cadre for every tile — cutout vs lifestyle only changes object-fit. */
+.lookbook-card--cutout {
+  overflow: hidden;
+}
+
+/* Home sheet: skip painting offscreen tiles. */
 .home-products .lookbook-card {
   content-visibility: auto;
-  contain-intrinsic-size: auto 420px;
+  contain-intrinsic-size: auto 480px;
 }
 
 .lookbook-card__frame {
   position: relative;
   width: 100%;
-  overflow: visible;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--foreground) 6%, transparent);
+}
+
+.lookbook-card--cutout .lookbook-card__frame {
+  overflow: hidden;
+  background: color-mix(in srgb, var(--foreground) 4%, transparent);
 }
 
 .lookbook-card__media {
   position: relative;
-  aspect-ratio: 1 / 1.05;
+  aspect-ratio: 3 / 4;
   width: 100%;
-  /* Keep visible so drop-shadow follows the cutout, not a clipped square. */
-  overflow: visible;
-  background: transparent;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--foreground) 6%, transparent);
   cursor: pointer;
   -webkit-user-drag: none;
+}
+
+.lookbook-card--cutout .lookbook-card__media {
+  aspect-ratio: 3 / 4;
+  overflow: hidden;
+  background: transparent;
 }
 
 /* Horizontal swipe changes photos; vertical page scroll still works. */
@@ -6088,47 +6140,116 @@ html.is-scrolling .lookbook__grid--scroll .lookbook-card__sizes {
 }
 
 .lookbook-card__img {
-  object-fit: contain;
-  object-position: center bottom;
-  /* Soft floating shadow like illicitbloc cutouts */
-  filter: drop-shadow(0 12px 18px rgb(0 0 0 / 0.14));
+  object-fit: cover;
+  object-position: center center;
+  filter: none;
   opacity: 0;
-  transition: opacity 180ms ease;
+  transition: opacity 180ms ease, transform 420ms ease;
   pointer-events: none;
   -webkit-user-drag: none;
   user-select: none;
+}
+
+.lookbook-card--cutout .lookbook-card__img {
+  object-fit: contain;
+  object-position: center center;
+  padding: 6%;
+  filter: drop-shadow(0 10px 16px rgb(0 0 0 / 0.16));
 }
 
 .lookbook-card__img--active {
   opacity: 1;
 }
 
-.lookbook-card__badge {
+.lookbook-card--lifestyle:hover .lookbook-card__img--active {
+  transform: scale(1.03);
+}
+
+.lookbook-card--cutout:hover .lookbook-card__img--active {
+  transform: none;
+}
+
+.lookbook-card__wish {
   position: absolute;
   top: 10px;
   right: 10px;
-  left: auto;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.88);
+  color: #111111;
+  cursor: pointer;
+  transition: background 160ms ease, transform 160ms ease;
+}
+
+.lookbook-card__wish:hover {
+  background: #ffffff;
+  transform: scale(1.05);
+}
+
+.lookbook-card__wish.is-on {
+  color: #e11d2e;
+}
+
+.lookbook-card__wish svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* Sale "% Off" only — opposite of page theme. Status badges keep their own colors. */
+.lookbook-card__badge {
+  position: absolute;
+  top: auto;
+  right: auto;
+  bottom: 10px;
+  left: 10px;
   z-index: 4;
   margin: 0;
-  padding: 6px 10px;
+  padding: 5px 9px;
   border: 0;
-  border-radius: 4px;
+  border-radius: 0;
+  background: #ffffff;
+  color: #111111;
+  box-shadow: none;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  line-height: 1.2;
+  text-transform: none;
+  pointer-events: none;
+}
+
+html[data-theme="day"] .lookbook-card__badge:not(.lookbook-card__badge--status) {
+  background: #111111;
+  color: #ffffff;
+}
+
+.lookbook-card__badge--status {
+  top: 10px;
+  bottom: auto;
+  left: 10px;
   background: #e11d2e;
   color: #ffffff;
-  box-shadow: 0 2px 8px rgb(0 0 0 / 0.18);
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   font-size: 10px;
-  font-style: normal;
   font-weight: 700;
   letter-spacing: 0.06em;
-  line-height: 1.2;
   text-transform: uppercase;
-  pointer-events: none;
 }
 
 .lookbook-card__badge--coming-soon {
   background: #6b7280;
-  box-shadow: 0 2px 8px rgb(0 0 0 / 0.12);
+  color: #ffffff;
+  box-shadow: none;
 }
 
 .lookbook-card__sold-out {
@@ -6785,10 +6906,20 @@ html.is-scrolling .product-card--drop-urgent .media-primary {
   color: var(--price-ink);
 }
 
-.product-related .lookbook-card__badge {
+.product-related .lookbook-card__badge:not(.lookbook-card__badge--status) {
+  color: #111111;
+  background: #ffffff;
+  border: 0;
+}
+
+html[data-theme="day"] .product-related .lookbook-card__badge:not(.lookbook-card__badge--status) {
+  color: #ffffff;
+  background: #111111;
+}
+
+.product-related .lookbook-card__badge--status {
   color: #ffffff;
   background: #e11d2e;
-  border: 0;
 }
 
 .product-related .lookbook-card__badge--coming-soon {
@@ -6799,16 +6930,17 @@ html.is-scrolling .product-card--drop-urgent .media-primary {
 .product-related .lookbook-card,
 .product-related .lookbook-card__frame,
 .product-related .lookbook-card__media {
-  overflow: visible;
-  content-visibility: visible;
-  contain: none;
+  overflow: hidden;
 }
 
-.product-related .lookbook-card__img {
+.product-related .lookbook-card--lifestyle .lookbook-card__img {
+  filter: none;
+}
+
+.product-related .lookbook-card--cutout .lookbook-card__img {
   filter:
-    drop-shadow(0 0 6px rgb(255 255 255 / 0.55))
-    drop-shadow(0 0 16px rgb(255 255 255 / 0.35))
-    drop-shadow(0 0 28px rgb(255 255 255 / 0.18));
+    drop-shadow(0 0 5px rgb(255 255 255 / 0.45))
+    drop-shadow(0 0 14px rgb(255 255 255 / 0.28));
 }
 
 .product-related .lookbook-card__dot {
@@ -7678,6 +7810,122 @@ html:has(.cart-page-bar) .toast {
   bottom: calc(84px + env(safe-area-inset-bottom, 0px));
 }
 
+/* Wishlist fly-to-header ghost --------------------------------------------- */
+.wishlist-fly {
+  position: fixed;
+  z-index: 320;
+  overflow: hidden;
+  border-radius: 10px;
+  pointer-events: none;
+  background: rgb(255 255 255 / 0.92);
+  box-shadow:
+    0 10px 28px rgb(0 0 0 / 0.22),
+    0 0 0 1px rgb(255 255 255 / 0.35);
+  will-change: transform, opacity;
+}
+
+.wishlist-fly img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.wishlist-fly-catcher {
+  position: fixed;
+  z-index: 321;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  pointer-events: none;
+  color: #e11d2e;
+  background: rgb(255 255 255 / 0.94);
+  box-shadow: 0 8px 22px rgb(0 0 0 / 0.2);
+  animation: wishlist-catcher-in 900ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes wishlist-catcher-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  25% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+  70% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+}
+
+[data-wishlist-target].wishlist-target--pulse {
+  animation: wishlist-target-pulse 640ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes wishlist-target-pulse {
+  0% {
+    transform: scale(1);
+  }
+  35% {
+    transform: scale(1.22);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.lookbook-card__wish.is-on,
+.cv-shop__save.is-on {
+  animation: wishlist-heart-pop 420ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes wishlist-heart-pop {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.18);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.product-wish-link {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.product-wish-link.is-on {
+  color: #e11d2e;
+}
+
+.product-wish-link__icon {
+  display: inline-flex;
+  width: 1.1em;
+  justify-content: center;
+  font-size: 14px;
+  line-height: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-wishlist-target].wishlist-target--pulse,
+  .lookbook-card__wish.is-on,
+  .cv-shop__save.is-on,
+  .wishlist-fly-catcher {
+    animation: none;
+  }
+}
+
 /* ── Mobile buying: sticky bar, size prompt, cart bars ─────────────────── */
 
 .sticky-size-sheet {
@@ -8545,8 +8793,19 @@ html[data-theme="day"] .lookbook-hero .lookbook-card__expand {
   background: #ffffff;
 }
 
-html[data-theme="day"] .lookbook-hero .lookbook-card__img,
-html[data-theme="day"] .product-related .lookbook-card__img,
+html[data-theme="day"] .lookbook-hero .lookbook-card--lifestyle .lookbook-card__img,
+html[data-theme="day"] .product-related .lookbook-card--lifestyle .lookbook-card__img {
+  filter: none;
+}
+
+html[data-theme="day"] .lookbook-hero .lookbook-card--cutout .lookbook-card__img,
+html[data-theme="day"] .product-related .lookbook-card--cutout .lookbook-card__img {
+  filter:
+    drop-shadow(0 0 6px rgb(0 0 0 / 0.55))
+    drop-shadow(0 0 16px rgb(0 0 0 / 0.35))
+    drop-shadow(0 0 28px rgb(0 0 0 / 0.18));
+}
+
 html[data-theme="day"] .product-gallery__main img {
   filter:
     drop-shadow(0 0 6px rgb(0 0 0 / 0.55))

@@ -13,13 +13,11 @@ export default async function WishlistPage() {
   const products = await getCatalog();
 
   return (
-    <section className="px-3 pb-10 sm:px-4">
-      <h1 className="page-title">Wishlist</h1>
-      <p className="ui-sm mt-2 text-muted">
-        Saved on this device. A wishlist does not reserve stock.
-      </p>
-      <div className="mt-4">
-        <WishlistView products={products} />
+    <section className="lookbook">
+      <div className="lookbook-hero">
+        <div className="lookbook__shop">
+          <WishlistView products={products} />
+        </div>
       </div>
     </section>
   );

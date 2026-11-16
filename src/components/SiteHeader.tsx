@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { BrandMark } from "@/components/BrandMark";
 import { replaySplash } from "@/components/SiteLoadSplash";
 import { SearchOverlay } from "@/components/SearchOverlay";
-import { BagGlyph, MenuGlyph, SearchGlyph } from "@/components/SocialGlyphs";
+import { BagGlyph, HeartGlyph, MenuGlyph, SearchGlyph } from "@/components/SocialGlyphs";
 import { SocialLinks } from "@/components/SocialLinks";
 import { useStore } from "@/components/StoreProvider";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -16,7 +16,8 @@ import { CATEGORIES, COLLECTIONS } from "@/lib/products";
 export function SiteHeader() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const { count, openCart, hydrated } = useStore();
+  const { count, openCart, hydrated, wishlist } = useStore();
+  const wishCount = wishlist.length;
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [homeRetreat, setHomeRetreat] = useState(false);
@@ -180,8 +181,17 @@ export function SiteHeader() {
             />
           </div>
 
-          <div className="flex items-center justify-end gap-3">
+          <div className="flex items-center justify-end gap-2 sm:gap-3">
             <ThemeToggle />
+            <Link
+              href="/wishlist"
+              data-wishlist-target
+              aria-label={`Wishlist (${hydrated ? wishCount : 0})`}
+              className="-m-1 flex items-center gap-1 p-1"
+            >
+              <HeartGlyph className="h-6 w-6" />
+              {hydrated && wishCount > 0 ? <span className="ui-sm">{wishCount}</span> : null}
+            </Link>
             <button
               type="button"
               onClick={openCart}
@@ -237,7 +247,7 @@ export function SiteHeader() {
               </Link>
             ))}
           </nav>
-          <div className="flex shrink-0 items-center justify-end gap-5 sm:gap-7">
+          <div className="flex shrink-0 items-center justify-end gap-4 sm:gap-6">
             <button
               type="button"
               onClick={() => setSearchOpen(true)}
@@ -247,6 +257,15 @@ export function SiteHeader() {
               <SearchGlyph className="h-5 w-5" />
             </button>
             <ThemeToggle className="h-5 w-5" />
+            <Link
+              href="/wishlist"
+              data-wishlist-target
+              className="flex items-center gap-2"
+              aria-label={`Wishlist (${hydrated ? wishCount : 0})`}
+            >
+              <HeartGlyph className="h-5 w-5" />
+              <span className="ui hover-underline">Wishlist ({hydrated ? wishCount : 0})</span>
+            </Link>
             <button type="button" onClick={openCart} className="flex items-center gap-2">
               <BagGlyph />
               <span className="ui hover-underline">Cart ({hydrated ? count : 0})</span>
@@ -312,11 +331,20 @@ export function SiteHeader() {
                 setMenuOpen(false);
                 setSearchOpen(true);
               }}
-              className="mx-4 mb-8 flex items-center gap-2"
+              className="mx-4 mb-3 flex items-center gap-2"
             >
               <SearchGlyph />
               <span className="ui hover-underline">Search</span>
             </button>
+
+            <Link
+              href="/wishlist"
+              onClick={closeMenu}
+              className="mx-4 mb-8 flex items-center gap-2"
+            >
+              <HeartGlyph />
+              <span className="ui hover-underline">Wishlist ({hydrated ? wishCount : 0})</span>
+            </Link>
 
             <div className="mx-4 border-t border-line" aria-hidden="true" />
 

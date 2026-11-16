@@ -800,10 +800,20 @@ export function ProductPurchasePanel({
 
       <button
         type="button"
-        onClick={() => toggleWishlist(product.id)}
-        className="ui-sm hover-underline mt-3 block w-full text-center text-muted lg:w-auto lg:text-left"
+        onClick={(event) =>
+          toggleWishlist(product.id, {
+            image: product.images[0],
+            from: event.currentTarget,
+          })
+        }
+        className={`product-wish-link ui-sm mt-3 flex w-full items-center justify-center gap-2 lg:w-auto lg:justify-start${
+          saved ? " is-on" : ""
+        }`}
       >
-        {saved ? "Remove from wishlist" : "Save to wishlist"}
+        <span className="product-wish-link__icon" aria-hidden>
+          {saved ? "♥" : "♡"}
+        </span>
+        <span className="hover-underline">{saved ? "Saved to wishlist" : "Add to wishlist"}</span>
       </button>
 
       <p className="ui-sm mt-5 text-center leading-relaxed text-muted lg:text-left">

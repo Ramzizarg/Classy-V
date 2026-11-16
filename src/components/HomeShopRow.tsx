@@ -133,7 +133,12 @@ export function HomeShopRow({ products }: { products: Product[] }) {
                   className={`cv-shop__save${saved ? " is-on" : ""}`}
                   aria-pressed={saved}
                   aria-label={saved ? `Remove ${lead.name} from wishlist` : `Save ${lead.name} to wishlist`}
-                  onClick={() => toggleWishlist(lead.id)}
+                  onClick={(event) =>
+                    toggleWishlist(lead.id, {
+                      image: lead.images[0],
+                      from: event.currentTarget,
+                    })
+                  }
                 >
                   <BookmarkIcon filled={saved} />
                 </button>

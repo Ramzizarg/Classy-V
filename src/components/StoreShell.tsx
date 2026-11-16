@@ -26,9 +26,9 @@ export function StoreShell({
   announcements?: string[];
 }) {
   const pathname = usePathname();
-  /** Home is a full-bleed hero; collection keeps the lookbook chrome (no header spacer). */
+  /** Home is a full-bleed hero; lookbook shop pages clear the fixed bar themselves. */
   const isHome = pathname === "/";
-  const isLookbookShop = isHome || pathname === "/collection";
+  const isLookbookShop = isHome || pathname === "/collection" || pathname === "/wishlist";
   const isProductPage = /^\/collection\/[^/]+/.test(pathname);
 
   if (matchesPath(pathname, CHROMELESS_PATHS) || CHROMELESS_EXACT.includes(pathname)) {
