@@ -857,7 +857,7 @@ html.dashboard-light select option {
 
 .media-frame.product-gallery__main--lifestyle {
   overflow: hidden;
-  background: color-mix(in srgb, var(--foreground) 6%, transparent);
+  background: transparent;
 }
 
 .product-gallery__viewport {
@@ -886,11 +886,12 @@ html.dashboard-light select option {
     drop-shadow(0 0 28px rgb(255 255 255 / 0.18));
 }
 
-/* Person / on-model — fill the cadre. */
+/* Person / on-model — full image visible, scaled down inside the cadre. */
 .product-gallery__photo--lifestyle {
-  object-fit: cover;
+  object-fit: contain;
   object-position: center center;
-  padding: 0;
+  padding: 10%;
+  inset: 0;
   filter: none;
 }
 
@@ -995,6 +996,12 @@ html.dashboard-light select option {
     width: calc(100% + 1.5rem);
     max-width: none;
     margin-inline: -0.75rem;
+    margin-top: -28px;
+    gap: 4px;
+  }
+
+  .product-gallery--multi .product-gallery__photo--cutout {
+    padding-top: 0;
   }
 
   .product-gallery--multi .product-gallery__viewport {
@@ -1009,7 +1016,8 @@ html.dashboard-light select option {
     scroll-snap-type: x mandatory;
     scroll-padding-inline: 0;
     padding-inline: 0;
-    padding-block: 16px;
+    /* Flush under header on mobile — no top padding. */
+    padding-block: 0 2px;
     scrollbar-width: none;
     -ms-overflow-style: none;
     -webkit-overflow-scrolling: touch;
@@ -1039,6 +1047,7 @@ html.dashboard-light select option {
 
   .product-gallery--multi .product-gallery__dots {
     padding-inline: 0.75rem;
+    margin-top: -6px;
   }
 
   .product-gallery--multi .product-gallery__count {
@@ -1115,11 +1124,11 @@ html.dashboard-light select option {
   }
 
   .product-gallery__stage {
-    width: 460px;
-    max-width: min(460px, 48vw);
+    width: 420px;
+    max-width: min(420px, 48vw);
     justify-self: start;
     margin-left: 0;
-    margin-top: 28px;
+    margin-top: -44px;
   }
 
   .product-gallery__main {
@@ -1134,7 +1143,7 @@ html.dashboard-light select option {
   }
 
   .product-gallery__chevron {
-    top: 36%;
+    top: 44%;
     width: 52px;
     height: 52px;
   }
@@ -1164,10 +1173,10 @@ html.dashboard-light select option {
   }
 
   .product-gallery__stage {
-    width: 520px;
-    max-width: min(520px, 44vw);
+    width: 470px;
+    max-width: min(470px, 44vw);
     margin-left: 0;
-    margin-top: 36px;
+    margin-top: -52px;
   }
 }
 
@@ -5559,7 +5568,8 @@ html:has(.site-announce) .lookbook__shop {
 }
 
 .site-header-spacer--product {
-  height: calc(var(--header-height) + 8px);
+  /* Mobile PDP: sit the gallery tight under the bar. */
+  height: calc(var(--header-height) - 6px);
 }
 
 @media (min-width: 1024px) {

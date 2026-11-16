@@ -7,22 +7,42 @@ import { ChevronGlyph } from "@/components/SocialGlyphs";
 import {
   detectProductImageKindFromImg,
   readCachedProductImageKind,
+  seedProductImageKind,
   type ProductImageKind,
 } from "@/lib/productImageKind";
 
-export function ProductGallery({ images, name }: { images: string[]; name: string }) {
+export function ProductGallery({
+  images,
+  name,
+  imageKinds,
+}: {
+  images: string[];
+  name: string;
+  /** SSR-resolved kinds — same on server + first client paint (no flash). */
+  imageKinds?: ProductImageKind[];
+}) {
   const [active, setActive] = useState(0);
   const [expanded, setExpanded] = useState(false);
   const [kinds, setKinds] = useState<ProductImageKind[]>(() =>
-    images.map((src) => readCachedProductImageKind(src) ?? "cutout"),
+    images.map((_, index) => imageKinds?.[index] ?? "cutout"),
   );
   const multi = images.length > 1;
   const railRef = useRef<HTMLDivElement>(null);
   const tap = useRef<{ x: number; y: number } | null>(null);
+  const hasServerKinds = Boolean(imageKinds && imageKinds.length === images.length);
 
   useLayoutEffect(() => {
-    setKinds(images.map((src) => readCachedProductImageKind(src) ?? "cutout"));
-  }, [images]);
+    setKinds(
+      images.map((src, index) => {
+        const fromServer = imageKinds?.[index];
+        if (fromServer) {
+          seedProductImageKind(src, fromServer);
+          return fromServer;
+        }
+        return readCachedProductImageKind(src) ?? "cutout";
+      }),
+    );
+  }, [images, imageKinds]);
 
   const setKindAt = useCallback((index: number, kind: ProductImageKind) => {
     setKinds((prev) => {
@@ -37,9 +57,14 @@ export function ProductGallery({ images, name }: { images: string[]; name: strin
     (src: string, index: number, event: React.SyntheticEvent<HTMLImageElement>) => {
       const img = event.currentTarget;
       if (!img.naturalWidth) return;
+      // Server already classified — only refresh the shared cache, don't restyle.
+      if (hasServerKinds) {
+        detectProductImageKindFromImg(src, img);
+        return;
+      }
       setKindAt(index, detectProductImageKindFromImg(src, img));
     },
-    [setKindAt],
+    [hasServerKinds, setKindAt],
   );
 
   const openLightbox = (index: number) => {
@@ -195,8 +220,9 @@ export function ProductGallery({ images, name }: { images: string[]; name: strin
             src={images[active]}
             alt={`${name} — view ${active + 1}`}
             fill
-            priority={!multi}
-            fetchPriority={!multi ? "high" : undefined}
+            priority={active === 0}
+            loading={active === 0 ? "eager" : "lazy"}
+            fetchPriority={active === 0 ? "high" : "auto"}
             quality={100}
             sizes="(min-width: 1280px) 520px, (min-width: 1024px) 460px, (min-width: 640px) 480px, 90vw"
             className={photoClass(active)}

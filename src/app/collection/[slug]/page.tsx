@@ -19,6 +19,7 @@ import { getShippingRate } from "@/lib/shipping.server";
 import { resolveProductSizeChart } from "@/lib/sizeCharts";
 import { getTypeSizeChart } from "@/lib/sizeCharts.server";
 import { productDescriptionLines } from "@/lib/productDescription";
+import { resolveProductImageKinds } from "@/lib/productImageKind.server";
 import { jsonLdHtml } from "@/lib/jsonLd";
 import { SITE } from "@/lib/site";
 
@@ -51,6 +52,7 @@ export default async function ProductPage({ params }: { params: Params }) {
   const product = getProduct(slug, catalog);
   if (!product) notFound();
 
+  const imageKinds = await resolveProductImageKinds(product.images);
   const category = getCategory(product.categorySlug);
   const price = effectivePrice(product);
   const [shippingRate, typeChart] = await Promise.all([
@@ -101,7 +103,7 @@ export default async function ProductPage({ params }: { params: Params }) {
   };
 
   return (
-    <div className="product-page px-3 pt-2 pb-6 sm:px-4 lg:pl-4 lg:pr-12 lg:pt-3 xl:pl-6 xl:pr-20">
+    <div className="product-page px-3 pt-0 pb-6 sm:px-4 lg:pl-4 lg:pr-12 lg:pt-3 xl:pl-6 xl:pr-20">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdHtml([jsonLd, breadcrumbLd]) }} />
 
       <nav
@@ -124,7 +126,7 @@ export default async function ProductPage({ params }: { params: Params }) {
       </nav>
 
       <div className="product-layout mt-0 grid gap-6 lg:mt-0 lg:grid-cols-[auto_minmax(300px,400px)] lg:items-start lg:justify-start lg:gap-36 xl:grid-cols-[auto_minmax(320px,420px)] xl:gap-40">
-        <ProductGallery images={product.images} name={product.name} />
+        <ProductGallery images={product.images} name={product.name} imageKinds={imageKinds} />
 
         <div className="product-layout__buy w-full">
           <ProductPurchasePanel
