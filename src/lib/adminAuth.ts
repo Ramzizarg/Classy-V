@@ -191,3 +191,98 @@ export async function isAdminAuthenticated(): Promise<boolean> {
   const store = await cookies();
   return verifyAdminSessionToken(store.get(ADMIN_COOKIE)?.value);
 }
+
+const RESET_TTL_SECONDS = 30 * 60; // 30 min
+
+/** True when email matches the env admin or an existing backoffice_users row. */
+export async function isKnownAdminEmail(email: string): Promise<boolean> {
+  const normalized = email.trim().toLowerCase();
+  if (!normalized) return false;
+
+  const envCreds = getAdminCredentials();
+  if (envCreds && timingSafeEqualString(normalized, envCreds.email.toLowerCase())) {
+    return true;
+  }
+
+  if (!resolveDatabaseUrl()) return false;
+  try {
+    const { rows } = await neonQuery<{ email: string }>(
+      `SELECT email::text AS email
+       FROM backoffice_users
+       WHERE lower(trim(email)) = $1
+       LIMIT 1`,
+      [normalized],
+    );
+    return Boolean(rows[0]?.email);
+  } catch {
+    return false;
+  }
+}
+
+export async function createPasswordResetToken(email: string): Promise<string> {
+  const secret = getSessionSecret();
+  if (!secret) throw new Error("Admin sessions are not configured.");
+  const expiresAt = Math.floor(Date.now() / 1000) + RESET_TTL_SECONDS;
+  const nonce = crypto.randomUUID();
+  const normalized = email.trim().toLowerCase();
+  const payload = `${expiresAt}.${encodeURIComponent(normalized)}.${nonce}`;
+  const signature = await hmacHex(payload, secret);
+  return `${payload}.${signature}`;
+}
+
+export async function verifyPasswordResetToken(token: string): Promise<string | null> {
+  const parts = token.split(".");
+  if (parts.length !== 4) return null;
+  const [expiresAtRaw, emailEncoded, nonce, signature] = parts;
+  const expiresAt = Number.parseInt(expiresAtRaw ?? "", 10);
+  if (!Number.isFinite(expiresAt) || !emailEncoded || !nonce || !signature) return null;
+  if (expiresAt <= Math.floor(Date.now() / 1000)) return null;
+
+  const secret = getSessionSecret();
+  if (!secret) return null;
+  const payload = `${expiresAtRaw}.${emailEncoded}.${nonce}`;
+  const expected = await hmacHex(payload, secret);
+  if (!timingSafeEqualString(expected, signature)) return null;
+
+  try {
+    const email = decodeURIComponent(emailEncoded).trim().toLowerCase();
+    if (!email || !email.includes("@")) return null;
+    return email;
+  } catch {
+    return null;
+  }
+}
+
+/** Ensures the admin table exists, then upserts a hashed password (no plaintext). */
+export async function upsertAdminPassword(email: string, password: string): Promise<void> {
+  if (!resolveDatabaseUrl()) {
+    throw new Error("DATABASE_URL is missing; cannot store a new password.");
+  }
+  const normalized = email.trim().toLowerCase();
+  if (!normalized) throw new Error("Email is required.");
+  if (password.length < 8) throw new Error("Password must be at least 8 characters.");
+
+  const passwordHash = await hashAdminPassword(password);
+
+  await neonQuery(
+    `CREATE TABLE IF NOT EXISTS backoffice_users (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      email text NOT NULL UNIQUE,
+      password_hash text NOT NULL,
+      created_at timestamptz NOT NULL DEFAULT now(),
+      updated_at timestamptz NOT NULL DEFAULT now()
+    )`,
+  );
+  await neonQuery(
+    `CREATE INDEX IF NOT EXISTS backoffice_users_email_lower_idx
+     ON backoffice_users (lower(trim(email)))`,
+  );
+  await neonQuery(
+    `INSERT INTO backoffice_users (email, password_hash)
+     VALUES ($1, $2)
+     ON CONFLICT (email) DO UPDATE
+       SET password_hash = EXCLUDED.password_hash,
+           updated_at = now()`,
+    [normalized, passwordHash],
+  );
+}

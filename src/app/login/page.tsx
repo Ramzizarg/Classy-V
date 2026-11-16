@@ -42,15 +42,15 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
               <LoginFormPanel hasError={hasError} />
             </div>
 
-            <aside className="hidden h-full min-h-[14rem] flex-col justify-between border-l border-line pl-16 lg:flex">
-              <div>
+            <aside className="hidden h-full min-h-[14rem] flex-col items-start justify-between border-l border-line pl-16 lg:flex">
+              <div className="text-left">
                 <BrandMark width={165} />
                 <h2 className="page-title mt-10">Back office</h2>
                 <p className="prose-raw mt-4 max-w-md text-muted">
                   Review orders and update shipping status for {SITE.name}.
                 </p>
               </div>
-              <a href="/" className="ui mt-12 inline-flex text-muted hover-underline">
+              <a href="/" className="ui inline-flex text-muted hover-underline">
                 Return to storefront
               </a>
             </aside>
