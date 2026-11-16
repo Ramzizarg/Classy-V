@@ -251,7 +251,10 @@ export function mapXDeliveryToShopStatus(status: string): string | null {
   return null;
 }
 
-export async function addXDeliveryParcel(orderId: number): Promise<{ barcode: string }> {
+export async function addXDeliveryParcel(
+  orderId: number,
+  options: { force?: boolean } = {},
+): Promise<{ barcode: string; resent?: boolean }> {
   await ensureXDeliveryColumns();
   try {
     await ensureXDeliverySession();
@@ -265,7 +268,33 @@ export async function addXDeliveryParcel(orderId: number): Promise<{ barcode: st
   );
   const order = rows[0];
   if (!order) throw new Error("Order not found.");
-  if (order.xdelivery_barcode) return { barcode: order.xdelivery_barcode };
+
+  const existingBarcode = order.xdelivery_barcode?.trim() || "";
+  if (existingBarcode && !options.force) {
+    return { barcode: existingBarcode };
+  }
+
+  // Resend: drop the old X-Delivery parcel (best effort) and clear the local barcode
+  // so a fresh parcel can be created with the latest order details.
+  let resent = false;
+  if (existingBarcode && options.force) {
+    resent = true;
+    try {
+      await deleteXDeliveryParcel(existingBarcode);
+    } catch (err) {
+      console.error("[xdelivery] delete before resend:", err);
+    }
+    await neonQuery(
+      `UPDATE shop_orders
+       SET xdelivery_barcode = NULL,
+           xdelivery_status = NULL,
+           xdelivery_motif = NULL,
+           xdelivery_synced_at = NULL
+       WHERE id = $1`,
+      [orderId],
+    );
+    order.xdelivery_barcode = null;
+  }
 
   const governorate = matchGovernorate(order.governorate);
   const delegation = governorate ? matchDelegation(governorate, order.city) : null;
@@ -341,7 +370,7 @@ export async function addXDeliveryParcel(orderId: number): Promise<{ barcode: st
      WHERE id = $2`,
     [barcode, orderId, governorate, delegation],
   );
-  return { barcode };
+  return { barcode, resent };
 }
 
 export async function deleteXDeliveryParcel(barcode: string) {

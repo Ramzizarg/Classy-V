@@ -48,6 +48,8 @@ export async function POST(request: NextRequest) {
       action?: string;
       orderId?: number | string;
       status?: string;
+      /** When true, replace an existing X-Delivery parcel with a new one. */
+      force?: boolean;
     } | null;
 
     const action = body?.action;
@@ -69,8 +71,15 @@ export async function POST(request: NextRequest) {
       if (!xdeliveryConfigured()) {
         return NextResponse.json({ error: "X-Delivery is not configured." }, { status: 503 });
       }
-      const { barcode } = await addXDeliveryParcel(orderId);
-      return NextResponse.json({ ok: true, barcode, xdelivery_status: "CREATED", status: "confirmed" });
+      const force = body?.force === true;
+      const { barcode, resent } = await addXDeliveryParcel(orderId, { force });
+      return NextResponse.json({
+        ok: true,
+        barcode,
+        resent: Boolean(resent),
+        xdelivery_status: "CREATED",
+        status: "confirmed",
+      });
     }
 
     if (action === "status") {

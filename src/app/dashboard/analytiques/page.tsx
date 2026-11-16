@@ -377,7 +377,7 @@ export default function DashboardAnalytiquesPage() {
   const [editingOrderId, setEditingOrderId] = useState<number | null>(null);
   const [syncingDelivery, setSyncingDelivery] = useState(false);
   const [confirmDialog, setConfirmDialog] = useState<null | {
-    kind: "delete";
+    kind: "delete" | "resend";
     order: OrderRow;
     title: string;
     description: string;
@@ -426,9 +426,8 @@ export default function DashboardAnalytiquesPage() {
     }
   };
 
-  const handleSendToXDelivery = async (order: OrderRow, e: React.SyntheticEvent) => {
-    e.stopPropagation();
-    if (order.xdelivery_barcode || savingStatusId === order.id) return;
+  const executeSendToXDelivery = async (order: OrderRow, force = false) => {
+    if (savingStatusId === order.id) return;
     if (!xdeliveryReady) {
       setError(xdeliveryDetail || "X-Delivery is not connected.");
       return;
@@ -440,7 +439,7 @@ export default function DashboardAnalytiquesPage() {
       const res = await fetch("/api/backoffice/xdelivery", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "push", orderId: order.id }),
+        body: JSON.stringify({ action: "push", orderId: order.id, force }),
       });
       const data = (await res.json().catch(() => null)) as {
         error?: string;
@@ -454,11 +453,32 @@ export default function DashboardAnalytiquesPage() {
         xdelivery_status: data?.xdelivery_status || "CREATED",
         xdelivery_motif: "",
       });
+      setConfirmDialog(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to send to X-Delivery.");
     } finally {
       setSavingStatusId(null);
     }
+  };
+
+  const handleSendToXDelivery = (order: OrderRow, e: React.SyntheticEvent) => {
+    e.stopPropagation();
+    if (order.xdelivery_barcode || savingStatusId === order.id) return;
+    void executeSendToXDelivery(order, false);
+  };
+
+  const handleResendToXDelivery = (order: OrderRow, e: React.SyntheticEvent) => {
+    e.stopPropagation();
+    if (!order.xdelivery_barcode || savingStatusId === order.id) return;
+    setConfirmDialog({
+      kind: "resend",
+      order,
+      title: `Resend ${orderLabel(order)} to X-Delivery?`,
+      description: `${order.full_name} · ${formatPrice(Number(order.total_price))}`,
+      detail: order.xdelivery_barcode
+        ? `Current parcel ${order.xdelivery_barcode} will be replaced with a new one using the latest order details.`
+        : "A new X-Delivery parcel will be created.",
+    });
   };
 
   const executeDeleteOrder = async (order: OrderRow) => {
@@ -643,13 +663,31 @@ export default function DashboardAnalytiquesPage() {
 
     if (order.xdelivery_barcode) {
       return (
-        <span
-          title={order.xdelivery_motif || order.xdelivery_barcode}
-          className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${deliveryStyle(key)} ${
-            compact ? "text-[10px] px-2 py-0.5" : ""
-          }`}
-        >
-          {xdeliveryLabel(order.xdelivery_status) || "En attente"}
+        <span className={`inline-flex items-center gap-1 ${compact ? "gap-0.5" : ""}`}>
+          <span
+            title={order.xdelivery_motif || order.xdelivery_barcode}
+            className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${deliveryStyle(key)} ${
+              compact ? "text-[10px] px-2 py-0.5" : ""
+            }`}
+          >
+            {xdeliveryLabel(order.xdelivery_status) || "En attente"}
+          </span>
+          <button
+            type="button"
+            onClick={(e) => handleResendToXDelivery(order, e)}
+            disabled={saving || !xdeliveryReady}
+            title={
+              xdeliveryReady
+                ? "Send again to X-Delivery (new parcel)"
+                : xdeliveryDetail || "X-Delivery is not connected"
+            }
+            className={`inline-flex items-center gap-1 rounded-full border border-zinc-300 bg-white px-2 py-1 text-xs font-semibold text-zinc-700 transition hover:border-black hover:text-black disabled:opacity-60 ${
+              compact ? "text-[10px] px-1.5 py-0.5" : ""
+            }`}
+          >
+            {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+            Resend
+          </button>
         </span>
       );
     }
@@ -874,7 +912,7 @@ export default function DashboardAnalytiquesPage() {
                 className="absolute inset-0 bg-black/45"
                 aria-label="Close"
                 onClick={() => {
-                  if (deletingId == null) setConfirmDialog(null);
+                  if (deletingId == null && savingStatusId == null) setConfirmDialog(null);
                 }}
               />
               <div
@@ -884,8 +922,12 @@ export default function DashboardAnalytiquesPage() {
                 className="relative z-10 w-full max-w-md overflow-hidden rounded-t-2xl bg-white shadow-2xl sm:rounded-2xl"
               >
                 <div className="flex items-start gap-3 border-b border-zinc-100 px-5 py-4">
-                  <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-50 text-red-600">
-                    <Trash2 className="h-5 w-5" />
+                  <div
+                    className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
+                      confirmDialog.kind === "resend" ? "bg-zinc-100 text-black" : "bg-red-50 text-red-600"
+                    }`}
+                  >
+                    {confirmDialog.kind === "resend" ? <RefreshCw className="h-5 w-5" /> : <Trash2 className="h-5 w-5" />}
                   </div>
                   <div className="min-w-0 flex-1">
                     <h2 id="analytiques-confirm-title" className="text-base font-bold text-black">
@@ -899,7 +941,7 @@ export default function DashboardAnalytiquesPage() {
                   <button
                     type="button"
                     onClick={() => {
-                      if (deletingId == null) setConfirmDialog(null);
+                      if (deletingId == null && savingStatusId == null) setConfirmDialog(null);
                     }}
                     className="rounded-full p-1.5 text-zinc-400 hover:bg-zinc-100 hover:text-black"
                     aria-label="Close"
@@ -910,21 +952,37 @@ export default function DashboardAnalytiquesPage() {
                 <div className="flex flex-col-reverse gap-2 px-5 py-4 sm:flex-row sm:justify-end">
                   <button
                     type="button"
-                    disabled={deletingId != null}
+                    disabled={deletingId != null || savingStatusId != null}
                     onClick={() => setConfirmDialog(null)}
                     className="rounded-lg border border-zinc-300 bg-white px-4 py-2.5 text-sm font-semibold text-black hover:bg-zinc-50 disabled:opacity-50"
                   >
                     Cancel
                   </button>
-                  <button
-                    type="button"
-                    disabled={deletingId != null}
-                    onClick={() => void executeDeleteOrder(confirmDialog.order)}
-                    className="inline-flex items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50"
-                  >
-                    {deletingId === confirmDialog.order.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-                    Delete
-                  </button>
+                  {confirmDialog.kind === "resend" ? (
+                    <button
+                      type="button"
+                      disabled={savingStatusId != null || !xdeliveryReady}
+                      onClick={() => void executeSendToXDelivery(confirmDialog.order, true)}
+                      className="inline-flex items-center justify-center gap-2 rounded-lg bg-black px-4 py-2.5 text-sm font-semibold text-white hover:bg-zinc-800 disabled:opacity-50"
+                    >
+                      {savingStatusId === confirmDialog.order.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <RefreshCw className="h-4 w-4" />
+                      )}
+                      Resend
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled={deletingId != null}
+                      onClick={() => void executeDeleteOrder(confirmDialog.order)}
+                      className="inline-flex items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50"
+                    >
+                      {deletingId === confirmDialog.order.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                      Delete
+                    </button>
+                  )}
                 </div>
               </div>
             </div>,
