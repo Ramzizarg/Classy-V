@@ -514,7 +514,7 @@ export function ProductLightbox({ images, name, index, onIndexChange, onClose }:
                     aria-hidden
                     fill
                     sizes="64px"
-                    className={slide >= 2 ? "object-cover" : "lb-thumb__cutout object-contain p-1"}
+                    className="lb-thumb__cutout object-contain p-1"
                   />
                 </button>
               ))}

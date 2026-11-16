@@ -845,13 +845,19 @@ html.dashboard-light select option {
 
 .product-gallery__main {
   display: block;
-  aspect-ratio: 1 / 1;
+  /* Gymshark-style portrait frame on every breakpoint. */
+  aspect-ratio: 3 / 4;
   width: 100%;
 }
 
-/* The silhouette glow spills past the frame; clipping it draws a box around the photo. */
-.media-frame.product-gallery__main {
+.media-frame.product-gallery__main--cutout {
   overflow: visible;
+  background: transparent;
+}
+
+.media-frame.product-gallery__main--lifestyle {
+  overflow: hidden;
+  background: color-mix(in srgb, var(--foreground) 6%, transparent);
 }
 
 .product-gallery__viewport {
@@ -863,38 +869,29 @@ html.dashboard-light select option {
   display: none;
 }
 
-.product-gallery__main img {
-  filter:
-    drop-shadow(0 0 6px rgb(255 255 255 / 0.55))
-    drop-shadow(0 0 16px rgb(255 255 255 / 0.35))
-    drop-shadow(0 0 28px rgb(255 255 255 / 0.18));
+.product-gallery__photo {
   pointer-events: none;
   -webkit-user-drag: none;
   user-select: none;
 }
 
-.product-gallery__main--photo {
-  overflow: hidden;
+/* Packshot / cutout — sit inside the frame like a studio product. */
+.product-gallery__photo--cutout {
+  object-fit: contain;
+  object-position: center center;
+  padding: 6%;
+  filter:
+    drop-shadow(0 0 6px rgb(255 255 255 / 0.55))
+    drop-shadow(0 0 16px rgb(255 255 255 / 0.35))
+    drop-shadow(0 0 28px rgb(255 255 255 / 0.18));
 }
 
-.product-gallery__main img.product-gallery__photo--tall {
+/* Person / on-model — fill the cadre. */
+.product-gallery__photo--lifestyle {
   object-fit: cover;
   object-position: center center;
   padding: 0;
   filter: none;
-}
-
-@media (min-width: 1024px) {
-  .product-gallery__main--later {
-    overflow: hidden;
-  }
-
-  .product-gallery__main img.product-gallery__photo--later {
-    object-fit: contain;
-    object-position: center top;
-    padding: 2% 16% 26%;
-    filter: none;
-  }
 }
 
 /* Colour swatches use the same silhouette glow as the main PDP photo. */
@@ -903,11 +900,18 @@ html.dashboard-light select option {
 }
 
 .product-colour-variants__img,
-.product-gallery__thumb img {
+.product-gallery__thumb--cutout img {
   filter:
     drop-shadow(0 0 4px rgb(255 255 255 / 0.55))
     drop-shadow(0 0 10px rgb(255 255 255 / 0.35))
     drop-shadow(0 0 18px rgb(255 255 255 / 0.18));
+  pointer-events: none;
+  -webkit-user-drag: none;
+  user-select: none;
+}
+
+.product-gallery__thumb--lifestyle img {
+  filter: none;
   pointer-events: none;
   -webkit-user-drag: none;
   user-select: none;
@@ -1121,10 +1125,6 @@ html.dashboard-light select option {
   .product-gallery__main {
     aspect-ratio: 3 / 4;
     width: 100%;
-  }
-
-  .product-gallery__main img {
-    object-position: center top;
   }
 
   /* Desktop uses left thumbs — hide dots + counter. Chevrons change the photo. */
@@ -5026,12 +5026,18 @@ html[data-theme="day"] .home-products .lookbook-card__badge:not(.lookbook-card__
   text-align: center;
 }
 
-.home-products .lookbook-card--lifestyle .lookbook-card__img {
-  filter: none;
+.home-products .lookbook-card--cutout .lookbook-card__img {
+  object-fit: contain;
+  object-position: center center;
+  padding: 6%;
+  filter: drop-shadow(0 10px 16px rgb(0 0 0 / 0.14));
 }
 
-.home-products .lookbook-card--cutout .lookbook-card__img {
-  filter: drop-shadow(0 10px 16px rgb(0 0 0 / 0.14));
+.home-products .lookbook-card--lifestyle .lookbook-card__img {
+  object-fit: cover;
+  object-position: center center;
+  padding: 0;
+  filter: none;
 }
 
 .home-products .lookbook-card__frame,
@@ -6039,14 +6045,20 @@ html[data-theme="day"] .lookbook-hero .lookbook-card__badge:not(.lookbook-card__
   overflow: hidden;
 }
 
-.lookbook-hero .lookbook-card--lifestyle .lookbook-card__img {
-  filter: none;
-}
-
 .lookbook-hero .lookbook-card--cutout .lookbook-card__img {
+  object-fit: contain;
+  object-position: center center;
+  padding: 6%;
   filter:
     drop-shadow(0 0 5px rgb(255 255 255 / 0.45))
     drop-shadow(0 0 14px rgb(255 255 255 / 0.28));
+}
+
+.lookbook-hero .lookbook-card--lifestyle .lookbook-card__img {
+  object-fit: cover;
+  object-position: center center;
+  padding: 0;
+  filter: none;
 }
 
 .lookbook__grid {
@@ -6139,12 +6151,14 @@ html.is-scrolling .lookbook__grid--scroll .lookbook-card__sizes {
   touch-action: pan-y;
 }
 
+/* Packshot default = contain. Person/lifestyle = full-bleed cover (large cadre). */
 .lookbook-card__img {
-  object-fit: cover;
+  object-fit: contain;
   object-position: center center;
-  filter: none;
+  padding: 6%;
+  filter: drop-shadow(0 10px 16px rgb(0 0 0 / 0.16));
   opacity: 0;
-  transition: opacity 180ms ease, transform 420ms ease;
+  transition: opacity 180ms ease;
   pointer-events: none;
   -webkit-user-drag: none;
   user-select: none;
@@ -6157,7 +6171,16 @@ html.is-scrolling .lookbook__grid--scroll .lookbook-card__sizes {
   filter: drop-shadow(0 10px 16px rgb(0 0 0 / 0.16));
 }
 
-.lookbook-card__img--active {
+.lookbook-card--lifestyle .lookbook-card__img {
+  object-fit: cover;
+  object-position: center center;
+  padding: 0;
+  filter: none;
+}
+
+.lookbook-card__img--active,
+.lookbook-card--cutout .lookbook-card__img--active,
+.lookbook-card--lifestyle .lookbook-card__img--active {
   opacity: 1;
 }
 
@@ -6933,14 +6956,20 @@ html[data-theme="day"] .product-related .lookbook-card__badge:not(.lookbook-card
   overflow: hidden;
 }
 
-.product-related .lookbook-card--lifestyle .lookbook-card__img {
-  filter: none;
-}
-
 .product-related .lookbook-card--cutout .lookbook-card__img {
+  object-fit: contain;
+  object-position: center center;
+  padding: 6%;
   filter:
     drop-shadow(0 0 5px rgb(255 255 255 / 0.45))
     drop-shadow(0 0 14px rgb(255 255 255 / 0.28));
+}
+
+.product-related .lookbook-card--lifestyle .lookbook-card__img {
+  object-fit: cover;
+  object-position: center center;
+  padding: 0;
+  filter: none;
 }
 
 .product-related .lookbook-card__dot {
@@ -8793,33 +8822,35 @@ html[data-theme="day"] .lookbook-hero .lookbook-card__expand {
   background: #ffffff;
 }
 
+html[data-theme="day"] .lookbook-hero .lookbook-card--cutout .lookbook-card__img,
+html[data-theme="day"] .product-related .lookbook-card--cutout .lookbook-card__img {
+  object-fit: contain;
+  filter:
+    drop-shadow(0 0 6px rgb(0 0 0 / 0.55))
+    drop-shadow(0 0 16px rgb(0 0 0 / 0.35))
+    drop-shadow(0 0 28px rgb(0 0 0 / 0.18));
+}
+
 html[data-theme="day"] .lookbook-hero .lookbook-card--lifestyle .lookbook-card__img,
 html[data-theme="day"] .product-related .lookbook-card--lifestyle .lookbook-card__img {
+  object-fit: cover;
+  padding: 0;
   filter: none;
 }
 
-html[data-theme="day"] .lookbook-hero .lookbook-card--cutout .lookbook-card__img,
-html[data-theme="day"] .product-related .lookbook-card--cutout .lookbook-card__img {
+html[data-theme="day"] .product-gallery__photo--cutout {
   filter:
     drop-shadow(0 0 6px rgb(0 0 0 / 0.55))
     drop-shadow(0 0 16px rgb(0 0 0 / 0.35))
     drop-shadow(0 0 28px rgb(0 0 0 / 0.18));
 }
 
-html[data-theme="day"] .product-gallery__main img {
-  filter:
-    drop-shadow(0 0 6px rgb(0 0 0 / 0.55))
-    drop-shadow(0 0 16px rgb(0 0 0 / 0.35))
-    drop-shadow(0 0 28px rgb(0 0 0 / 0.18));
-}
-
-html[data-theme="day"] .product-gallery__main img.product-gallery__photo--tall,
-html[data-theme="day"] .product-gallery__main img.product-gallery__photo--later {
+html[data-theme="day"] .product-gallery__photo--lifestyle {
   filter: none;
 }
 
 html[data-theme="day"] .product-colour-variants__img,
-html[data-theme="day"] .product-gallery__thumb img,
+html[data-theme="day"] .product-gallery__thumb--cutout img,
 html[data-theme="day"] .track-thumb .media-primary,
 html[data-theme="day"] .track-thumb .media-secondary,
 html[data-theme="day"] .pack-toggle__photo {
@@ -8827,6 +8858,10 @@ html[data-theme="day"] .pack-toggle__photo {
     drop-shadow(0 0 4px rgb(0 0 0 / 0.55))
     drop-shadow(0 0 10px rgb(0 0 0 / 0.35))
     drop-shadow(0 0 18px rgb(0 0 0 / 0.18));
+}
+
+html[data-theme="day"] .product-gallery__thumb--lifestyle img {
+  filter: none;
 }
 
 html[data-theme="day"] .lookbook-card__dot {

@@ -77,7 +77,7 @@ export const defaultHomeContent: HomeContent = {
     "Premium quality",
     "Classy V Club",
     "New collection",
-    "Streetwear & sport",
+    "Streetwear & Casual",
   ],
 };
 

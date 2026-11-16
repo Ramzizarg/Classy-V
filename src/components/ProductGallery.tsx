@@ -1,17 +1,46 @@
 "use client";
 
 import Image from "next/image";
-import { useRef, useState } from "react";
+import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import { ProductLightbox } from "@/components/ProductLightbox";
 import { ChevronGlyph } from "@/components/SocialGlyphs";
+import {
+  detectProductImageKindFromImg,
+  readCachedProductImageKind,
+  type ProductImageKind,
+} from "@/lib/productImageKind";
 
 export function ProductGallery({ images, name }: { images: string[]; name: string }) {
   const [active, setActive] = useState(0);
   const [expanded, setExpanded] = useState(false);
-  const [tall, setTall] = useState<Record<number, boolean>>({});
+  const [kinds, setKinds] = useState<ProductImageKind[]>(() =>
+    images.map((src) => readCachedProductImageKind(src) ?? "cutout"),
+  );
   const multi = images.length > 1;
   const railRef = useRef<HTMLDivElement>(null);
   const tap = useRef<{ x: number; y: number } | null>(null);
+
+  useLayoutEffect(() => {
+    setKinds(images.map((src) => readCachedProductImageKind(src) ?? "cutout"));
+  }, [images]);
+
+  const setKindAt = useCallback((index: number, kind: ProductImageKind) => {
+    setKinds((prev) => {
+      if (prev[index] === kind) return prev;
+      const next = prev.slice();
+      next[index] = kind;
+      return next;
+    });
+  }, []);
+
+  const onImageLoad = useCallback(
+    (src: string, index: number, event: React.SyntheticEvent<HTMLImageElement>) => {
+      const img = event.currentTarget;
+      if (!img.naturalWidth) return;
+      setKindAt(index, detectProductImageKindFromImg(src, img));
+    },
+    [setKindAt],
+  );
 
   const openLightbox = (index: number) => {
     setActive(index);
@@ -56,18 +85,6 @@ export function ProductGallery({ images, name }: { images: string[]; name: strin
     openLightbox(index);
   };
 
-  const markTall = (index: number) => (event: React.SyntheticEvent<HTMLImageElement>) => {
-    const img = event.currentTarget;
-    if (img.naturalWidth < 1 || img.naturalHeight < 1) return;
-    const isTall = img.naturalHeight / img.naturalWidth > 1.08;
-    setTall((current) => (current[index] === isTall ? current : { ...current, [index]: isTall }));
-  };
-
-  const photoClass = (index: number) =>
-    tall[index]
-      ? "product-gallery__photo--tall h-full w-full object-cover object-center"
-      : "h-full w-full object-contain p-1 sm:p-2";
-
   const onRailScroll = () => {
     const rail = railRef.current;
     const width = slideWidth();
@@ -75,6 +92,17 @@ export function ProductGallery({ images, name }: { images: string[]; name: strin
     const next = Math.min(images.length - 1, Math.max(0, Math.round(rail.scrollLeft / width)));
     setActive((current) => (current === next ? current : next));
   };
+
+  const kindOf = (index: number): ProductImageKind => kinds[index] ?? "cutout";
+  const isLifestyle = (index: number) => kindOf(index) === "lifestyle";
+  const frameClass = (index: number) =>
+    `media-frame product-gallery__main${
+      isLifestyle(index) ? " product-gallery__main--lifestyle" : " product-gallery__main--cutout"
+    }`;
+  const photoClass = (index: number) =>
+    isLifestyle(index)
+      ? "product-gallery__photo product-gallery__photo--lifestyle"
+      : "product-gallery__photo product-gallery__photo--cutout";
 
   return (
     <div className={`product-gallery${multi ? " product-gallery--multi" : ""}`}>
@@ -87,7 +115,9 @@ export function ProductGallery({ images, name }: { images: string[]; name: strin
               role="tab"
               aria-label={`Show view ${index + 1}`}
               aria-selected={index === active}
-              className={`product-gallery__thumb${index === active ? " product-gallery__thumb--active" : ""}`}
+              className={`product-gallery__thumb${
+                isLifestyle(index) ? " product-gallery__thumb--lifestyle" : " product-gallery__thumb--cutout"
+              }${index === active ? " product-gallery__thumb--active" : ""}`}
               onClick={() => goTo(index)}
             >
               <Image
@@ -96,7 +126,8 @@ export function ProductGallery({ images, name }: { images: string[]; name: strin
                 aria-hidden
                 fill
                 sizes="72px"
-                className="object-cover object-top p-1"
+                className={isLifestyle(index) ? "object-cover object-center" : "object-contain p-1"}
+                onLoad={(event) => onImageLoad(image, index, event)}
               />
             </button>
           ))}
@@ -128,22 +159,20 @@ export function ProductGallery({ images, name }: { images: string[]; name: strin
                   }
                 }}
                 aria-label={`View ${name} image ${index + 1} of ${images.length}`}
-                className={`media-frame product-gallery__main product-gallery__slide cursor-zoom-in${
-                  tall[index] ? " product-gallery__main--photo" : ""
-                }`}
+                className={`${frameClass(index)} product-gallery__slide cursor-zoom-in`}
+                data-image-kind={kindOf(index)}
               >
                 <Image
                   src={image}
                   alt={`${name} — view ${index + 1}`}
                   fill
-                  /* Only the first slide is high-priority; avoid unused link-preload warnings. */
                   priority={index === 0}
                   fetchPriority={index === 0 ? "high" : "auto"}
                   quality={75}
                   sizes="(min-width: 1024px) 520px, 100vw"
-                  onLoad={markTall(index)}
                   className={photoClass(index)}
                   draggable={false}
+                  onLoad={(event) => onImageLoad(image, index, event)}
                 />
               </div>
             ))}
@@ -159,13 +188,8 @@ export function ProductGallery({ images, name }: { images: string[]; name: strin
           type="button"
           onClick={() => openLightbox(active)}
           aria-label={`View all ${name} images`}
-          className={`media-frame product-gallery__main cursor-zoom-in${
-            active >= 2
-              ? " product-gallery__main--later"
-              : tall[active]
-                ? " product-gallery__main--photo"
-                : ""
-          }`}
+          className={`${frameClass(active)} cursor-zoom-in`}
+          data-image-kind={kindOf(active)}
         >
           <Image
             src={images[active]}
@@ -175,13 +199,9 @@ export function ProductGallery({ images, name }: { images: string[]; name: strin
             fetchPriority={!multi ? "high" : undefined}
             quality={100}
             sizes="(min-width: 1280px) 520px, (min-width: 1024px) 460px, (min-width: 640px) 480px, 90vw"
-            onLoad={markTall(active)}
-            className={
-              active >= 2
-                ? "product-gallery__photo--later h-full w-full object-contain"
-                : photoClass(active)
-            }
+            className={photoClass(active)}
             draggable={false}
+            onLoad={(event) => onImageLoad(images[active] ?? "", active, event)}
           />
         </button>
 

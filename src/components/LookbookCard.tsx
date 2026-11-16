@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import { ProductCountdown } from "@/components/ProductCountdown";
 import { useStore } from "@/components/StoreProvider";
 import { formatPrice } from "@/lib/format";
@@ -46,21 +46,16 @@ export function LookbookCard({
   const [active, setActive] = useState(0);
   const [sizesOpen, setSizesOpen] = useState(false);
   const [dropUrgent, setDropUrgent] = useState(false);
-  /**
-   * Default to cutout (object-fit: contain) so packshots are not painted oversized
-   * as lifestyle/cover, then snap. Cache is applied in useLayoutEffect before paint.
-   */
+  /** Packshot = contain; person/lifestyle = cover (fills the cadre). Default cutout avoids flash. */
   const [imageKind, setImageKind] = useState<ProductImageKind>("cutout");
   const touch = useRef<{ x: number; y: number; axis: "none" | "x" | "y" } | null>(null);
   const suppressClick = useRef(false);
   const sizesAttr = "(min-width: 1280px) 25vw, (min-width: 768px) 33vw, 50vw";
   const onDropUrgent = useCallback((urgent: boolean) => setDropUrgent(urgent), []);
-
   const activeSrc = images[active] ?? images[0] ?? "";
 
   useLayoutEffect(() => {
-    const cached = readCachedProductImageKind(activeSrc);
-    setImageKind(cached ?? "cutout");
+    setImageKind(readCachedProductImageKind(activeSrc) ?? "cutout");
   }, [activeSrc]);
 
   const onImageLoad = useCallback(
@@ -175,16 +170,16 @@ export function LookbookCard({
     (event.currentTarget as HTMLButtonElement).blur();
   };
 
-  const isCutout = imageKind === "cutout";
+  const isLifestyle = imageKind === "lifestyle";
 
   return (
     <article
-      className={`lookbook-card${isCutout ? " lookbook-card--cutout" : " lookbook-card--lifestyle"}${
+      className={`lookbook-card${isLifestyle ? " lookbook-card--lifestyle" : " lookbook-card--cutout"}${
         sizesOpen ? " lookbook-card--sizes-open" : ""
       }${comingSoon ? " lookbook-card--coming-soon" : ""}${
         comingSoon && dropUrgent ? " lookbook-card--drop-urgent" : ""
       }`}
-      data-image-kind={isCutout ? "cutout" : "lifestyle"}
+      data-image-kind={isLifestyle ? "lifestyle" : "cutout"}
       onMouseLeave={(event) => {
         const activeEl = document.activeElement;
         if (activeEl instanceof HTMLElement && event.currentTarget.contains(activeEl)) {
