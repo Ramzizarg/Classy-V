@@ -154,7 +154,19 @@ export function filterProducts(options: {
       sorted.sort((a, b) => a.name.localeCompare(b.name));
       break;
     default:
-      sorted.sort((a, b) => b.releasedAt.localeCompare(a.releasedAt));
+      // Default shop order: joggers first, then newest within each group.
+      sorted.sort((a, b) => {
+        const joggerDelta = Number(isJoggerProduct(b)) - Number(isJoggerProduct(a));
+        if (joggerDelta !== 0) return joggerDelta;
+        return b.releasedAt.localeCompare(a.releasedAt);
+      });
   }
   return sorted;
+}
+
+function isJoggerProduct(product: Product): boolean {
+  return (
+    product.categorySlug === "sweatpants" ||
+    /jogger|jogging|baggy/i.test(`${product.name} ${product.slug}`)
+  );
 }

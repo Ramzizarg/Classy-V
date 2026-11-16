@@ -45,10 +45,17 @@ function catalogSizes(products: Product[]): string[] {
   return [...labels].sort(compareSizeLabels);
 }
 
-/** Every distinct price except the highest (that filter would change nothing). */
-function priceSteps(products: Product[]): number[] {
-  const prices = [...new Set(products.map((product) => Math.ceil(effectivePrice(product))))].sort((a, b) => a - b);
-  return prices.slice(0, -1).slice(0, 6);
+/** Catalog price bounds for the max-price slider. */
+function priceBounds(products: Product[]): { min: number; max: number } {
+  if (products.length === 0) return { min: 0, max: 0 };
+  let min = Infinity;
+  let max = -Infinity;
+  for (const product of products) {
+    const price = effectivePrice(product);
+    if (price < min) min = price;
+    if (price > max) max = price;
+  }
+  return { min: Math.floor(min), max: Math.ceil(max) };
 }
 
 export default async function CollectionPage({ searchParams }: { searchParams: SearchParams }) {
@@ -59,13 +66,13 @@ export default async function CollectionPage({ searchParams }: { searchParams: S
   const activeCollection = COLLECTIONS.find((entry) => entry.key === collection);
   const catalog = await getCatalog();
   const scope = filterProducts({ category, collection, source: catalog });
+  const bounds = priceBounds(scope);
   const maxPrice = params.max ? Number(params.max) : null;
   const products = filterProducts({
     category,
     collection,
     query: params.q ?? null,
     sort: (params.sort as SortKey) ?? "newest",
-    inStockOnly: params.stock === "in",
     size: params.size ?? null,
     maxPrice: Number.isFinite(maxPrice) ? maxPrice : null,
     source: catalog,
@@ -82,7 +89,7 @@ export default async function CollectionPage({ searchParams }: { searchParams: S
       count={products.length}
       toolbar={
         <Suspense fallback={null}>
-          <ShopToolbar sizes={catalogSizes(scope)} priceSteps={priceSteps(scope)} />
+          <ShopToolbar sizes={catalogSizes(scope)} priceMin={bounds.min} priceMax={bounds.max} />
         </Suspense>
       }
     />

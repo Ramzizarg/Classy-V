@@ -5463,9 +5463,16 @@ html:has(.site-announce) {
   height: var(--announce-h, 30px);
   padding: 0 16px;
   overflow: hidden;
+  /* Night (default): white bar, black text */
+  background: #ffffff;
+  color: #000000;
+  border-top: 3px solid #e10600;
+}
+
+/* Day: opposite — black bar, white text */
+html[data-theme="day"] .site-announce {
   background: #000000;
   color: #ffffff;
-  border-top: 3px solid #e10600;
 }
 
 .site-announce__text {
@@ -5688,23 +5695,54 @@ html:has(.site-announce) .lookbook__shop {
   }
 }
 
-/* Listing sort + filters: chips and selects that inherit the shop theme. */
+/* Listing filters: size chips + max-price slider. */
 .shop-toolbar {
-  margin: 0 0 16px;
+  margin: 0 0 18px;
   color: var(--foreground);
   transition: opacity 0.2s ease;
 }
 
 .shop-toolbar.is-pending {
-  opacity: 0.6;
+  opacity: 0.55;
 }
 
 .shop-toolbar__inner {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(220px, 0.85fr);
+  gap: 14px 28px;
+  align-items: end;
+}
+
+.shop-toolbar__block {
+  min-width: 0;
+}
+
+.shop-toolbar__label-row {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
+  align-items: baseline;
   justify-content: space-between;
-  gap: 10px 16px;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.shop-toolbar__label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.shop-toolbar__price-value {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.shop-toolbar__price-value.is-on {
+  color: var(--foreground);
 }
 
 .shop-toolbar__rail {
@@ -5717,18 +5755,22 @@ html:has(.site-announce) .lookbook__shop {
 
 .shop-toolbar__chip {
   flex: 0 0 auto;
-  min-width: 40px;
-  height: 34px;
+  min-width: 42px;
+  height: 36px;
   padding: 0 12px;
-  border: 1px solid var(--line);
+  border: 1px solid color-mix(in srgb, var(--line) 88%, var(--foreground));
   background: transparent;
   color: inherit;
   font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
+  font-weight: 700;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   cursor: pointer;
-  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    color 0.15s ease,
+    transform 0.15s ease;
 }
 
 .shop-toolbar__chip:hover {
@@ -5741,44 +5783,113 @@ html:has(.site-announce) .lookbook__shop {
   color: var(--background);
 }
 
-.shop-toolbar__select {
-  flex: 0 0 auto;
-  display: block;
-  min-width: 0;
+.shop-toolbar__chip:active {
+  transform: scale(0.97);
 }
 
-.shop-toolbar__select select {
+.shop-toolbar__slider {
   display: block;
-  max-width: 100%;
-  height: 34px;
-  padding: 0 30px 0 12px;
-  border: 1px solid var(--line);
-  border-radius: 0;
-  background: transparent
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23888' stroke-width='1.4'/%3E%3C/svg%3E")
-    no-repeat right 11px center;
-  color: inherit;
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  width: 100%;
+}
+
+.shop-toolbar__slider input[type="range"] {
+  --shop-slider-pct: 100%;
+  display: block;
+  width: 100%;
+  height: 28px;
+  margin: 0;
+  padding: 0;
+  background: transparent;
   cursor: pointer;
   appearance: none;
+  -webkit-appearance: none;
+  touch-action: none;
 }
 
-.shop-toolbar__select option {
+.shop-toolbar__slider input[type="range"]::-webkit-slider-runnable-track {
+  height: 3px;
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    var(--foreground) 0%,
+    var(--foreground) var(--shop-slider-pct),
+    color-mix(in srgb, var(--line) 70%, var(--foreground)) var(--shop-slider-pct),
+    color-mix(in srgb, var(--line) 70%, var(--foreground)) 100%
+  );
+}
+
+.shop-toolbar__slider input[type="range"]::-moz-range-track {
+  height: 3px;
+  border: 0;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--line) 70%, var(--foreground));
+}
+
+.shop-toolbar__slider input[type="range"]::-moz-range-progress {
+  height: 3px;
+  border-radius: 999px;
+  background: var(--foreground);
+}
+
+.shop-toolbar__slider input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  margin-top: -7.5px;
+  border: 2px solid var(--foreground);
+  border-radius: 999px;
   background: var(--background);
-  color: var(--foreground);
+  box-shadow: 0 1px 6px color-mix(in srgb, var(--foreground) 22%, transparent);
+  transition: transform 0.15s ease;
+}
+
+.shop-toolbar__slider input[type="range"]::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--foreground);
+  border-radius: 999px;
+  background: var(--background);
+  box-shadow: 0 1px 6px color-mix(in srgb, var(--foreground) 22%, transparent);
+  transition: transform 0.15s ease;
+}
+
+.shop-toolbar__slider input[type="range"]:active::-webkit-slider-thumb,
+.shop-toolbar__slider input[type="range"]:focus-visible::-webkit-slider-thumb {
+  transform: scale(1.08);
+}
+
+.shop-toolbar__slider input[type="range"]:active::-moz-range-thumb,
+.shop-toolbar__slider input[type="range"]:focus-visible::-moz-range-thumb {
+  transform: scale(1.08);
+}
+
+.shop-toolbar__slider-ends {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
 }
 
 .shop-toolbar__clear {
-  flex: 0 0 auto;
   border: 0;
+  padding: 0;
   background: transparent;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
   cursor: pointer;
   white-space: nowrap;
+}
+
+.shop-toolbar__clear:hover {
+  color: var(--foreground);
 }
 
 .shop-toolbar :focus-visible {
@@ -5786,23 +5897,18 @@ html:has(.site-announce) .lookbook__shop {
   outline-offset: 2px;
 }
 
-/*
- * Mobile: two full-width rows that fit the screen without swiping —
- * sizes + in stock share row one, price + sort split row two 50/50.
- */
 @media (max-width: 767px) {
   .shop-toolbar {
     margin-bottom: 14px;
   }
 
   .shop-toolbar__inner {
-    flex-direction: column;
-    flex-wrap: nowrap;
+    grid-template-columns: 1fr;
+    gap: 14px;
     align-items: stretch;
-    gap: 8px;
   }
 
-  .shop-toolbar__rail {
+  .shop-toolbar__rail--chips {
     flex-wrap: nowrap;
     width: 100%;
     gap: 6px;
@@ -5811,27 +5917,31 @@ html:has(.site-announce) .lookbook__shop {
   .shop-toolbar__rail--chips .shop-toolbar__chip {
     flex: 1 1 0;
     min-width: 0;
-    height: 36px;
+    height: 40px;
     padding: 0 4px;
   }
 
-  .shop-toolbar__rail--chips .shop-toolbar__chip--stock {
-    flex: 2.2 1 0;
-    white-space: nowrap;
-  }
-
-  .shop-toolbar__rail--selects .shop-toolbar__select {
-    flex: 1 1 0;
-    min-width: 0;
-  }
-
-  .shop-toolbar__select select {
-    width: 100%;
+  .shop-toolbar__slider input[type="range"] {
     height: 36px;
-    padding: 0 26px 0 10px;
-    background-position: right 9px center;
-    white-space: nowrap;
-    text-overflow: ellipsis;
+  }
+
+  .shop-toolbar__slider input[type="range"]::-webkit-slider-thumb {
+    width: 22px;
+    height: 22px;
+    margin-top: -9.5px;
+  }
+
+  .shop-toolbar__slider input[type="range"]::-moz-range-thumb {
+    width: 22px;
+    height: 22px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shop-toolbar__chip,
+  .shop-toolbar__slider input[type="range"]::-webkit-slider-thumb,
+  .shop-toolbar__slider input[type="range"]::-moz-range-thumb {
+    transition: none;
   }
 }
 
@@ -7866,13 +7976,6 @@ html:has(.cart-page-bar) .toast {
   .cart-page-bar,
   .size-picker--attention {
     animation: none;
-  }
-}
-
-/* 16px keeps iOS from zooming the page when a filter select is focused. */
-@media (max-width: 1023px) {
-  .shop-toolbar__select select {
-    font-size: 16px;
   }
 }
 
