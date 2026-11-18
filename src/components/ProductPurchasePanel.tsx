@@ -592,6 +592,8 @@ export function ProductPurchasePanel({
         </div>
       )}
 
+      <DeliveryTimeline />
+
       {comingSoon ? (
         <div className="purchase-actions mx-auto mt-4 lg:mx-0">
           <button type="button" disabled className="btn btn--coming-soon w-full">
@@ -853,6 +855,63 @@ function defaultSlots(
     });
   }
   return slots;
+}
+
+function DeliveryTimeline() {
+  return (
+    <div className="delivery-track" aria-label="Livraison partout en Tunisie">
+      <p className="delivery-track__title">
+        Livraison partout en Tunisie
+        <svg className="delivery-track__flag" viewBox="-60 -40 120 80" width="16" height="11" aria-hidden>
+          <path fill="#e70013" d="M-60-40H60v80H-60z" />
+          <circle fill="#fff" r="20" />
+          <circle fill="#e70013" r="15" />
+          <circle fill="#fff" cx="4" r="12" />
+          <path fill="#e70013" d="M-5 0l16.281-5.29L1.22 8.56V-8.56L11.28 5.29z" />
+        </svg>
+      </p>
+      <div className="delivery-track__row">
+        <div className="delivery-track__step">
+          <span className="delivery-track__icon">
+            <svg viewBox="0 0 24 24" aria-hidden fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" strokeLinecap="round">
+              <path d="M6.2 9h11.6l-1.1 10.2a1 1 0 0 1-1 .8H8.3a1 1 0 0 1-1-.8L6.2 9Z" />
+              <path d="M4.5 9h15" />
+              <path d="M9 9c0-2.4 1.3-4 3-4s3 1.6 3 4" />
+            </svg>
+          </span>
+          <span className="delivery-track__label">Commande</span>
+        </div>
+        <div className="delivery-track__link" aria-hidden>
+          <span>24 h</span>
+          <i />
+        </div>
+        <div className="delivery-track__step">
+          <span className="delivery-track__icon">
+            <svg viewBox="0 0 24 24" aria-hidden fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round">
+              <path d="M12 3.8 19.2 8 12 12.2 4.8 8 12 3.8Z" />
+              <path d="M19.2 8v8L12 20.2 4.8 16V8" />
+              <path d="M12 12.2V20.2" />
+            </svg>
+          </span>
+          <span className="delivery-track__label">Préparation</span>
+        </div>
+        <div className="delivery-track__link" aria-hidden>
+          <span>24–48 h</span>
+          <i />
+        </div>
+        <div className="delivery-track__step">
+          <span className="delivery-track__icon">
+            <svg viewBox="0 0 24 24" aria-hidden fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round">
+              <path d="M4.5 11.2 12 5.2l7.5 6" />
+              <path d="M6.4 10.2V18.6h11.2V10.2" />
+              <path d="M10.2 18.6v-4.4h3.6v4.4" />
+            </svg>
+          </span>
+          <span className="delivery-track__label">À votre porte</span>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function RulerGlyph() {
