@@ -4,10 +4,10 @@ import { Suspense, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { BRAND_LOGO_SRC } from "@/components/BrandMark";
 
-/** Matches the `splash-cover` / `splash-mark` animations in globals.css. */
+/** Logo is on screen until ~64% of the 1500ms splash, then it leaves. */
 const SPLASH_MS = 1500;
-/** Unhide the page when the cover starts fading — no extra black hold. */
-const REVEAL_MS = Math.round(SPLASH_MS * 0.68);
+/** Show the page as the logo starts to leave — no extra black hold. */
+const REVEAL_MS = 900;
 const REPLAY_EVENT = "classyv:replay-splash";
 const ENTRY_KEY = "classyv-entry-gate";
 

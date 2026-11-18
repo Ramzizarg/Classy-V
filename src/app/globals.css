@@ -7619,6 +7619,15 @@ html[data-splash-on="1"]:not([data-splash-reveal]) body {
   filter: brightness(0) invert(1);
 }
 
+/* Mobile: center on the visible screen, not the extra-tall cover. */
+@media (max-width: 1023px) {
+  .splash-mark,
+  #boot-splash .boot-splash-mark {
+    top: 50svh;
+    width: min(46vw, 200px);
+  }
+}
+
 @keyframes splash-cover {
   0%,
   68% {
