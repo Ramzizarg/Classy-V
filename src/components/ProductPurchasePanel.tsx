@@ -871,21 +871,23 @@ function DeliveryTimeline() {
         </svg>
       </p>
       <div className="delivery-track__row">
-        <div className="delivery-track__step">
-          <span className="delivery-track__icon">
-            <svg viewBox="0 0 24 24" aria-hidden fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" strokeLinecap="round">
-              <path d="M6.2 9h11.6l-1.1 10.2a1 1 0 0 1-1 .8H8.3a1 1 0 0 1-1-.8L6.2 9Z" />
-              <path d="M4.5 9h15" />
-              <path d="M9 9c0-2.4 1.3-4 3-4s3 1.6 3 4" />
-            </svg>
-          </span>
-          <span className="delivery-track__label">Commande</span>
+        <div className="delivery-track__side delivery-track__side--start">
+          <div className="delivery-track__step">
+            <span className="delivery-track__icon">
+              <svg viewBox="0 0 24 24" aria-hidden fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" strokeLinecap="round">
+                <path d="M6.2 9h11.6l-1.1 10.2a1 1 0 0 1-1 .8H8.3a1 1 0 0 1-1-.8L6.2 9Z" />
+                <path d="M4.5 9h15" />
+                <path d="M9 9c0-2.4 1.3-4 3-4s3 1.6 3 4" />
+              </svg>
+            </span>
+            <span className="delivery-track__label">Commande</span>
+          </div>
+          <div className="delivery-track__link" aria-hidden>
+            <span>24 h</span>
+            <i />
+          </div>
         </div>
-        <div className="delivery-track__link" aria-hidden>
-          <span>24 h</span>
-          <i />
-        </div>
-        <div className="delivery-track__step">
+        <div className="delivery-track__step delivery-track__step--mid">
           <span className="delivery-track__icon">
             <svg viewBox="0 0 24 24" aria-hidden fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round">
               <path d="M12 3.8 19.2 8 12 12.2 4.8 8 12 3.8Z" />
@@ -895,19 +897,21 @@ function DeliveryTimeline() {
           </span>
           <span className="delivery-track__label">Préparation</span>
         </div>
-        <div className="delivery-track__link" aria-hidden>
-          <span>24–48 h</span>
-          <i />
-        </div>
-        <div className="delivery-track__step">
-          <span className="delivery-track__icon">
-            <svg viewBox="0 0 24 24" aria-hidden fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round">
-              <path d="M4.5 11.2 12 5.2l7.5 6" />
-              <path d="M6.4 10.2V18.6h11.2V10.2" />
-              <path d="M10.2 18.6v-4.4h3.6v4.4" />
-            </svg>
-          </span>
-          <span className="delivery-track__label">À votre porte</span>
+        <div className="delivery-track__side delivery-track__side--end">
+          <div className="delivery-track__link" aria-hidden>
+            <span>24–48 h</span>
+            <i />
+          </div>
+          <div className="delivery-track__step">
+            <span className="delivery-track__icon">
+              <svg viewBox="0 0 24 24" aria-hidden fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round">
+                <path d="M4.5 11.2 12 5.2l7.5 6" />
+                <path d="M6.4 10.2V18.6h11.2V10.2" />
+                <path d="M10.2 18.6v-4.4h3.6v4.4" />
+              </svg>
+            </span>
+            <span className="delivery-track__label">À votre porte</span>
+          </div>
         </div>
       </div>
     </div>

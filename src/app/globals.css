@@ -891,9 +891,10 @@ html.dashboard-light select option {
 
 .delivery-track__link {
   display: flex;
-  min-width: 40px;
-  max-width: 84px;
-  flex: 1 1 64px;
+  width: 64px;
+  min-width: 64px;
+  max-width: 64px;
+  flex: 0 0 64px;
   flex-direction: column;
   align-items: center;
   gap: 6px;
@@ -927,6 +928,48 @@ html[data-theme="day"] .delivery-track__link span {
 
 html[data-theme="day"] .delivery-track__link i {
   border-top-color: #c4c4c4;
+}
+
+.delivery-track__side {
+  display: contents;
+}
+
+@media (max-width: 1023px) {
+  .delivery-track__row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    width: 100%;
+    margin-inline: 0;
+    align-items: start;
+  }
+
+  .delivery-track__side {
+    display: flex;
+    align-items: flex-start;
+    min-width: 0;
+  }
+
+  .delivery-track__side--start {
+    justify-content: flex-end;
+  }
+
+  .delivery-track__side--end {
+    justify-content: flex-start;
+  }
+
+  .delivery-track__step--mid {
+    justify-self: center;
+    padding-inline: 6px;
+  }
+
+  .delivery-track__link span {
+    white-space: nowrap;
+    font-size: 11px;
+  }
+
+  .delivery-track__label {
+    font-size: 11px;
+  }
 }
 
 .product-gallery {
