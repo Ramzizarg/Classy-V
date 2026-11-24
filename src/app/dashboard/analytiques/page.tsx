@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState, Fragment, useMemo, type ReactNode } from "react";
+import Link from "next/link";
 import { createPortal } from "react-dom";
 import { supabaseBrowserClient } from "@/lib/supabaseClient";
 import {
@@ -27,6 +28,7 @@ import {
   Mail,
   Banknote,
   StickyNote,
+  Bell,
 } from "lucide-react";
 import { telHref } from "@/lib/phoneValidation";
 import {
@@ -383,7 +385,6 @@ export default function DashboardAnalytiquesPage() {
     description: string;
     detail?: string;
   }>(null);
-
   const { link: xdeliveryLink, detail: xdeliveryDetail } = useXDeliveryConnection();
   const xdeliveryReady = xdeliveryLink === "connected";
 
@@ -1023,6 +1024,13 @@ export default function DashboardAnalytiquesPage() {
             {syncingDelivery ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
             Sync X-Delivery
           </button>
+          <Link
+            href="/dashboard/notify"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-zinc-300 bg-white px-4 py-3 text-sm font-semibold text-black hover:bg-zinc-50 sm:w-auto sm:py-2.5"
+          >
+            <Bell className="h-4 w-4" />
+            Notify me
+          </Link>
           <button
             type="button"
             onClick={() => {

@@ -155,3 +155,22 @@ CREATE TABLE IF NOT EXISTS site_presence (
   created_at timestamptz NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS site_presence_last_seen_idx ON site_presence (last_seen DESC);
+
+-- Hoodie drop reminders: the shopper picks when the email arrives.
+CREATE TABLE IF NOT EXISTS hoodie_drop_reminders (
+  id            SERIAL PRIMARY KEY,
+  email         TEXT NOT NULL,
+  product_id    INTEGER NOT NULL,
+  product_slug  TEXT NOT NULL,
+  product_name  TEXT NOT NULL,
+  release_at    TIMESTAMPTZ NOT NULL,
+  remind_at     TIMESTAMPTZ NOT NULL,
+  lead_minutes  INTEGER NOT NULL,
+  note          TEXT,
+  sent_at       TIMESTAMPTZ,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE UNIQUE INDEX IF NOT EXISTS hoodie_drop_reminders_unique
+  ON hoodie_drop_reminders (email, product_id, lead_minutes);
+CREATE INDEX IF NOT EXISTS hoodie_drop_reminders_due_idx
+  ON hoodie_drop_reminders (remind_at) WHERE sent_at IS NULL;

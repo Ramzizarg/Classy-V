@@ -177,10 +177,10 @@ function pick(actions: Action[] | undefined, types: string[]): number {
   return 0;
 }
 
-/** Website Purchase only — skip omni (pixel+CAPI duplicates) and checkout starts. */
-const PURCHASE = ["purchase", "offsite_conversion.fb_pixel_purchase", "omni_purchase"];
-const ADD_TO_CART = ["omni_add_to_cart", "add_to_cart", "offsite_conversion.fb_pixel_add_to_cart"];
-const CHECKOUT = ["omni_initiated_checkout", "initiate_checkout", "offsite_conversion.fb_pixel_initiate_checkout"];
+/** Website Purchase only — never prefer omni (it can double-count pixel + CAPI). */
+const PURCHASE = ["offsite_conversion.fb_pixel_purchase", "purchase"];
+const ADD_TO_CART = ["add_to_cart", "offsite_conversion.fb_pixel_add_to_cart", "omni_add_to_cart"];
+const CHECKOUT = ["initiate_checkout", "offsite_conversion.fb_pixel_initiate_checkout", "omni_initiated_checkout"];
 
 const AD_FIELDS =
   "name,effective_status,created_time,adset{name},campaign{name}," +
@@ -427,21 +427,25 @@ function distributeByWeight(weights: number[], total: number): number[] {
   return out;
 }
 
-/** Cap Meta pixel "purchases" to real placed orders. Checkout starts stay on checkouts. */
+/**
+ * Force every ad's "Orders" to sum to real placed commandes.
+ * Meta pixel purchases (checkout starts, auto events, pixel+CAPI doubles) are only used as
+ * attribution weights — never as the sale count itself.
+ */
 function applyCompletedOrders(ads: AdCreative[], shop: ShopSales | null): AdCreative[] {
   if (!shop) return ads;
   if (shop.orders <= 0) return ads.map((ad) => ({ ...ad, purchases: 0, revenue: 0 }));
-  const metaPurchases = ads.reduce((sum, ad) => sum + ad.purchases, 0);
-  const metaRevenue = ads.reduce((sum, ad) => sum + ad.revenue, 0);
-  if (metaPurchases <= shop.orders) return ads;
-  const purchases = distributeByWeight(
-    ads.map((ad) => ad.purchases),
-    shop.orders,
-  );
+
+  const purchaseWeights = ads.map((ad) => ad.purchases);
+  const metaPurchases = purchaseWeights.reduce((sum, value) => sum + value, 0);
+  const weights = metaPurchases > 0 ? purchaseWeights : ads.map((ad) => ad.spend);
+
+  const purchases = distributeByWeight(weights, shop.orders);
+  const revenueCents = distributeByWeight(weights, Math.round(shop.revenue * 100));
   return ads.map((ad, i) => ({
     ...ad,
     purchases: purchases[i] ?? 0,
-    revenue: metaRevenue > 0 ? (ad.revenue / metaRevenue) * shop.revenue : 0,
+    revenue: (revenueCents[i] ?? 0) / 100,
   }));
 }
 

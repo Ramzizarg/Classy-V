@@ -95,11 +95,24 @@ function userData(customer: UserFields, request: Request) {
   return data;
 }
 
+/** Same reference must never POST Purchase twice in one process (after() / retry). */
+const sentPurchases = new Set<string>();
+
+/**
+ * One Purchase per saved commande. Browser does not also fire Purchase, so Meta
+ * cannot double-count pixel + CAPI for the same order.
+ */
 export async function sendMetaPurchase(input: PurchaseInput): Promise<void> {
   const token = capiToken();
   if (!token || !META_PIXEL_ID) return;
 
   const event_id = metaPurchaseEventId(input.reference);
+  if (sentPurchases.has(event_id)) {
+    console.info("[meta-capi] Purchase skipped (already sent)", { reference: input.reference });
+    return;
+  }
+  sentPurchases.add(event_id);
+
   const contents = input.lines.flatMap((line) => {
     const id = metaCatalogContentId(line);
     return id ? [{ id, quantity: line.quantity, item_price: line.unitPrice }] : [];
@@ -127,8 +140,9 @@ export async function sendMetaPurchase(input: PurchaseInput): Promise<void> {
     access_token: token,
   };
 
+  // Never attach a test code in production — it can inflate Events Manager counts.
   const testCode = process.env.META_TEST_EVENT_CODE?.trim();
-  if (testCode) body.test_event_code = testCode;
+  if (testCode && process.env.NODE_ENV !== "production") body.test_event_code = testCode;
 
   try {
     const res = await fetch(`https://graph.facebook.com/${GRAPH_VERSION}/${META_PIXEL_ID}/events`, {
@@ -139,6 +153,7 @@ export async function sendMetaPurchase(input: PurchaseInput): Promise<void> {
     });
     const json = (await res.json().catch(() => ({}))) as GraphEventsResponse;
     if (!res.ok || json.error) {
+      sentPurchases.delete(event_id);
       console.error("[meta-capi] Purchase failed", {
         reference: input.reference,
         status: res.status,
@@ -151,6 +166,7 @@ export async function sendMetaPurchase(input: PurchaseInput): Promise<void> {
       events_received: json.events_received,
     });
   } catch (err) {
+    sentPurchases.delete(event_id);
     console.error("[meta-capi] Purchase threw", err instanceof Error ? err.message : err);
   }
 }

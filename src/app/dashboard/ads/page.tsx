@@ -649,8 +649,8 @@ function GoalNote({
         </span>
       ) : goal === "purchases" ? (
         <span>
-          Judged on <b className="text-black">placed orders</b>, not Facebook&apos;s website-purchase pixel
-          (that number also counts people who opened checkout and did not finish). Each creative gets{" "}
+          Judged on <b className="text-black">placed commandes</b> from the shop — one order = one sale. Facebook&apos;s
+          website-purchase number is ignored (it can count unfinished checkouts or fire twice). Each creative gets{" "}
           <b className="text-black">{money(testBudget(rules))}</b> to prove itself. Winning means {rules.minPurchases}+
           orders at a ROAS of {rules.targetRoas}× or better.
         </span>

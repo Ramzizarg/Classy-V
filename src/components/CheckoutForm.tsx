@@ -17,7 +17,7 @@ import {
   type CheckoutFieldKey,
 } from "@/lib/checkoutValidation";
 import { formatPrice } from "@/lib/format";
-import { metaCatalogContentId, trackMeta, trackPurchase } from "@/lib/metaPixel";
+import { metaCatalogContentId, trackMeta } from "@/lib/metaPixel";
 import { XDELIVERY_GOVERNORATES, delegationsFor } from "@/lib/xdeliveryLocations";
 
 type FieldKey = CheckoutFieldKey;
@@ -220,9 +220,8 @@ export function CheckoutForm() {
         return;
       }
 
-      // The server total wins: a coupon that expired between preview and submit is dropped there.
+      // Purchase is sent once by the server (CAPI) when the commande is saved — not from the browser.
       const confirmedTotal = typeof payload.total === "number" ? payload.total : total;
-      trackPurchase({ reference: payload.reference, total: confirmedTotal, eventId: payload.eventId }, lines);
       setPlaced({
         reference: payload.reference,
         firstName: form.fullName.trim().split(/\s+/)[0] ?? "",

@@ -14,7 +14,7 @@ import {
   type CheckoutFieldKey,
 } from "@/lib/checkoutValidation";
 import { formatPrice } from "@/lib/format";
-import { metaCatalogContentId, trackMeta, trackPurchase } from "@/lib/metaPixel";
+import { metaCatalogContentId, trackMeta } from "@/lib/metaPixel";
 import { XDELIVERY_GOVERNORATES, delegationsFor } from "@/lib/xdeliveryLocations";
 import type { CartLine } from "@/lib/types";
 
@@ -134,8 +134,8 @@ export function ProductBuyNowForm({
         return;
       }
 
+      // Purchase is sent once by the server (CAPI) when the commande is saved — not from the browser.
       const confirmedTotal = typeof payload.total === "number" ? payload.total : total;
-      trackPurchase({ reference: payload.reference, total: confirmedTotal, eventId: payload.eventId }, lines);
       clearCheckoutDraft();
       setForm(EMPTY_CHECKOUT_FORM);
       setSubmitting(false);

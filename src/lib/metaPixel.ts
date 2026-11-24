@@ -56,8 +56,12 @@ export function isLocalPixelHost(hostname: string) {
   return host === "localhost" || host === "127.0.0.1" || host === "0.0.0.0" || host.endsWith(".local");
 }
 
-/** Official Meta snippet for <head>. Skips localhost so dev browsing is not a domain. */
-export const META_PIXEL_BOOT_SCRIPT = `(function(){var h=location.hostname;if(h==="localhost"||h==="127.0.0.1"||h==="0.0.0.0"||/\\.local$/.test(h))return;!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');fbq('init','${META_PIXEL_ID}');fbq('track','PageView');})();`;
+/**
+ * Official Meta snippet for <head>. Skips localhost so dev browsing is not a domain.
+ * autoConfig is off so Meta does not invent Purchase from button clicks — Purchase is
+ * sent once from the server (CAPI) when the commande is saved.
+ */
+export const META_PIXEL_BOOT_SCRIPT = `(function(){var h=location.hostname;if(h==="localhost"||h==="127.0.0.1"||h==="0.0.0.0"||/\\.local$/.test(h))return;!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');fbq('set','autoConfig',false,'${META_PIXEL_ID}');fbq('init','${META_PIXEL_ID}');fbq('track','PageView');})();`;
 
 function ensureMetaPixel() {
   if (typeof window === "undefined") return;
@@ -81,37 +85,12 @@ function ensureMetaPixel() {
   const first = document.getElementsByTagName("script")[0];
   first?.parentNode?.insertBefore(script, first);
 
+  fbq("set", "autoConfig", false, META_PIXEL_ID);
   fbq("init", META_PIXEL_ID);
 }
 
 export function metaPurchaseEventId(reference: string) {
   return `purchase-${reference}`;
-}
-
-/**
- * Browser Purchase after the API confirms the order. Shares its event id with the
- * server-side CAPI Purchase so Meta counts the order once.
- */
-export function trackPurchase(
-  order: { reference: string; total: number; eventId?: string },
-  lines: { slug?: string | null; productId?: number | null; quantity: number; unitPrice: number }[],
-) {
-  const contents = lines.flatMap((line) => {
-    const id = metaCatalogContentId(line);
-    return id ? [{ id, quantity: line.quantity, item_price: line.unitPrice }] : [];
-  });
-  trackMeta(
-    "Purchase",
-    {
-      content_ids: contents.map((entry) => entry.id),
-      content_type: "product",
-      contents,
-      value: order.total,
-      num_items: lines.reduce((sum, line) => sum + line.quantity, 0),
-      order_id: order.reference,
-    },
-    order.eventId || metaPurchaseEventId(order.reference),
-  );
 }
 
 export function trackMeta(event: string, params?: MetaPixelParams, eventID?: string) {

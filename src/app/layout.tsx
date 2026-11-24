@@ -123,6 +123,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   return (
     <html
       lang="en"
+      data-theme="day"
       className={`min-h-dvh antialiased ${gelasio.variable} ${instrumentSerif.variable}`}
       suppressHydrationWarning
     >

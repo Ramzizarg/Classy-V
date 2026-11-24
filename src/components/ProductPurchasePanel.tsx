@@ -7,7 +7,7 @@ import { createPortal } from "react-dom";
 import { ProductBuyNowForm } from "@/components/ProductBuyNowForm";
 import { ProductColourVariants } from "@/components/ProductColourVariants";
 import { ProductCountdown } from "@/components/ProductCountdown";
-import { SizeGuideModal } from "@/components/SizeGuideModal";
+import { HoodieDropReminder } from "@/components/HoodieDropReminder";
 import { useStore } from "@/components/StoreProvider";
 import { useFitProfile } from "@/components/useFitProfile";
 import { MAX_LINE_QUANTITY } from "@/lib/cart";
@@ -594,7 +594,16 @@ export function ProductPurchasePanel({
 
       <DeliveryTimeline />
 
-      {comingSoon ? (
+      {comingSoon && product.categorySlug === "hoodies" && product.releaseAt ? (
+        <div className="purchase-actions mx-auto mt-4 lg:mx-0">
+          <HoodieDropReminder
+            slug={product.slug}
+            name={product.name}
+            releaseAt={product.releaseAt}
+            sizes={sortSizeStocks(product.sizes).map((entry) => entry.size)}
+          />
+        </div>
+      ) : comingSoon ? (
         <div className="purchase-actions mx-auto mt-4 lg:mx-0">
           <button type="button" disabled className="btn btn--coming-soon w-full">
             Coming soon
@@ -859,9 +868,9 @@ function defaultSlots(
 
 function DeliveryTimeline() {
   return (
-    <div className="delivery-track" aria-label="Livraison partout en Tunisie">
+    <div className="delivery-track" aria-label="Delivery across Tunisia">
       <p className="delivery-track__title">
-        Livraison partout en Tunisie
+        Delivery across Tunisia
         <svg className="delivery-track__flag" viewBox="-60 -40 120 80" width="16" height="11" aria-hidden>
           <path fill="#e70013" d="M-60-40H60v80H-60z" />
           <circle fill="#fff" r="20" />
@@ -880,10 +889,10 @@ function DeliveryTimeline() {
                 <path d="M9 9c0-2.4 1.3-4 3-4s3 1.6 3 4" />
               </svg>
             </span>
-            <span className="delivery-track__label">Commande</span>
+            <span className="delivery-track__label">Order</span>
           </div>
           <div className="delivery-track__link" aria-hidden>
-            <span>24 h</span>
+            <span>24h</span>
             <i />
           </div>
         </div>
@@ -895,11 +904,11 @@ function DeliveryTimeline() {
               <path d="M12 12.2V20.2" />
             </svg>
           </span>
-          <span className="delivery-track__label">Préparation</span>
+          <span className="delivery-track__label">Packing</span>
         </div>
         <div className="delivery-track__side delivery-track__side--end">
           <div className="delivery-track__link" aria-hidden>
-            <span>24–48 h</span>
+            <span>24–48h</span>
             <i />
           </div>
           <div className="delivery-track__step">
@@ -910,7 +919,7 @@ function DeliveryTimeline() {
                 <path d="M10.2 18.6v-4.4h3.6v4.4" />
               </svg>
             </span>
-            <span className="delivery-track__label">À votre porte</span>
+            <span className="delivery-track__label">At your door</span>
           </div>
         </div>
       </div>
