@@ -8,6 +8,7 @@ import { ProductBuyNowForm } from "@/components/ProductBuyNowForm";
 import { ProductColourVariants } from "@/components/ProductColourVariants";
 import { ProductCountdown } from "@/components/ProductCountdown";
 import { HoodieDropReminder } from "@/components/HoodieDropReminder";
+import { SizeGuideModal } from "@/components/SizeGuideModal";
 import { useStore } from "@/components/StoreProvider";
 import { useFitProfile } from "@/components/useFitProfile";
 import { MAX_LINE_QUANTITY } from "@/lib/cart";
