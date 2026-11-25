@@ -8,7 +8,9 @@ import { GovernorateSelect } from "@/components/GovernorateSelect";
 import { OrderLineThumb } from "@/components/OrderLineThumb";
 import { OrderPlacedModal } from "@/components/OrderPlacedModal";
 import { useStore } from "@/components/StoreProvider";
+import * as shopStore from "@/lib/clientStore";
 import { shippingCost } from "@/lib/cart";
+import type { Product } from "@/lib/types";
 import { clearCheckoutDraft, useCheckoutDraft } from "@/lib/checkoutDraft";
 import {
   CHECKOUT_FIELD_ORDER,
@@ -204,6 +206,7 @@ export function CheckoutForm() {
           },
           couponCode: coupon?.code ?? null,
           lines,
+          expectedSubtotal: subtotal,
         }),
       });
 
@@ -212,9 +215,26 @@ export function CheckoutForm() {
         total?: number;
         eventId?: string;
         error?: string;
+        code?: string;
+        subtotal?: number;
       };
       if (!response.ok || !payload.reference) {
-        setError(payload.error ?? "We could not place the order. Try again.");
+        if (response.status === 409 && payload.code === "PRICE_CHANGED") {
+          setError(
+            payload.error ??
+              "The price changed while you were checking out. Review the new total and place the order again.",
+          );
+          void fetch("/api/catalog")
+            .then((res) => (res.ok ? res.json() : null))
+            .then((data: { products?: Product[] } | null) => {
+              if (data && Array.isArray(data.products)) {
+                shopStore.refreshLinesFromCatalog(data.products);
+              }
+            })
+            .catch(() => null);
+        } else {
+          setError(payload.error ?? "We could not place the order. Try again.");
+        }
         setSubmitting(false);
         inFlight.current = false;
         return;

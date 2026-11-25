@@ -431,6 +431,15 @@ export async function applyXDeliveryStatus(barcode: string, status: string, moti
       ? [status.toUpperCase(), motif ?? "", order.id, nextShop]
       : [status.toUpperCase(), motif ?? "", order.id],
   );
+
+  // Live progressive price may step when a hoodie order reaches / leaves delivered.
+  try {
+    const { recordLevelIfChanged } = await import("@/lib/progressivePricing.server");
+    await recordLevelIfChanged();
+  } catch (err) {
+    console.error("[xdelivery] progressive pricing refresh failed:", err);
+  }
+
   return { orderId: order.id, barcode: code, status: status.toUpperCase(), shopStatus: nextShop };
 }
 

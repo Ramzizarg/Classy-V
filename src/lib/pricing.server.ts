@@ -1,11 +1,13 @@
 import { MAX_LINE_QUANTITY } from "@/lib/cart";
 import { applyPackPricing, resolvePackDeal, type ResolvedPackDeal } from "@/lib/packDeals";
 import { getProductById, isComingSoon, productHoverImage } from "@/lib/products";
+import { isHoodieCategorySlug } from "@/lib/progressivePricing";
+import { computeProgressiveStateFromDb } from "@/lib/progressivePricing.server";
 import { getCatalog } from "@/lib/storefrontCatalog";
 import type { CartLine } from "@/lib/types";
 
 export type PricedCart =
-  | { ok: true; lines: CartLine[]; subtotal: number }
+  | { ok: true; lines: CartLine[]; subtotal: number; progressivePrice: number | null }
   | { ok: false; error: string; status: number };
 
 /**
@@ -16,6 +18,13 @@ export async function priceCart(requested: CartLine[]): Promise<PricedCart> {
   const catalog = await getCatalog();
   const lines: CartLine[] = [];
   const dealByLine: Array<ResolvedPackDeal | null> = [];
+  const needsProgressive = requested.some((line) => {
+    const product = getProductById(line.productId, catalog);
+    return product ? isHoodieCategorySlug(product.categorySlug) : false;
+  });
+  const progressive = needsProgressive ? await computeProgressiveStateFromDb() : null;
+  const progressivePrice =
+    progressive?.enabled === true ? progressive.currentPrice : null;
 
   for (const line of requested) {
     const product = getProductById(line.productId, catalog);
@@ -47,8 +56,12 @@ export async function priceCart(requested: CartLine[]): Promise<PricedCart> {
       };
     }
 
-    const unitPrice =
+    const catalogUnit =
       product.salePrice && product.salePrice < product.price ? product.salePrice : product.price;
+    const unitPrice =
+      progressivePrice != null && isHoodieCategorySlug(product.categorySlug)
+        ? progressivePrice
+        : catalogUnit;
 
     lines.push({
       productId: product.id,
@@ -67,5 +80,5 @@ export async function priceCart(requested: CartLine[]): Promise<PricedCart> {
 
   const pricedLines = applyPackPricing(lines, dealByLine);
   const subtotal = pricedLines.reduce((sum, line) => sum + line.unitPrice * line.quantity, 0);
-  return { ok: true, lines: pricedLines, subtotal };
+  return { ok: true, lines: pricedLines, subtotal, progressivePrice };
 }

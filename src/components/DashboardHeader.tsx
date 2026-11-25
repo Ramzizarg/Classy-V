@@ -11,6 +11,7 @@ import {
   LogOut,
   Ruler,
   Megaphone,
+  BadgeDollarSign,
 } from "lucide-react";
 import { BRAND_LOGO_SRC } from "@/components/BrandMark";
 import { DashboardOnlineVisitors } from "@/components/DashboardOnlineVisitors";
@@ -29,6 +30,7 @@ const NAV_PRIMARY: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, active: (p) => p === "/dashboard" },
   { href: "/dashboard/analytiques", label: "Analytics", icon: BarChart3, active: (p) => p === "/dashboard/analytiques" },
   { href: "/dashboard/produits", label: "Products", icon: Package, active: (p) => p === "/dashboard/produits" },
+  { href: "/dashboard/pricing", label: "Pricing", icon: BadgeDollarSign, active: (p) => p === "/dashboard/pricing" },
   { href: "/dashboard/ads", label: "Ads", icon: Megaphone, active: (p) => p === "/dashboard/ads" },
 ];
 
@@ -76,7 +78,7 @@ export function DashboardHeader() {
         </div>
         <nav
           aria-label="Back office"
-          className="grid grid-cols-8 items-stretch gap-0.5 border-t border-white/10 px-1.5 py-1"
+          className="grid grid-cols-9 items-stretch gap-0.5 border-t border-white/10 px-1.5 py-1"
         >
           {NAV_ALL.map((item) => (
             <Link

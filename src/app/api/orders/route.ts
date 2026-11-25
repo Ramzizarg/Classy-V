@@ -19,6 +19,8 @@ type Payload = {
   customer?: Partial<OrderCustomer>;
   lines?: unknown;
   couponCode?: string;
+  /** Client-visible bag subtotal before shipping/discount — used to surface price changes. */
+  expectedSubtotal?: number;
 };
 
 const REQUIRED_FIELDS: (keyof OrderCustomer)[] = ["fullName", "phone", "address", "governorate", "city"];
@@ -73,7 +75,29 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: priced.error }, { status: priced.status });
   }
 
-  const { lines: pricedLines, subtotal } = priced;
+  const { lines: pricedLines, subtotal, progressivePrice } = priced;
+
+  const expectedRaw = payload.expectedSubtotal;
+  if (typeof expectedRaw === "number" && Number.isFinite(expectedRaw)) {
+    const expected = Math.round(expectedRaw * 100) / 100;
+    const server = Math.round(subtotal * 100) / 100;
+    if (Math.abs(expected - server) >= 0.01) {
+      return NextResponse.json(
+        {
+          error:
+            progressivePrice != null
+              ? `The hoodie price updated to ${progressivePrice.toFixed(2)} DT. Review the new total before placing your order.`
+              : "Bag prices changed while you were checking out. Review the new total before placing your order.",
+          code: "PRICE_CHANGED",
+          lines: pricedLines,
+          subtotal,
+          progressivePrice,
+        },
+        { status: 409 },
+      );
+    }
+  }
+
   const shipping = shippingCost(subtotal, await getShippingRate());
 
   // A code that went stale between preview and submit is dropped rather than

@@ -174,3 +174,42 @@ CREATE UNIQUE INDEX IF NOT EXISTS hoodie_drop_reminders_unique
   ON hoodie_drop_reminders (email, product_id, lead_minutes);
 CREATE INDEX IF NOT EXISTS hoodie_drop_reminders_due_idx
   ON hoodie_drop_reminders (remind_at) WHERE sent_at IS NULL;
+
+-- Progressive pricing (hoodie pool): live count of delivered hoodie orders drives price.
+CREATE TABLE IF NOT EXISTS progressive_pricing (
+  pool_key              TEXT PRIMARY KEY,
+  enabled               BOOLEAN NOT NULL DEFAULT TRUE,
+  base_price            NUMERIC(12, 2) NOT NULL DEFAULT 55,
+  milestone_interval    INTEGER NOT NULL DEFAULT 10 CHECK (milestone_interval >= 1),
+  price_increment       NUMERIC(12, 2) NOT NULL DEFAULT 5 CHECK (price_increment >= 0),
+  manual_order_offset   INTEGER NOT NULL DEFAULT 0,
+  updated_at            TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+INSERT INTO progressive_pricing (pool_key, enabled, base_price, milestone_interval, price_increment, manual_order_offset)
+VALUES ('hoodies', TRUE, 55, 10, 5, 0)
+ON CONFLICT (pool_key) DO NOTHING;
+
+CREATE TABLE IF NOT EXISTS progressive_pricing_audit (
+  id          SERIAL PRIMARY KEY,
+  pool_key    TEXT NOT NULL DEFAULT 'hoodies',
+  actor       TEXT,
+  action      TEXT NOT NULL,
+  before_json JSONB,
+  after_json  JSONB,
+  note        TEXT,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS progressive_pricing_audit_created_idx
+  ON progressive_pricing_audit (created_at DESC);
+
+CREATE TABLE IF NOT EXISTS progressive_pricing_levels (
+  id                   SERIAL PRIMARY KEY,
+  pool_key             TEXT NOT NULL DEFAULT 'hoodies',
+  level                INTEGER NOT NULL,
+  price                NUMERIC(12, 2) NOT NULL,
+  delivered_orders_at  INTEGER NOT NULL,
+  created_at           TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (pool_key, level)
+);
+CREATE INDEX IF NOT EXISTS progressive_pricing_levels_pool_idx
+  ON progressive_pricing_levels (pool_key, level);

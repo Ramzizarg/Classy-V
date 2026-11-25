@@ -29,6 +29,7 @@ import {
   Banknote,
   StickyNote,
   Bell,
+  BadgeDollarSign,
 } from "lucide-react";
 import { telHref } from "@/lib/phoneValidation";
 import {
@@ -1030,6 +1031,13 @@ export default function DashboardAnalytiquesPage() {
           >
             <Bell className="h-4 w-4" />
             Notify me
+          </Link>
+          <Link
+            href="/dashboard/pricing"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-zinc-300 bg-white px-4 py-3 text-sm font-semibold text-black hover:bg-zinc-50 sm:w-auto sm:py-2.5"
+          >
+            <BadgeDollarSign className="h-4 w-4" />
+            Pricing
           </Link>
           <button
             type="button"

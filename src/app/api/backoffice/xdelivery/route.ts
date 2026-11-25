@@ -128,6 +128,13 @@ export async function POST(request: NextRequest) {
         }
       }
 
+      try {
+        const { recordLevelIfChanged } = await import("@/lib/progressivePricing.server");
+        await recordLevelIfChanged();
+      } catch (err) {
+        console.error("[backoffice/xdelivery] progressive pricing refresh failed:", err);
+      }
+
       return NextResponse.json({
         ok: true,
         status,

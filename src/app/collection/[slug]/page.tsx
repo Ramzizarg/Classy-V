@@ -15,6 +15,8 @@ import {
   relatedProducts,
 } from "@/lib/products";
 import { colourVariants, getCatalog } from "@/lib/storefrontCatalog";
+import { isHoodieCategorySlug, toPublicProgressivePayload } from "@/lib/progressivePricing";
+import { computeProgressiveStateFromDb } from "@/lib/progressivePricing.server";
 import { getShippingRate } from "@/lib/shipping.server";
 import { resolveProductSizeChart } from "@/lib/sizeCharts";
 import { getTypeSizeChart } from "@/lib/sizeCharts.server";
@@ -55,11 +57,17 @@ export default async function ProductPage({ params }: { params: Params }) {
   const imageKinds = await resolveProductImageKinds(product.images);
   const category = getCategory(product.categorySlug);
   const price = effectivePrice(product);
-  const [shippingRate, typeChart] = await Promise.all([
+  const [shippingRate, typeChart, progressiveState] = await Promise.all([
     getShippingRate(),
     getTypeSizeChart(product.sizeChartKey || product.categorySlug, category?.name),
+    isHoodieCategorySlug(product.categorySlug)
+      ? computeProgressiveStateFromDb().catch(() => null)
+      : Promise.resolve(null),
   ]);
   const sizeChart = resolveProductSizeChart(product.sizeGuide, typeChart);
+  const progressiveInitial = progressiveState
+    ? toPublicProgressivePayload(progressiveState)
+    : null;
 
   const comingSoon = isComingSoon(product);
   const descriptionLines = productDescriptionLines(product.description);
@@ -133,6 +141,7 @@ export default async function ProductPage({ params }: { params: Params }) {
             product={product}
             variants={colourVariants(product, catalog)}
             sizeChart={sizeChart}
+            progressiveInitial={progressiveInitial}
           />
 
           <ProductInfoAccordion

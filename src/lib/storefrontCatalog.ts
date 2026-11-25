@@ -7,6 +7,8 @@ import { slugifyProductName } from "@/lib/productUrl";
 import { parseProductSizeGuide } from "@/lib/sizeCharts";
 import { parsePackDeals } from "@/lib/packDeals";
 import { CATEGORIES } from "@/lib/products";
+import { isHoodieCategorySlug } from "@/lib/progressivePricing";
+import { computeProgressiveStateFromDb } from "@/lib/progressivePricing.server";
 import type { CategorySlug, Product, SizeStock } from "@/lib/types";
 
 /** Shown when a back-office product has no uploaded image yet (next/image needs a src). */
@@ -136,6 +138,26 @@ function rowToProduct(row: ProductRow): Product {
   };
 }
 
+/** Apply progressive hoodie selling price without mutating Neon catalog base rows. */
+async function applyProgressiveOverlay(products: Product[]): Promise<Product[]> {
+  if (!products.some((p) => isHoodieCategorySlug(p.categorySlug))) return products;
+  try {
+    const state = await computeProgressiveStateFromDb();
+    if (!state.enabled) return products;
+    return products.map((product) => {
+      if (!isHoodieCategorySlug(product.categorySlug)) return product;
+      return {
+        ...product,
+        price: state.currentPrice,
+        salePrice: null,
+        badges: product.badges?.filter((b) => b !== "Sale"),
+      };
+    });
+  } catch {
+    return products;
+  }
+}
+
 /** Products created in the back office, newest first. Empty when the DB is unreachable. */
 const getDatabaseProducts = cache(async (): Promise<Product[]> => {
   if (!resolveDatabaseUrl()) return [];
@@ -166,7 +188,7 @@ const getDatabaseProducts = cache(async (): Promise<Product[]> => {
         WHERE p.active IS NOT FALSE
         ORDER BY p.created_at DESC`
     );
-    return (rows ?? []).map(rowToProduct);
+    return applyProgressiveOverlay((rows ?? []).map(rowToProduct));
   } catch {
     return [];
   }

@@ -791,6 +791,142 @@ html.dashboard-light select option {
   color: #e72400;
 }
 
+/* Progressive pricing meter — compact drop signal under product price */
+.prog-meter {
+  margin-top: 0.85rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid color-mix(in srgb, var(--foreground) 12%, transparent);
+  text-align: center;
+}
+
+.prog-meter__head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.prog-meter__kicker {
+  margin: 0;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--foreground);
+}
+
+.prog-meter__rule {
+  margin: 0;
+  font-size: 0.72rem;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+}
+
+.prog-meter__unlock {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--foreground);
+  animation: prog-meter-unlock 380ms ease-out both;
+}
+
+@keyframes prog-meter-unlock {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.prog-meter__track {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+  gap: 4px;
+  width: min(100%, 17rem);
+  margin: 0.75rem auto 0;
+}
+
+.prog-meter__tick {
+  display: block;
+  height: 3px;
+  background: color-mix(in srgb, var(--foreground) 14%, transparent);
+  transition: background-color 420ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
+  transform-origin: center;
+}
+
+.prog-meter__tick--on {
+  background: var(--foreground);
+  transform: scaleY(1.35);
+}
+
+.prog-meter__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem 0.55rem;
+  margin-top: 0.7rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.prog-meter__fraction {
+  font-weight: 700;
+  color: var(--foreground);
+  letter-spacing: 0.02em;
+}
+
+.prog-meter__slash {
+  margin: 0 0.05em;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.prog-meter__dot {
+  width: 3px;
+  height: 3px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--muted) 70%, transparent);
+}
+
+.prog-meter__remain {
+  font-weight: 500;
+}
+
+.prog-meter__next {
+  font-weight: 500;
+}
+
+.prog-meter__next .tabular-nums {
+  font-weight: 700;
+  color: var(--foreground);
+}
+
+@media (min-width: 1024px) {
+  .prog-meter {
+    text-align: right;
+  }
+
+  .prog-meter__head {
+    align-items: flex-end;
+  }
+
+  .prog-meter__track {
+    margin-left: auto;
+    margin-right: 0;
+  }
+
+  .prog-meter__meta {
+    justify-content: flex-end;
+  }
+}
+
 /* Product gallery image dots */
 .gallery-dots {
   display: flex;

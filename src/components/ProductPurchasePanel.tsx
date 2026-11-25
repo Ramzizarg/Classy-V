@@ -8,6 +8,7 @@ import { ProductBuyNowForm } from "@/components/ProductBuyNowForm";
 import { ProductColourVariants } from "@/components/ProductColourVariants";
 import { ProductCountdown } from "@/components/ProductCountdown";
 import { HoodieDropReminder } from "@/components/HoodieDropReminder";
+import { ProgressivePriceMeter } from "@/components/ProgressivePriceMeter";
 import { SizeGuideModal } from "@/components/SizeGuideModal";
 import { useStore } from "@/components/StoreProvider";
 import { useFitProfile } from "@/components/useFitProfile";
@@ -24,9 +25,12 @@ import {
 } from "@/lib/packDeals";
 import { metaCatalogContentId, trackMeta } from "@/lib/metaPixel";
 import { effectivePrice, isComingSoon, isSoldOut, productHoverImage } from "@/lib/products";
+import { isHoodieCategorySlug, toPublicProgressivePayload } from "@/lib/progressivePricing";
 import { sortSizeStocks } from "@/lib/productSizesDisplay";
 import { chartSupportsFinder, recommendSize, type SizeChart } from "@/lib/sizeCharts";
 import type { CartLine, Product } from "@/lib/types";
+
+type ProgressivePublic = ReturnType<typeof toPublicProgressivePayload>;
 
 type PackQty = 1 | 2 | 3;
 
@@ -39,10 +43,12 @@ export function ProductPurchasePanel({
   product,
   variants = [],
   sizeChart = null,
+  progressiveInitial = null,
 }: {
   product: Product;
   variants?: Product[];
   sizeChart?: SizeChart | null;
+  progressiveInitial?: ProgressivePublic | null;
 }) {
   const router = useRouter();
   const { addLine, toggleWishlist, wishlist, hydrated, shippingRate } = useStore();
@@ -101,10 +107,16 @@ export function ProductPurchasePanel({
     );
   };
 
+  const showProgressive = isHoodieCategorySlug(product.categorySlug);
+  const [liveProgressive, setLiveProgressive] = useState<ProgressivePublic | null>(
+    progressiveInitial?.enabled ? progressiveInitial : null,
+  );
+
   useEffect(() => {
     const contentId = metaCatalogContentId(product);
     if (!contentId) return;
-    const viewedPrice = effectivePrice(product);
+    const viewedPrice =
+      liveProgressive?.enabled === true ? liveProgressive.currentPrice : effectivePrice(product);
     trackMeta("ViewContent", {
       content_ids: [contentId],
       content_name: product.name,
@@ -112,13 +124,20 @@ export function ProductPurchasePanel({
       content_category: product.categorySlug,
       contents: [{ id: contentId, quantity: 1, item_price: viewedPrice }],
       value: viewedPrice,
+      ...(liveProgressive?.enabled
+        ? { price_level: liveProgressive.level, current_price: liveProgressive.currentPrice }
+        : {}),
     });
-  }, [product.id, product.slug, product.name, product.categorySlug, product.price, product.salePrice]);
+    // Fire once per product identity; live price is attached when available on first paint.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- avoid re-firing ViewContent on every poll
+  }, [product.id, product.slug, product.name, product.categorySlug]);
 
   const comingSoon = isComingSoon(product);
   const soldOut = !comingSoon && isSoldOut(product);
-  const price = effectivePrice(product);
-  const onSale = price < product.price;
+  const catalogPrice = effectivePrice(product);
+  const price =
+    liveProgressive?.enabled === true ? liveProgressive.currentPrice : catalogPrice;
+  const onSale = liveProgressive?.enabled !== true && price < product.price;
   const saved = hydrated && wishlist.includes(product.id);
   const selectedStock = product.sizes.find((entry) => entry.size === size)?.stock ?? 0;
   const locked = comingSoon || soldOut;
@@ -398,6 +417,16 @@ export function ProductPurchasePanel({
           {soldOut ? <span className="font-bold text-[color:#e11d2e]"> — Sold Out</span> : null}
         </p>
       )}
+
+      {showProgressive ? (
+        <ProgressivePriceMeter
+          initial={progressiveInitial}
+          fallbackPrice={catalogPrice}
+          onUpdate={(payload) => {
+            if (payload.enabled) setLiveProgressive(payload);
+          }}
+        />
+      ) : null}
 
       {packEligible && !comingSoon && !soldOut && deal ? (
         <div className="pack-toggle mt-4" role="radiogroup" aria-label="Choose pack">

@@ -118,6 +118,7 @@ export function ProductBuyNowForm({
             note: form.note,
           },
           lines,
+          expectedSubtotal: lines.reduce((sum, line) => sum + line.unitPrice * line.quantity, 0),
         }),
       });
 
@@ -126,9 +127,15 @@ export function ProductBuyNowForm({
         total?: number;
         eventId?: string;
         error?: string;
+        code?: string;
       };
       if (!response.ok || !payload.reference) {
-        setError(payload.error ?? "We could not place the order. Try again.");
+        setError(
+          response.status === 409 && payload.code === "PRICE_CHANGED"
+            ? payload.error ??
+                "The price changed while you were checking out. Review the new total and try again."
+            : (payload.error ?? "We could not place the order. Try again."),
+        );
         setSubmitting(false);
         inFlight.current = false;
         return;
