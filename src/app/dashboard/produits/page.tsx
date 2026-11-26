@@ -42,6 +42,7 @@ import {
   Truck,
   Clock,
   Calendar,
+  BadgeDollarSign,
 } from "lucide-react";
 
 const SIZES = ["Standard", "S", "M", "L", "XL", "XXL"];
@@ -1105,6 +1106,14 @@ export default function DashboardProduitsPage() {
             <Truck className="h-4 w-4 shrink-0" />
             <span className="hidden sm:inline">Delivery</span>
           </button>
+          <Link
+            href="/dashboard/pricing"
+            className="inline-flex items-center justify-center sm:justify-start gap-2 px-3 py-2 sm:px-4 text-xs font-semibold uppercase tracking-wider rounded transition-colors min-w-[2.75rem] sm:min-w-0 bg-white text-black border border-zinc-300 hover:bg-zinc-50"
+            title="Progressive pricing"
+          >
+            <BadgeDollarSign className="h-4 w-4 shrink-0" />
+            <span className="hidden sm:inline">Pricing</span>
+          </Link>
           <button
             type="button"
             onClick={() => {
