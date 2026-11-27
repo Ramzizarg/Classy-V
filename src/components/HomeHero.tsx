@@ -73,7 +73,7 @@ export function HomeHero() {
             </div>
             <div className="home-hero__shade home-hero__shade--panel" aria-hidden="true" />
             <div className="home-hero__panel-copy">
-              <p className="home-hero__eyebrow">{SITE.description.replace(/\.$/, "")}</p>
+              <p className="home-hero__eyebrow">{SITE.motto.replace(/\.$/, "")}</p>
               <h2 className="home-hero__panel-title">{SITE.name}</h2>
               <div className="home-hero__actions">
                 <Link href="/collection" className="home-hero__btn home-hero__btn--solid">

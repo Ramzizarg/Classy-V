@@ -54,11 +54,36 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE.url),
+  applicationName: SITE.name,
   title: {
-    default: `${SITE.name} — ${SITE.tagline}`,
+    default: SITE.title,
     template: `%s | ${SITE.name}`,
   },
   description: SITE.description,
+  keywords: [
+    "CLASSY V",
+    "streetwear Tunisia",
+    "hoodie",
+    "cropped hoodie",
+    "N4E",
+    "not for everyone",
+  ],
+  authors: [{ name: SITE.name, url: SITE.url }],
+  creator: SITE.name,
+  publisher: SITE.name,
+  alternates: {
+    canonical: SITE.url,
+  },
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "48x48" },
+      { url: "/favicon-48.png", type: "image/png", sizes: "48x48" },
+      { url: "/favicon-32.png", type: "image/png", sizes: "32x32" },
+      { url: "/icon.png", type: "image/png", sizes: "512x512" },
+    ],
+    apple: [{ url: "/apple-icon.png", sizes: "180x180", type: "image/png" }],
+    shortcut: ["/favicon.ico"],
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
@@ -70,24 +95,36 @@ export const metadata: Metadata = {
   },
   openGraph: {
     type: "website",
+    locale: "en_GB",
     url: SITE.url,
     siteName: SITE.name,
-    title: `${SITE.name} — ${SITE.tagline}`,
+    title: SITE.title,
     description: SITE.description,
     images: [
       {
-        url: "/og-image.png",
+        url: "/opengraph-image.png",
         width: 1200,
         height: 630,
-        alt: `${SITE.name} logo`,
+        alt: `${SITE.name} — streetwear`,
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: `${SITE.name} — ${SITE.tagline}`,
+    title: SITE.title,
     description: SITE.description,
-    images: ["/og-image.png"],
+    images: ["/twitter-image.png"],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
   },
 };
 
@@ -97,9 +134,17 @@ const SITE_LD = [
     "@type": "Organization",
     "@id": `${SITE.url}/#organization`,
     name: SITE.name,
+    legalName: SITE.legalName,
     url: SITE.url,
-    logo: `${SITE.url}/og-image.png`,
+    logo: {
+      "@type": "ImageObject",
+      url: `${SITE.url}${SITE.logoPath}`,
+      width: 512,
+      height: 512,
+    },
+    image: `${SITE.url}${SITE.logoPath}`,
     email: SITE.email,
+    description: SITE.description,
     sameAs: [SITE.instagram],
   },
   {
@@ -108,6 +153,8 @@ const SITE_LD = [
     "@id": `${SITE.url}/#website`,
     name: SITE.name,
     url: SITE.url,
+    description: SITE.description,
+    inLanguage: "en",
     publisher: { "@id": `${SITE.url}/#organization` },
     potentialAction: {
       "@type": "SearchAction",

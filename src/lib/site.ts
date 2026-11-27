@@ -2,14 +2,25 @@ export const SITE = {
   name: "CLASSY V",
   legalName: "CLASSY V",
   tagline: "N4E",
+  /** On-site brand line (hero / UI) — keep short. */
+  motto: "NOT FOR EVERYONE.",
+  /** Primary SERP / Open Graph title — clear brand + category, not an internal code. */
+  title: "CLASSY V | Official Streetwear Store",
   url: "https://classy-v.com",
-  description: "NOT FOR EVERYONE.",
+  /**
+   * Full meta description for Google. Keep ~150–160 chars so Search uses this
+   * instead of scraping product grid text.
+   */
+  description:
+    "CLASSY V — Tunisian streetwear. Heavyweight hoodies, cropped fits and limited drops. Not for everyone. Shop the official store.",
   email: "hello@classy-v.com",
-  phone: "+216 00 000 000",
+  phone: "+216 25 161 292",
   city: "Tunis, Tunisia",
   instagram: "https://www.instagram.com/classyv.tn?igsh=YXR2OTJoNnA4d2s5",
   tiktok: "https://tiktok.com",
   standardShipping: 8,
+  /** Square brand mark for Google favicon / Knowledge Graph (min 112×112). */
+  logoPath: "/icon.png",
 } as const;
 
 /** Secondary links shown under the category rail, in the mobile menu and in the footer. */
